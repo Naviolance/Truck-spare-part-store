@@ -1,0 +1,19 @@
+{
+  "name": "truckparts",
+  "private": true,
+  "version": "0.1.0",
+  "description": "E-commerce website for selling truck spare parts",
+  "scripts": {
+    "dev:backend": "pnpm --filter backend dev",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "prisma:generate": "pnpm --filter @truckparts/prisma generate",
+    "prisma:migrate": "pnpm --filter @truckparts/prisma migrate",
+    "prisma:studio": "pnpm --filter @truckparts/prisma studio",
+    "prisma:seed": "pnpm --filter @truckparts/prisma seed",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

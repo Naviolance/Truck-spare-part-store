@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Next.js
+apps/frontend/.next/
+apps/frontend/out/
+
+# NestJS
+apps/backend/dist/
+
+# Prisma
+packages/prisma/generated/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Docker volumes (data lives in named volumes, not here, but just in case)
+docker-data/
