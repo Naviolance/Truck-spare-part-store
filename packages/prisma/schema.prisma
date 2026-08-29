@@ -68,13 +68,27 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  cart      Cart?
-  orders    Order[]
-  reviews   Review[]
+  cart          Cart?
+  orders        Order[]
+  reviews       Review[]
+  refreshTokens RefreshToken[]
 
   @@map("users")
 }
+// Refresh tokens are stored hashed (never plaintext) so a database leak alone
+// can't be used to impersonate users. Each row is one login session/device.
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
 
+  @@index([userId])
+  @@map("refresh_tokens")
+}
 // ---------------------------------------------------------------------------
 // Catalog: categories, brands, vehicles
 // ---------------------------------------------------------------------------
