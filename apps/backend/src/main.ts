@@ -2,13 +2,22 @@ import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
 import helmet from "helmet";
 import * as cookieParser from "cookie-parser";
+import { json, urlencoded } from "express";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.use(helmet());
-app.use((cookieParser as unknown as () => any)());
+  // Default body size limit is too small for image uploads — raise it.
+  app.use(json({ limit: "10mb" }));
+  app.use(urlencoded({ extended: true, limit: "10mb" }));
+
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }),
+);
+  app.use((cookieParser as unknown as () => any)());
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 

@@ -6,7 +6,11 @@ import { PrismaModule } from "./common/prisma/prisma.module";
 import { ProductsModule } from "./products/products.module";
 import { AuthModule } from "./auth/auth.module";
 import { UsersModule } from "./users/users.module";
+import { CategoriesModule } from "./categories/categories.module";
+import { BrandsModule } from "./brands/brands.module";
+import { AdminModule } from "./admin/admin.module";
 import { AppController } from "./app.controller";
+import { UploadsModule } from "./uploads/uploads.module";
 
 @Module({
   imports: [
@@ -16,6 +20,10 @@ import { AppController } from "./app.controller";
     ProductsModule,
     AuthModule,
     UsersModule,
+    CategoriesModule,
+    BrandsModule,
+    AdminModule,
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
