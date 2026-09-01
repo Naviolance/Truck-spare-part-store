@@ -13,7 +13,7 @@ export default function NewProductPage() {
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "", description: "", price: "", quantity: "", condition: "NEW",
-    categoryId: "", brandId: "", partNumber: "",
+    categoryId: "", brandId: "", partNumber: "", conditionNotes: "",
   });
   const [imageUrls, setImageUrls] = useState<string[]>([]);
 
@@ -77,6 +77,19 @@ export default function NewProductPage() {
             <option value="RECONDITIONED">Reconditioned</option>
           </select>
         </div>
+        {form.condition !== "NEW" && (
+          <div>
+            <label className="block text-sm font-medium mb-1">Condition notes</label>
+            <textarea
+              required
+              value={form.conditionNotes}
+              onChange={(e) => update("conditionNotes", e.target.value)}
+              placeholder="Describe wear, testing, functionality, etc."
+              className="w-full border border-gray-300 rounded px-3 py-2"
+              rows={2}
+            />
+          </div>
+        )}
         <div>
           <label className="block text-sm font-medium mb-1">Category</label>
           <select required value={form.categoryId} onChange={(e) => update("categoryId", e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2">

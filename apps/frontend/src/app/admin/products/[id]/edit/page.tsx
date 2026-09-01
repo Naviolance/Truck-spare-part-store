@@ -14,10 +14,10 @@ export default function EditProductPage() {
   const [brands, setBrands] = useState<Option[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
- const [form, setForm] = useState({
-  name: "", description: "", price: "", quantity: "", condition: "NEW",
-  categoryId: "", brandId: "", partNumber: "",
-});
+  const [form, setForm] = useState({
+    name: "", description: "", price: "", quantity: "", condition: "NEW",
+    categoryId: "", brandId: "", partNumber: "", conditionNotes: "",
+  });
 const [imageUrls, setImageUrls] = useState<string[]>([]);
 
   useEffect(() => {
@@ -25,10 +25,11 @@ const [imageUrls, setImageUrls] = useState<string[]>([]);
     apiFetch("/brands").then((res) => res.json()).then(setBrands);
     apiFetch(`/products/admin/${id}`).then(async (res) => {
       const p = await res.json();
-      setForm({
-        name: p.name, description: p.description, price: String(p.price), quantity: String(p.quantity),
-        condition: p.condition, categoryId: p.categoryId, brandId: p.brandId || "", partNumber: p.partNumber || "",
-      });
+    setForm({
+      name: p.name, description: p.description, price: String(p.price), quantity: String(p.quantity),
+      condition: p.condition, categoryId: p.categoryId, brandId: p.brandId || "", partNumber: p.partNumber || "",
+      conditionNotes: p.conditionNotes || "",
+    });
       setImageUrls(p.images?.map((img: { url: string }) => img.url) ?? []);
       setLoading(false);
     });

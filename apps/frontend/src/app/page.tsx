@@ -1,5 +1,7 @@
+import Link from "next/link";
 type Product = {
   id: string;
+  slug: string;
   name: string;
   price: string;
   condition: string;
@@ -39,8 +41,12 @@ export default async function HomePage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map((product) => (
-            <div key={product.id} className="rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm">
+        {products.map((product) => (
+            <Link
+              key={product.id}
+              href={`/products/${product.slug}`}
+              className="rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+            >
               {product.images[0] && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -59,7 +65,7 @@ export default async function HomePage() {
                   <span className="text-xs rounded-full bg-gray-100 px-2 py-0.5">{product.condition}</span>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
