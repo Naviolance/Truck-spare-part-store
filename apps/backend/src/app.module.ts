@@ -12,6 +12,7 @@ import { AdminModule } from "./admin/admin.module";
 import { AppController } from "./app.controller";
 import { UploadsModule } from "./uploads/uploads.module";
 import { CartModule } from "./cart/cart.module";
+import { OrdersModule } from "./orders/orders.module";
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { CartModule } from "./cart/cart.module";
     AdminModule,
     UploadsModule,
     CartModule,
+    OrdersModule,
   ],
   controllers: [AppController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

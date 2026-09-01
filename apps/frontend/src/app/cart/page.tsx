@@ -1,9 +1,11 @@
 "use client";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
+import { useRouter } from "next/navigation";
 
 export default function CartPage() {
   const { items, subtotal, loading, updateQuantity, removeItem } = useCart();
+  const router = useRouter();
 
   if (loading) return <main className="max-w-3xl mx-auto px-4 py-16 text-gray-500">Loading cart…</main>;
 
@@ -79,10 +81,12 @@ export default function CartPage() {
         <span className="text-lg font-bold">${subtotal.toFixed(2)}</span>
       </div>
 
-      <button className="w-full mt-4 bg-gray-900 text-white rounded py-3 font-medium">
+        <button
+        onClick={() => router.push("/checkout")}
+        className="w-full mt-4 bg-gray-900 text-white rounded py-3 font-medium"
+        >
         Checkout
-      </button>
-      <p className="text-xs text-gray-400 mt-2 text-center">Checkout coming next</p>
+        </button>
     </main>
   );
 }

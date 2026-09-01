@@ -16,6 +16,7 @@ export function Navbar() {
             <Link href="/cart" className="hover:underline">
               Cart{itemCount > 0 && ` (${itemCount})`}
             </Link>
+            <Link href="/orders" className="hover:underline">Orders</Link>
             <span className="text-gray-600">Hi, {user.firstName}</span>
             {user.role === "ADMIN" && (
               <Link href="/admin" className="hover:underline">Admin</Link>
