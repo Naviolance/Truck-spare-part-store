@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AddToCartButton } from "./AddToCartButton";
 
 type Product = {
   id: string;
@@ -125,13 +126,9 @@ export default async function ProductPage({ params }: { params: { slug: string }
             </div>
           )}
 
-          <button
-            disabled={product.quantity === 0}
-            className="w-full mt-6 bg-gray-900 text-white rounded py-3 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {product.quantity > 0 ? "Add to cart" : "Out of stock"}
-          </button>
-          <p className="text-xs text-gray-400 mt-2 text-center">Cart functionality coming next</p>
+            <div className="mt-6">
+            <AddToCartButton productId={product.id} inStock={product.quantity > 0} />
+            </div>
         </div>
       </div>
 
