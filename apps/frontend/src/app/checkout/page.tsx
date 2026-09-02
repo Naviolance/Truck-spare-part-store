@@ -108,7 +108,14 @@ export default function CheckoutPage() {
   }
 
   return (
-    <main className="max-w-lg mx-auto px-4 py-10">
+    <main className="max-w-lg mx-auto px-4 py-10 relative">
+      {submitting && (
+        <div className="fixed inset-0 bg-white/80 flex flex-col items-center justify-center gap-3 z-50">
+          <div className="w-10 h-10 border-4 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
+          <p className="text-sm text-gray-600">Setting up your payment…</p>
+        </div>
+      )}
+
       <h1 className="text-2xl font-bold mb-6">Checkout</h1>
 
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
