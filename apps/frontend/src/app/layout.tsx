@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { Navbar } from "@/components/Navbar";
+
+const inter = Inter({ subsets: ["latin"], display: "swap" });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 const SITE_NAME = "TruckParts";
@@ -28,7 +31,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-gray-50 text-gray-900">
+      <body className={`${inter.className} min-h-screen bg-zinc-50 text-zinc-900`}>
         <AuthProvider>
           <CartProvider>
             <Navbar />

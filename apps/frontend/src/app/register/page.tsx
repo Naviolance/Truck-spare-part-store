@@ -1,9 +1,12 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { PasswordInput } from "@/components/PasswordInput";
+import { IconInput, MailIcon, UserIcon } from "@/components/IconInput";
+import { AuthLayout } from "@/components/AuthLayout";
+
+const inputClass = "w-full border border-zinc-300 rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:border-zinc-500";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -31,48 +34,51 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="max-w-sm mx-auto px-4 py-16">
-      <h1 className="text-2xl font-bold mb-6">Create an account</h1>
+    <AuthLayout mode="register">
+      <h1 className="text-2xl font-bold mb-6 text-zinc-900">Create an account</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium mb-1">First name</label>
-            <input
+            <label className="block text-sm font-medium mb-1 text-zinc-700">First name</label>
+            <IconInput
+              icon={<UserIcon />}
               required
               value={form.firstName}
               onChange={(e) => update("firstName", e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Last name</label>
-            <input
+            <label className="block text-sm font-medium mb-1 text-zinc-700">Last name</label>
+            <IconInput
+              icon={<UserIcon />}
               required
               value={form.lastName}
               onChange={(e) => update("lastName", e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2"
+              className={inputClass}
             />
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Email</label>
-          <input
+          <label className="block text-sm font-medium mb-1 text-zinc-700">Email</label>
+          <IconInput
+            icon={<MailIcon />}
             type="email"
             required
             value={form.email}
             onChange={(e) => update("email", e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2"
+            className={inputClass}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Password</label>
+          <label className="block text-sm font-medium mb-1 text-zinc-700">Password</label>
           <PasswordInput
             required
             value={form.password}
             onChange={(e) => update("password", e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2"
+            className={inputClass}
           />
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-zinc-500 mt-1">
             At least 10 characters, with uppercase, lowercase, a number, and a symbol.
           </p>
         </div>
@@ -80,14 +86,11 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full bg-gray-900 text-white rounded py-2 font-medium disabled:opacity-50"
+          className="w-full rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 text-white py-2 font-medium shadow-sm transition-all duration-200 hover:from-zinc-600 hover:to-zinc-800 hover:shadow-md disabled:opacity-50"
         >
           {submitting ? "Creating account..." : "Sign up"}
         </button>
       </form>
-      <p className="text-sm text-gray-600 mt-4">
-        Already have an account? <Link href="/login" className="underline">Log in</Link>
-      </p>
-    </main>
+    </AuthLayout>
   );
 }
