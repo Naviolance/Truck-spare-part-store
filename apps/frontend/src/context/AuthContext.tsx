@@ -21,6 +21,17 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Module-level, not component state — React 18 Strict Mode intentionally
+// double-invokes effects in dev (mount → cleanup → mount again). Without
+// this, restoreSession() fires two concurrent /auth/refresh calls using the
+// same not-yet-rotated cookie; the backend's reuse-detection then reads the
+// second call as token theft and revokes every session, including the one
+// the first call just issued — a real logout, not a StrictMode artifact.
+// A module-level promise is shared across both invocations since the
+// module itself isn't re-evaluated between them, only reset on a genuine
+// full page reload, which is exactly the boundary we want.
+let restoreSessionPromise: Promise<boolean> | null = null;
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,19 +42,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    async function restoreSession() {
-      try {
-        const res = await apiFetch("/auth/refresh", { method: "POST", skipAuth: true });
-        if (res.ok) {
-          const data = await res.json();
-          setAccessToken(data.accessToken);
-          await fetchMe();
-        }
-      } finally {
-        setLoading(false);
-      }
+    let cancelled = false;
+
+    async function doRefresh(): Promise<boolean> {
+      const res = await apiFetch("/auth/refresh", { method: "POST", skipAuth: true });
+      if (!res.ok) return false;
+      const data = await res.json();
+      setAccessToken(data.accessToken);
+      return true;
     }
-    restoreSession();
+
+    if (!restoreSessionPromise) restoreSessionPromise = doRefresh();
+
+    restoreSessionPromise
+      .then(async (restored) => {
+        if (cancelled) return;
+        if (restored) await fetchMe();
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function login(email: string, password: string) {

@@ -12,6 +12,9 @@ function mockPrisma() {
       update: jest.fn(),
     },
     refreshToken: {
+      create: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
       updateMany: jest.fn(),
     },
     $transaction: jest.fn((ops: any[]) => Promise.all(ops)),
@@ -20,16 +23,17 @@ function mockPrisma() {
 
 describe("AuthService password reset", () => {
   let prisma: ReturnType<typeof mockPrisma>;
-  let usersService: { findByEmail: jest.Mock };
+  let usersService: { findByEmail: jest.Mock; findById: jest.Mock };
+  let jwtService: { sign: jest.Mock };
   let mailService: { sendMail: jest.Mock };
   let service: AuthService;
 
   beforeEach(() => {
     prisma = mockPrisma();
-    usersService = { findByEmail: jest.fn() };
+    usersService = { findByEmail: jest.fn(), findById: jest.fn() };
+    jwtService = { sign: jest.fn().mockReturnValue("fake.jwt.token") };
     mailService = { sendMail: jest.fn().mockResolvedValue(undefined) };
-    // jwtService isn't touched by forgotPassword/resetPassword.
-    service = new AuthService(usersService as any, {} as any, prisma as any, mailService as any);
+    service = new AuthService(usersService as any, jwtService as any, prisma as any, mailService as any);
   });
 
   describe("forgotPassword", () => {
@@ -115,6 +119,71 @@ describe("AuthService password reset", () => {
       expect(prisma.passwordResetToken.update).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id: "token-1" }, data: { usedAt: expect.any(Date) } }),
       );
+      expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { userId: "user-1", revokedAt: null },
+        data: { revokedAt: expect.any(Date) },
+      });
+    });
+  });
+
+  describe("refresh", () => {
+    it("rejects an unknown token", async () => {
+      prisma.refreshToken.findUnique.mockResolvedValue(null);
+      await expect(service.refresh("bogus")).rejects.toThrow(/expired/);
+    });
+
+    it("rejects an expired token", async () => {
+      prisma.refreshToken.findUnique.mockResolvedValue({
+        id: "rt-1",
+        userId: "user-1",
+        expiresAt: new Date(Date.now() - 1000),
+        revokedAt: null,
+      });
+      await expect(service.refresh("expired")).rejects.toThrow(/expired/);
+    });
+
+    it("rotates a valid token: revokes the old one and issues a new one", async () => {
+      prisma.refreshToken.findUnique.mockResolvedValue({
+        id: "rt-1",
+        userId: "user-1",
+        expiresAt: new Date(Date.now() + 100_000),
+        revokedAt: null,
+      });
+      usersService.findById.mockResolvedValue({ id: "user-1", role: "CUSTOMER" });
+
+      await service.refresh("valid-token");
+
+      expect(prisma.refreshToken.update).toHaveBeenCalledWith({
+        where: { id: "rt-1" },
+        data: { revokedAt: expect.any(Date) },
+      });
+      expect(prisma.refreshToken.create).toHaveBeenCalledTimes(1);
+    });
+
+    it("a token reused moments after rotation fails, but does NOT nuke the winning call's new session", async () => {
+      // This is the exact race two near-simultaneous refresh calls produce:
+      // both read the same cookie, one wins and rotates it, the other
+      // arrives a beat later and finds it already revoked.
+      prisma.refreshToken.findUnique.mockResolvedValue({
+        id: "rt-1",
+        userId: "user-1",
+        expiresAt: new Date(Date.now() + 100_000),
+        revokedAt: new Date(Date.now() - 500), // revoked half a second ago
+      });
+
+      await expect(service.refresh("just-rotated")).rejects.toThrow(/Session invalid/);
+      expect(prisma.refreshToken.updateMany).not.toHaveBeenCalled();
+    });
+
+    it("a token reused long after rotation IS treated as theft — revokes every session", async () => {
+      prisma.refreshToken.findUnique.mockResolvedValue({
+        id: "rt-1",
+        userId: "user-1",
+        expiresAt: new Date(Date.now() + 100_000),
+        revokedAt: new Date(Date.now() - 60_000), // revoked a full minute ago
+      });
+
+      await expect(service.refresh("old-replayed-token")).rejects.toThrow(/Session invalid/);
       expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
         where: { userId: "user-1", revokedAt: null },
         data: { revokedAt: expect.any(Date) },

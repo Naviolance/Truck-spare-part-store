@@ -16,6 +16,7 @@ const BCRYPT_ROUNDS = 12; // higher = slower to brute-force, 12 is a solid moder
 const REFRESH_TOKEN_BYTES = 64;
 const RESET_TOKEN_BYTES = 32;
 const RESET_TOKEN_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+const REUSE_GRACE_MS = 10_000; // see refresh()'s reuse-detection comment
 
 @Injectable()
 export class AuthService {
@@ -84,10 +85,22 @@ export class AuthService {
     }
 
     if (stored.revokedAt) {
-      await this.prisma.refreshToken.updateMany({
-        where: { userId: stored.userId, revokedAt: null },
-        data: { revokedAt: new Date() },
-      });
+      // A revoked token being reused looks like theft — someone replaying
+      // an old token after we already rotated it — but it's also exactly
+      // what two near-simultaneous legitimate refresh calls produce (two
+      // tabs, a page that double-fires its mount effect, a flaky-network
+      // retry): both read the same not-yet-rotated cookie, one wins the
+      // race and rotates it, the other arrives moments later and finds it
+      // already revoked. Only escalate to "nuke every session" if this
+      // token has been dead for longer than that could plausibly explain —
+      // a replay minutes or hours later is what actually indicates theft.
+      const revokedRecently = Date.now() - stored.revokedAt.getTime() < REUSE_GRACE_MS;
+      if (!revokedRecently) {
+        await this.prisma.refreshToken.updateMany({
+          where: { userId: stored.userId, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+      }
       throw new UnauthorizedException("Session invalid, please log in again");
     }
 
