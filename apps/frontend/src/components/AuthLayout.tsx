@@ -24,13 +24,18 @@ export function AuthLayout({ mode, children }: Props) {
             fails to load) this gradient alone is the background, so
             nothing looks broken either way. */}
         <div className="relative sm:w-2/5 min-h-[220px] sm:min-h-0 bg-gradient-to-br from-zinc-800 to-zinc-950 flex flex-col justify-between p-8 text-white overflow-hidden">
+          {/* Same source photo on both pages, but treated differently so
+              they don't read as an identical copy-paste: register is the
+              first-impression, new-visitor moment, so it gets the bolder,
+              more "metallic" pop (higher opacity + contrast/saturation);
+              login stays subdued since it's for people who already know us. */}
           {!imageFailed && (
             <Image
               src="/engine.jpg"
               alt=""
               fill
               sizes="(max-width: 640px) 100vw, 40vw"
-              className="object-cover opacity-40"
+              className={isLogin ? "object-cover opacity-40" : "object-cover opacity-70 contrast-125 saturate-150"}
               onError={() => setImageFailed(true)}
             />
           )}
