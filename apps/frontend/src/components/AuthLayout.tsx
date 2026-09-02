@@ -55,7 +55,7 @@ export function AuthLayout({ mode, children }: Props) {
             </p>
             <Link
               href={isLogin ? "/register" : "/login"}
-              className="inline-block rounded-lg border border-white/30 px-4 py-2 text-sm transition-colors duration-200 hover:bg-white/10"
+              className="inline-block rounded-lg bg-white text-zinc-900 px-5 py-2.5 text-sm font-semibold shadow-md transition-all duration-200 hover:bg-zinc-100 hover:shadow-lg"
             >
               {isLogin ? "Create an account" : "Log in instead"}
             </Link>
