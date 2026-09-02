@@ -63,8 +63,11 @@ export class AuthController {
       this.verifyCsrf(req);
       await this.authService.logout(token);
     }
-    res.clearCookie(REFRESH_COOKIE_NAME);
-    res.clearCookie(CSRF_COOKIE_NAME);
+    // clearCookie must be called with the SAME path the cookie was set
+    // with, or the browser treats it as a different cookie entirely and
+    // the real one is left behind.
+    res.clearCookie(REFRESH_COOKIE_NAME, { path: "/auth" });
+    res.clearCookie(CSRF_COOKIE_NAME, { path: "/" });
     return { success: true };
   }
 
@@ -98,12 +101,17 @@ export class AuthController {
     // cross-site attacker can trigger a request with our cookies attached,
     // but their JS can never read a cookie that belongs to our origin, so
     // they can't produce a header that matches.
+    //
+    // path MUST be "/" here, unlike the refresh cookie — document.cookie
+    // visibility is checked against the CURRENT PAGE's path, and the
+    // frontend has no pages under /auth/*, so path: "/auth" would make this
+    // cookie permanently invisible to the frontend and break every refresh.
     res.cookie(CSRF_COOKIE_NAME, crypto.randomBytes(24).toString("hex"), {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: REFRESH_COOKIE_MAX_AGE_MS,
-      path: "/auth",
+      path: "/",
     });
   }
 
