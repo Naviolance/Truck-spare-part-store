@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { ImageUploader } from "@/components/ImageUploader";
+import { VehicleCompatibilityPicker } from "@/components/VehicleCompatibilityPicker";
+
 type Option = { id: string; name: string };
 
 export default function EditProductPage() {
@@ -17,8 +19,10 @@ export default function EditProductPage() {
   const [form, setForm] = useState({
     name: "", description: "", price: "", quantity: "", condition: "NEW",
     categoryId: "", brandId: "", partNumber: "", conditionNotes: "",
-  });
+  }); 
+
 const [imageUrls, setImageUrls] = useState<string[]>([]);
+const [vehicleIds, setVehicleIds] = useState<string[]>([]);
 
   useEffect(() => {
     apiFetch("/categories").then((res) => res.json()).then(setCategories);
@@ -31,6 +35,7 @@ const [imageUrls, setImageUrls] = useState<string[]>([]);
       conditionNotes: p.conditionNotes || "",
     });
       setImageUrls(p.images?.map((img: { url: string }) => img.url) ?? []);
+      setVehicleIds(p.compatibility?.map((c: { vehicleId: string }) => c.vehicleId) ?? []);
       setLoading(false);
     });
   }, [id]);
@@ -50,6 +55,7 @@ const [imageUrls, setImageUrls] = useState<string[]>([]);
         quantity: Number(form.quantity),
         brandId: form.brandId || undefined,
         imageUrls,
+        vehicleIds,
       }),
     });
     if (!res.ok) {
@@ -109,7 +115,10 @@ const [imageUrls, setImageUrls] = useState<string[]>([]);
           <label className="block text-sm font-medium mb-1">Part number (optional)</label>
           <input value={form.partNumber} onChange={(e) => update("partNumber", e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2" />
         </div>
+
         <ImageUploader imageUrls={imageUrls} onChange={setImageUrls} />
+        <VehicleCompatibilityPicker selectedIds={vehicleIds} onChange={setVehicleIds} />
+        
         {error && <p className="text-red-600 text-sm">{error}</p>}
         <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2">Save changes</button>
       </form>

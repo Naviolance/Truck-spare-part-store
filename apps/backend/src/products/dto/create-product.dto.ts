@@ -41,4 +41,9 @@ export class CreateProductDto {
   @IsArray()
   @IsString({ each: true })
   imageUrls?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  vehicleIds?: string[];
 }

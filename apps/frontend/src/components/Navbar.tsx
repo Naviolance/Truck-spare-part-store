@@ -10,6 +10,10 @@ export function Navbar() {
     <nav className="border-b border-gray-200 bg-white">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
         <Link href="/" className="font-bold text-lg">TruckParts</Link>
+
+        <Link href="/find-my-part" className="text-sm hover:underline">Find My Part</Link>
+        <Link href="/products" className="text-sm hover:underline">All Parts</Link>
+        
         <div className="flex items-center gap-4 text-sm">
         {loading ? null : user ? (
           <>

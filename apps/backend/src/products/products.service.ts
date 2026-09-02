@@ -1,18 +1,41 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
-import { ProductStatus } from "@truckparts/prisma";
+import { ProductStatus, Prisma } from "@truckparts/prisma";
+import { QueryProductsDto } from "./dto/query-products.dto";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { slugify } from "../common/utils/slugify";
+
 
 @Injectable()
 export class ProductsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll() {
+  async findAll(query: QueryProductsDto) {
+    const where: Prisma.ProductWhereInput = { status: ProductStatus.PUBLISHED };
+
+    if (query.search) {
+      // Case-insensitive match across name and description.
+      where.OR = [
+        { name: { contains: query.search, mode: "insensitive" } },
+        { description: { contains: query.search, mode: "insensitive" } },
+        { partNumber: { contains: query.search, mode: "insensitive" } },
+      ];
+    }
+
+    if (query.categoryId) where.categoryId = query.categoryId;
+    if (query.brandId) where.brandId = query.brandId;
+    if (query.condition) where.condition = query.condition;
+
+    if (query.minPrice || query.maxPrice) {
+      where.price = {};
+      if (query.minPrice) where.price.gte = Number(query.minPrice);
+      if (query.maxPrice) where.price.lte = Number(query.maxPrice);
+    }
+
     return this.prisma.product.findMany({
-      where: { status: ProductStatus.PUBLISHED },
-      include: { category: true, brand: true, images: { orderBy: { position: "asc" } } },
+      where,
+      include: { category: true, brand: true, images: { orderBy: { position: "asc" }, take: 1 } },
       orderBy: { createdAt: "desc" },
     });
   }
@@ -60,7 +83,7 @@ export class ProductsService {
       slug = `${baseSlug}-${suffix++}`;
     }
 
-    const { imageUrls, ...rest } = dto;
+    const { imageUrls, vehicleIds, ...rest } = dto;
 
     return this.prisma.product.create({
       data: {
@@ -70,31 +93,41 @@ export class ProductsService {
         images: imageUrls?.length
           ? { create: imageUrls.map((url, position) => ({ url, position })) }
           : undefined,
+        compatibility: vehicleIds?.length
+          ? { create: vehicleIds.map((vehicleId) => ({ vehicleId })) }
+          : undefined,
       },
-      include: { images: true },
+      include: { images: true, compatibility: true },
     });
   }
 
-async update(id: string, dto: UpdateProductDto) {
-  await this.findByIdAdmin(id);
-  const { imageUrls, ...rest } = dto;
+  async update(id: string, dto: UpdateProductDto) {
+    await this.findByIdAdmin(id);
+    const { imageUrls, vehicleIds, ...rest } = dto;
 
-  return this.prisma.product.update({
-    where: { id },
-    data: {
-      ...rest,
-      // If imageUrls was provided, replace all existing images with the new set.
-      ...(imageUrls
-        ? {
-            images: {
-              deleteMany: {}, // remove old image records for this product
-              create: imageUrls.map((url, position) => ({ url, position })),
-            },
-          }
-        : {}),
-    },
-  });
-}
+    return this.prisma.product.update({
+      where: { id },
+      data: {
+        ...rest,
+        ...(imageUrls
+          ? {
+              images: {
+                deleteMany: {},
+                create: imageUrls.map((url, position) => ({ url, position })),
+              },
+            }
+          : {}),
+        ...(vehicleIds
+          ? {
+              compatibility: {
+                deleteMany: {},
+                create: vehicleIds.map((vehicleId) => ({ vehicleId })),
+              },
+            }
+          : {}),
+      },
+    });
+  }
 
   async remove(id: string) {
     await this.findByIdAdmin(id);

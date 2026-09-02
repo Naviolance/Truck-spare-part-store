@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { ImageUploader } from "@/components/ImageUploader";
+import { VehicleCompatibilityPicker } from "@/components/VehicleCompatibilityPicker";
 
 type Option = { id: string; name: string };
 
@@ -11,11 +12,13 @@ export default function NewProductPage() {
   const [categories, setCategories] = useState<Option[]>([]);
   const [brands, setBrands] = useState<Option[]>([]);
   const [error, setError] = useState<string | null>(null);
+  
   const [form, setForm] = useState({
     name: "", description: "", price: "", quantity: "", condition: "NEW",
     categoryId: "", brandId: "", partNumber: "", conditionNotes: "",
   });
   const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [vehicleIds, setVehicleIds] = useState<string[]>([]);
 
   useEffect(() => {
     apiFetch("/categories").then((res) => res.json()).then(setCategories);
@@ -31,13 +34,14 @@ export default function NewProductPage() {
     setError(null);
     const res = await apiFetch("/products", {
       method: "POST",
-      body: JSON.stringify({
-        ...form,
-        price: Number(form.price),
-        quantity: Number(form.quantity),
-        brandId: form.brandId || undefined,
-        imageUrls,
-      }),
+        body: JSON.stringify({
+          ...form,
+          price: Number(form.price),
+          quantity: Number(form.quantity),
+          brandId: form.brandId || undefined,
+          imageUrls,
+          vehicleIds,
+        }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -109,6 +113,7 @@ export default function NewProductPage() {
           <input value={form.partNumber} onChange={(e) => update("partNumber", e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2" />
         </div>
         <ImageUploader imageUrls={imageUrls} onChange={setImageUrls} />
+        <VehicleCompatibilityPicker selectedIds={vehicleIds} onChange={setVehicleIds} />
         {error && <p className="text-red-600 text-sm">{error}</p>}
         <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2">Create product</button>
       </form>
