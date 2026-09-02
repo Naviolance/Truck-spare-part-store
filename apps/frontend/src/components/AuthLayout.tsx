@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
-import { ReactNode } from "react";
+import Image from "next/image";
+import { ReactNode, useState } from "react";
 
 type Props = {
   mode: "login" | "register";
@@ -13,23 +14,26 @@ type Props = {
 // though it's a real navigation under the hood.
 export function AuthLayout({ mode, children }: Props) {
   const isLogin = mode === "login";
+  const [imageFailed, setImageFailed] = useState(false);
 
   return (
     <main className="min-h-[calc(100vh-57px)] flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-3xl rounded-xl overflow-hidden shadow-lg flex flex-col sm:flex-row bg-white">
-        {/* Branded panel — the engine clip loops here once
-            apps/frontend/public/engine-animation.mp4 exists; until then this
-            gradient alone is the background, so nothing looks broken. */}
+        {/* Branded panel — the engine photo shows here once
+            apps/frontend/public/engine.jpg exists; until then (or if it
+            fails to load) this gradient alone is the background, so
+            nothing looks broken either way. */}
         <div className="relative sm:w-2/5 min-h-[220px] sm:min-h-0 bg-gradient-to-br from-zinc-800 to-zinc-950 flex flex-col justify-between p-8 text-white overflow-hidden">
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="absolute inset-0 w-full h-full object-cover opacity-40"
-          >
-            <source src="/engine-animation.mp4" type="video/mp4" />
-          </video>
+          {!imageFailed && (
+            <Image
+              src="/engine.jpg"
+              alt=""
+              fill
+              sizes="(max-width: 640px) 100vw, 40vw"
+              className="object-cover opacity-40"
+              onError={() => setImageFailed(true)}
+            />
+          )}
 
           <div className="relative">
             <p className="font-bold text-lg tracking-tight">TruckParts</p>
