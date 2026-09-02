@@ -2,14 +2,17 @@ import { Controller, Post, Body, Res, Req, UnauthorizedException, ForbiddenExcep
 import { Throttle } from "@nestjs/throttler";
 import type { Response, Request } from "express";
 import * as crypto from "crypto";
-import { AuthService } from "./auth.service";
+import { AuthService, REFRESH_TOKEN_SLIDING_MS } from "./auth.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
 
 const REFRESH_COOKIE_NAME = "refresh_token";
-const REFRESH_COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+// Matches the DB-side sliding expiry in auth.service.ts — no point letting
+// the browser hold onto a cookie for longer than the token behind it is
+// ever actually valid for.
+const REFRESH_COOKIE_MAX_AGE_MS = REFRESH_TOKEN_SLIDING_MS;
 
 // /auth/refresh and /auth/logout are the only two routes that trust the
 // httpOnly cookie alone with no Bearer token to back it up — every other

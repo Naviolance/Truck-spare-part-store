@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { apiFetch, setAccessToken } from "@/lib/api";
+import { apiFetch, setAccessToken, refreshSession, onSessionExpire } from "@/lib/api";
 
 type User = {
   id: string;
@@ -21,17 +21,6 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Module-level, not component state — React 18 Strict Mode intentionally
-// double-invokes effects in dev (mount → cleanup → mount again). Without
-// this, restoreSession() fires two concurrent /auth/refresh calls using the
-// same not-yet-rotated cookie; the backend's reuse-detection then reads the
-// second call as token theft and revokes every session, including the one
-// the first call just issued — a real logout, not a StrictMode artifact.
-// A module-level promise is shared across both invocations since the
-// module itself isn't re-evaluated between them, only reset on a genuine
-// full page reload, which is exactly the boundary we want.
-let restoreSessionPromise: Promise<boolean> | null = null;
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,19 +31,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
+    // If the session ever expires later — e.g. some unrelated page's API
+    // call gets a 401, tries a silent refresh, and THAT fails because 15
+    // minutes of real inactivity have passed — this is what flips the
+    // navbar back to logged-out, without needing a page reload.
+    onSessionExpire(() => setUser(null));
+
     let cancelled = false;
 
-    async function doRefresh(): Promise<boolean> {
-      const res = await apiFetch("/auth/refresh", { method: "POST", skipAuth: true });
-      if (!res.ok) return false;
-      const data = await res.json();
-      setAccessToken(data.accessToken);
-      return true;
-    }
-
-    if (!restoreSessionPromise) restoreSessionPromise = doRefresh();
-
-    restoreSessionPromise
+    // refreshSession() is the single shared, module-level, single-flight
+    // refresh call (see lib/api.ts) — used here for the initial mount-time
+    // restore, and reused by apiFetch's silent 401-retry elsewhere. Sharing
+    // one implementation is what stops two near-simultaneous refresh
+    // attempts (Strict Mode's double-invoke in dev, or a genuine race
+    // between this and some other page's request) from ever racing on the
+    // same not-yet-rotated cookie.
+    refreshSession()
       .then(async (restored) => {
         if (cancelled) return;
         if (restored) await fetchMe();

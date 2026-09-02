@@ -18,7 +18,12 @@ import { MailModule } from "../mail/mail.module";
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>("JWT_SECRET"),
-        signOptions: { expiresIn: config.get<string>("JWT_ACCESS_EXPIRES_IN") ?? "15m" },
+        // Deliberately shorter than the refresh token's 15-minute sliding
+        // window (see auth.service.ts) — this is what forces a refresh
+        // attempt (and therefore a real activity check) at least every 5
+        // minutes during active use, while leaving comfortable buffer
+        // before the refresh token itself could expire.
+        signOptions: { expiresIn: config.get<string>("JWT_ACCESS_EXPIRES_IN") ?? "5m" },
       }),
     }),
   ],

@@ -18,6 +18,13 @@ const RESET_TOKEN_BYTES = 32;
 const RESET_TOKEN_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 const REUSE_GRACE_MS = 10_000; // see refresh()'s reuse-detection comment
 
+// The refresh token is a SLIDING window, not a fixed lifetime — every
+// successful refresh renews it another 15 minutes from that moment. As
+// long as the frontend keeps refreshing (which apiFetch does silently on
+// any 401, i.e. real activity), the session never disrupts the user; if
+// 15 minutes pass with zero requests, this is what actually logs them out.
+export const REFRESH_TOKEN_SLIDING_MS = 15 * 60 * 1000;
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -62,8 +69,7 @@ export class AuthService {
     const refreshTokenPlain = crypto.randomBytes(REFRESH_TOKEN_BYTES).toString("hex");
     const refreshTokenHash = this.hashToken(refreshTokenPlain);
 
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30);
+    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_SLIDING_MS);
 
     await this.prisma.refreshToken.create({
       data: { userId, tokenHash: refreshTokenHash, expiresAt },

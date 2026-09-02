@@ -158,6 +158,14 @@ describe("AuthService password reset", () => {
         data: { revokedAt: expect.any(Date) },
       });
       expect(prisma.refreshToken.create).toHaveBeenCalledTimes(1);
+
+      // The whole point of the sliding window: the new token gets ~15
+      // fresh minutes from THIS moment, not a fixed long-lived lifetime —
+      // otherwise an inactive user's session would never actually expire.
+      const newExpiresAt: Date = prisma.refreshToken.create.mock.calls[0][0].data.expiresAt;
+      const minutesFromNow = (newExpiresAt.getTime() - Date.now()) / 60_000;
+      expect(minutesFromNow).toBeGreaterThan(14);
+      expect(minutesFromNow).toBeLessThanOrEqual(15);
     });
 
     it("a token reused moments after rotation fails, but does NOT nuke the winning call's new session", async () => {
