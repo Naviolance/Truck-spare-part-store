@@ -4,6 +4,7 @@ import helmet from "helmet";
 import * as cookieParser from "cookie-parser";
 import { json, urlencoded } from "express";
 import { AppModule } from "./app.module";
+import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -29,6 +30,7 @@ app.use(
   app.use((cookieParser as unknown as () => any)());
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   app.enableCors({
     origin: "http://localhost:3000",

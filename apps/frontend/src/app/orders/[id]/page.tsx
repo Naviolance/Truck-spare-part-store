@@ -57,7 +57,7 @@ export default function OrderDetailPage() {
 
       <div className="text-sm text-gray-600 space-y-1 mb-6">
         <p><span className="font-medium">Status:</span> {order.status}</p>
-        <p><span className="font-medium">Ship to:</span> {order.shippingAddress}, {order.shippingCity}</p>
+        <p><span className="font-medium">Contact address:</span> {order.shippingAddress}, {order.shippingCity}</p>
         <p><span className="font-medium">Phone:</span> {order.shippingPhone}</p>
       </div>
 

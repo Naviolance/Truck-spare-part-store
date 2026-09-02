@@ -71,7 +71,7 @@ export default function AccountPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Address</label>
+          <label className="block text-sm font-medium mb-1">Contact address</label>
           <input value={form.defaultShippingAddress} onChange={(e) => update("defaultShippingAddress", e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2" />
         </div>
         <div>
@@ -79,7 +79,7 @@ export default function AccountPage() {
           <input value={form.defaultShippingCity} onChange={(e) => update("defaultShippingCity", e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2" />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Shipping phone</label>
+          <label className="block text-sm font-medium mb-1">Contact phone (for orders)</label>
           <input value={form.defaultShippingPhone} onChange={(e) => update("defaultShippingPhone", e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2" />
         </div>
 

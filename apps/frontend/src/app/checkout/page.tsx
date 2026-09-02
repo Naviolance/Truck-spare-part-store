@@ -156,7 +156,7 @@ export default function CheckoutPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1">Shipping address</label>
+          <label className="block text-sm font-medium mb-1">Contact address</label>
           <input
             required
             value={form.shippingAddress}
@@ -174,7 +174,7 @@ export default function CheckoutPage() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Phone number</label>
+          <label className="block text-sm font-medium mb-1">Contact phone number</label>
           <input
             required
             value={form.shippingPhone}

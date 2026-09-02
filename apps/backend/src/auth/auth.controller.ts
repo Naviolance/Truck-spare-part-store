@@ -1,6 +1,7 @@
-import { Controller, Post, Body, Res, Req, UnauthorizedException, HttpCode } from "@nestjs/common";
+import { Controller, Post, Body, Res, Req, UnauthorizedException, ForbiddenException, HttpCode } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
 import type { Response, Request } from "express";
+import * as crypto from "crypto";
 import { AuthService } from "./auth.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
@@ -9,6 +10,17 @@ import { ResetPasswordDto } from "./dto/reset-password.dto";
 
 const REFRESH_COOKIE_NAME = "refresh_token";
 const REFRESH_COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
+// /auth/refresh and /auth/logout are the only two routes that trust the
+// httpOnly cookie alone with no Bearer token to back it up — every other
+// authenticated route requires the Authorization header, which a
+// cross-site attacker can't forge (it lives in JS memory, never a cookie).
+// sameSite=lax on the refresh cookie already blocks the classic cross-site
+// POST attack in modern browsers, but this double-submit token is a second,
+// independent layer: it only validates if the caller's JS could read a
+// cookie value set on OUR origin, which a different origin's page cannot.
+const CSRF_COOKIE_NAME = "csrf_token";
+const CSRF_HEADER_NAME = "x-csrf-token";
 
 @Controller("auth")
 export class AuthController {
@@ -36,6 +48,7 @@ export class AuthController {
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const token = req.cookies?.[REFRESH_COOKIE_NAME];
     if (!token) throw new UnauthorizedException("No refresh token provided");
+    this.verifyCsrf(req);
 
     const { accessToken, refreshToken } = await this.authService.refresh(token);
     this.setRefreshCookie(res, refreshToken);
@@ -46,8 +59,12 @@ export class AuthController {
   @Post("logout")
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const token = req.cookies?.[REFRESH_COOKIE_NAME];
-    if (token) await this.authService.logout(token);
+    if (token) {
+      this.verifyCsrf(req);
+      await this.authService.logout(token);
+    }
     res.clearCookie(REFRESH_COOKIE_NAME);
+    res.clearCookie(CSRF_COOKIE_NAME);
     return { success: true };
   }
 
@@ -75,5 +92,26 @@ export class AuthController {
       maxAge: REFRESH_COOKIE_MAX_AGE_MS,
       path: "/auth",
     });
+
+    // Deliberately NOT httpOnly — the frontend JS needs to read this value
+    // itself and echo it back as a header. That's the whole mechanism: a
+    // cross-site attacker can trigger a request with our cookies attached,
+    // but their JS can never read a cookie that belongs to our origin, so
+    // they can't produce a header that matches.
+    res.cookie(CSRF_COOKIE_NAME, crypto.randomBytes(24).toString("hex"), {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: REFRESH_COOKIE_MAX_AGE_MS,
+      path: "/auth",
+    });
+  }
+
+  private verifyCsrf(req: Request) {
+    const cookieValue = req.cookies?.[CSRF_COOKIE_NAME];
+    const headerValue = req.headers[CSRF_HEADER_NAME];
+    if (!cookieValue || !headerValue || cookieValue !== headerValue) {
+      throw new ForbiddenException("Missing or invalid CSRF token");
+    }
   }
 }
