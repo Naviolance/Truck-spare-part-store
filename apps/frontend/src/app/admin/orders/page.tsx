@@ -13,6 +13,10 @@ type Order = {
   user: { firstName: string; lastName: string; email: string };
 };
 
+// CANCELLED and REFUNDED aren't in this list on purpose — those only happen
+// through the dedicated "Cancel & refund" button, which also restores stock
+// and marks the payment refunded. Setting them from this raw dropdown would
+// skip both of those.
 const STATUS_OPTIONS = [
   "PAYMENT_PENDING",
   "PAID",
@@ -20,11 +24,11 @@ const STATUS_OPTIONS = [
   "SHIPPED",
   "DELIVERED",
   "PAYMENT_FAILED",
-  "CANCELLED",
-  "REFUNDED",
   "PARTIALLY_REFUNDED",
   "DISPUTED",
 ];
+
+const TERMINAL_STATUSES = ["CANCELLED", "REFUNDED", "PARTIALLY_REFUNDED"];
 
 const STATUS_COLORS: Record<string, string> = {
   PAID: "bg-blue-100 text-blue-700",
@@ -60,6 +64,16 @@ export default function AdminOrdersPage() {
       method: "PATCH",
       body: JSON.stringify({ status }),
     });
+    await load();
+    setUpdatingId(null);
+  }
+
+  async function handleCancel(order: Order) {
+    if (!confirm(`Cancel order #${order.orderNumber}? This restores stock for its items${order.status === "PAID" || order.status === "PROCESSING" || order.status === "SHIPPED" || order.status === "DELIVERED" ? " and marks the payment as refunded (you still need to actually send the refund via Notch Pay)" : ""}.`)) {
+      return;
+    }
+    setUpdatingId(order.id);
+    await apiFetch(`/orders/${order.id}/cancel`, { method: "POST" });
     await load();
     setUpdatingId(null);
   }
@@ -100,16 +114,27 @@ export default function AdminOrdersPage() {
                   </span>
                 </td>
                 <td className="p-3">
-                  <select
-                    value={o.status}
-                    disabled={updatingId === o.id}
-                    onChange={(e) => handleStatusChange(o.id, e.target.value)}
-                    className="border border-gray-300 rounded px-2 py-1 text-xs"
-                  >
-                    {STATUS_OPTIONS.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={o.status}
+                      disabled={updatingId === o.id || TERMINAL_STATUSES.includes(o.status)}
+                      onChange={(e) => handleStatusChange(o.id, e.target.value)}
+                      className="border border-gray-300 rounded px-2 py-1 text-xs"
+                    >
+                      {STATUS_OPTIONS.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                    {!TERMINAL_STATUSES.includes(o.status) && (
+                      <button
+                        onClick={() => handleCancel(o)}
+                        disabled={updatingId === o.id}
+                        className="text-xs text-red-600 underline disabled:opacity-50"
+                      >
+                        Cancel &amp; refund
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}

@@ -2,9 +2,45 @@ import { Injectable, BadRequestException, NotFoundException, ForbiddenException 
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PaymentsService } from "../payments/payments.service";
 import { CouponsService } from "../coupons/coupons.service";
+import { MailService } from "../mail/mail.service";
 import { OrderStatus, PaymentStatus } from "@truckparts/prisma";
 import { CreateOrderDto } from "./dto/create-order.dto";
 import { generateOrderNumber } from "../common/utils/order-number";
+
+const STATUS_EMAIL_CONTENT: Partial<Record<OrderStatus, { subject: string; body: string }>> = {
+  [OrderStatus.PAID]: {
+    subject: "confirmed",
+    body: "We've received your payment. We'll email you again once it ships.",
+  },
+  [OrderStatus.PROCESSING]: {
+    subject: "is being processed",
+    body: "Your order is now being prepared.",
+  },
+  [OrderStatus.SHIPPED]: {
+    subject: "has shipped",
+    body: "Your order is on its way.",
+  },
+  [OrderStatus.DELIVERED]: {
+    subject: "was delivered",
+    body: "Your order has been marked as delivered. We hope you're happy with it!",
+  },
+  [OrderStatus.PAYMENT_FAILED]: {
+    subject: "payment failed",
+    body: "We couldn't process payment for this order. The items have been released back to stock — feel free to try again.",
+  },
+  [OrderStatus.CANCELLED]: {
+    subject: "was cancelled",
+    body: "This order has been cancelled.",
+  },
+  [OrderStatus.REFUNDED]: {
+    subject: "was refunded",
+    body: "This order has been refunded.",
+  },
+  [OrderStatus.PARTIALLY_REFUNDED]: {
+    subject: "was partially refunded",
+    body: "Part of this order has been refunded.",
+  },
+};
 
 @Injectable()
 export class OrdersService {
@@ -12,7 +48,30 @@ export class OrdersService {
     private prisma: PrismaService,
     private paymentsService: PaymentsService,
     private couponsService: CouponsService,
+    private mailService: MailService,
   ) {}
+
+  // Best-effort — a flaky mail server shouldn't ever block a real state
+  // change like a payment confirming or stock being restored. DISPUTED,
+  // CART, and PAYMENT_PENDING have no entry above, so this is a no-op for
+  // those on purpose.
+  private async notifyStatusChange(orderId: string, status: OrderStatus) {
+    const entry = STATUS_EMAIL_CONTENT[status];
+    if (!entry) return;
+
+    try {
+      const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { user: true } });
+      if (!order) return;
+
+      await this.mailService.sendMail(
+        order.user.email,
+        `Order ${order.orderNumber} ${entry.subject}`,
+        `<p>Hi ${order.user.firstName},</p><p>${entry.body}</p><p>Order: ${order.orderNumber}</p>`,
+      );
+    } catch (err) {
+      console.error("Failed to send order status email:", err);
+    }
+  }
   async checkout(userId: string, dto: CreateOrderDto) {
     const cart = await this.prisma.cart.findUnique({ where: { userId } });
     if (!cart) throw new BadRequestException("Cart is empty");
@@ -137,6 +196,8 @@ export class OrdersService {
         data: { status: PaymentStatus.SUCCEEDED, providerTransactionId },
       }),
     ]);
+
+    await this.notifyStatusChange(order.id, OrderStatus.PAID);
   }
 
   async failPayment(orderNumber: string) {
@@ -156,6 +217,51 @@ export class OrdersService {
         }),
       ),
     ]);
+
+    await this.notifyStatusChange(order.id, OrderStatus.PAYMENT_FAILED);
+  }
+
+  // Admin-triggered cancel/refund. Picks CANCELLED vs REFUNDED automatically
+  // based on whether the order was ever actually paid — stock is always
+  // restored either way, since checkout reserved it regardless of outcome.
+  // Actually returning money to the customer via Notch Pay is a manual step
+  // for now (payment-gateway integration for refunds isn't wired up yet).
+  async cancelOrder(orderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+    if (!order) throw new NotFoundException("Order not found");
+
+    const alreadyFinal: OrderStatus[] = [
+      OrderStatus.CANCELLED,
+      OrderStatus.REFUNDED,
+      OrderStatus.PARTIALLY_REFUNDED,
+    ];
+    if (alreadyFinal.includes(order.status)) {
+      throw new BadRequestException("This order has already been cancelled or refunded");
+    }
+
+    const wasPaid = order.status !== OrderStatus.PAYMENT_PENDING && order.status !== OrderStatus.PAYMENT_FAILED;
+    const newStatus = wasPaid ? OrderStatus.REFUNDED : OrderStatus.CANCELLED;
+
+    await this.prisma.$transaction([
+      this.prisma.order.update({ where: { id: order.id }, data: { status: newStatus } }),
+      this.prisma.payment.updateMany({
+        where: { orderId: order.id, status: PaymentStatus.SUCCEEDED },
+        data: { status: PaymentStatus.REFUNDED },
+      }),
+      ...order.items.map((item) =>
+        this.prisma.product.update({
+          where: { id: item.productId },
+          data: { quantity: { increment: item.quantity } },
+        }),
+      ),
+    ]);
+
+    await this.notifyStatusChange(order.id, newStatus);
+
+    return this.prisma.order.findUnique({ where: { id: order.id }, include: { items: true } });
   }
 
   async findMyOrders(userId: string) {
@@ -191,6 +297,8 @@ export class OrdersService {
     const order = await this.prisma.order.findUnique({ where: { id: orderId } });
     if (!order) throw new NotFoundException("Order not found");
 
-    return this.prisma.order.update({ where: { id: orderId }, data: { status } });
+    const updated = await this.prisma.order.update({ where: { id: orderId }, data: { status } });
+    await this.notifyStatusChange(orderId, status);
+    return updated;
   }
 }

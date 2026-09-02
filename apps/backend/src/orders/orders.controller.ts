@@ -46,4 +46,11 @@ export class OrdersController {
   updateStatus(@Param("id") id: string, @Body() dto: UpdateOrderStatusDto) {
     return this.ordersService.updateStatus(id, dto.status);
   }
+
+  @Post(":id/cancel")
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  cancelOrder(@Param("id") id: string) {
+    return this.ordersService.cancelOrder(id);
+  }
 }
