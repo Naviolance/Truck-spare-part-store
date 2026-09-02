@@ -89,7 +89,6 @@ apps/
   frontend/   Next.js storefront
 packages/
   prisma/          Database schema, migrations, seed script
-  shared-types/     Types shared between frontend and backend
 docker-compose.yml  Local infrastructure (Postgres, MinIO, Mailhog, Adminer)
 ```
 

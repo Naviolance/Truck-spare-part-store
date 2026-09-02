@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Image from "next/image";
 import { apiFetch } from "@/lib/api";
 
 type Props = {
@@ -56,9 +57,8 @@ export function ImageUploader({ imageUrls, onChange }: Props) {
       {imageUrls.length > 0 && (
         <div className="flex gap-2 flex-wrap mb-3">
           {imageUrls.map((url) => (
-            <div key={url} className="relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={url} alt="" className="w-20 h-20 object-cover rounded border border-gray-200" />
+            <div key={url} className="relative w-20 h-20">
+              <Image src={url} alt="" fill sizes="80px" className="object-cover rounded border border-gray-200" />
               <button
                 type="button"
                 onClick={() => removeImage(url)}

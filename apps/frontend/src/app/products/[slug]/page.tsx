@@ -1,6 +1,11 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { AddToCartButton } from "./AddToCartButton";
+import { ReviewsSection } from "./ReviewsSection";
+import { formatMoney } from "@/lib/money";
+import { isUnoptimizableImage } from "@/lib/image";
 
 type Product = {
   id: string;
@@ -17,7 +22,7 @@ type Product = {
   brand: { name: string } | null;
   images: { url: string; altText: string | null }[];
   compatibility: { vehicle: { manufacturer: string; model: string; yearStart: number; yearEnd: number | null; engine: string | null } }[];
-  reviews: { id: string; rating: number; comment: string | null }[];
+  reviews: { id: string; rating: number; comment: string | null; userId: string; createdAt: string }[];
 };
 
 async function getProduct(slug: string): Promise<Product | null> {
@@ -29,6 +34,21 @@ async function getProduct(slug: string): Promise<Product | null> {
   } catch {
     return null;
   }
+}
+
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const product = await getProduct(params.slug);
+  if (!product) return { title: "Product not found" };
+
+  const description = product.description.slice(0, 160);
+  const image = product.images[0]?.url;
+
+  return {
+    title: product.name,
+    description,
+    openGraph: { title: product.name, description, images: image ? [image] : undefined },
+    twitter: { title: product.name, description, images: image ? [image] : undefined },
+  };
 }
 
 export default async function ProductPage({ params }: { params: { slug: string } }) {
@@ -48,12 +68,17 @@ export default async function ProductPage({ params }: { params: { slug: string }
         {/* Images */}
         <div>
           {product.images[0] ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={product.images[0].url}
-              alt={product.images[0].altText ?? product.name}
-              className="w-full aspect-square object-cover rounded-lg border border-gray-200"
-            />
+            <div className="relative w-full aspect-square rounded-lg border border-gray-200 overflow-hidden">
+              <Image
+                src={product.images[0].url}
+                alt={product.images[0].altText ?? product.name}
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                priority
+                unoptimized={isUnoptimizableImage(product.images[0].url)}
+                className="object-cover"
+              />
+            </div>
           ) : (
             <div className="w-full aspect-square bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
               No image
@@ -62,13 +87,16 @@ export default async function ProductPage({ params }: { params: { slug: string }
           {product.images.length > 1 && (
             <div className="flex gap-2 mt-3 overflow-x-auto">
               {product.images.slice(1).map((img) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={img.url}
-                  src={img.url}
-                  alt={img.altText ?? product.name}
-                  className="w-20 h-20 object-cover rounded border border-gray-200 shrink-0"
-                />
+                <div key={img.url} className="relative w-20 h-20 shrink-0">
+                  <Image
+                    src={img.url}
+                    alt={img.altText ?? product.name}
+                    fill
+                    sizes="80px"
+                    unoptimized={isUnoptimizableImage(img.url)}
+                    className="object-cover rounded border border-gray-200"
+                  />
+                </div>
               ))}
             </div>
           )}
@@ -82,7 +110,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
           <h1 className="text-2xl font-bold mt-1">{product.name}</h1>
 
           <div className="flex items-center gap-3 mt-3">
-            <span className="text-2xl font-bold">${product.price}</span>
+            <span className="text-2xl font-bold">{formatMoney(product.price)}</span>
             <span className="text-xs rounded-full bg-gray-100 px-2 py-0.5">{product.condition}</span>
             {avgRating && (
               <span className="text-sm text-gray-500">★ {avgRating} ({product.reviews.length} review{product.reviews.length !== 1 ? "s" : ""})</span>
@@ -132,20 +160,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
         </div>
       </div>
 
-      {/* Reviews */}
-      {product.reviews.length > 0 && (
-        <div className="mt-16 max-w-2xl">
-          <h2 className="text-xl font-bold mb-4">Reviews</h2>
-          <div className="space-y-4">
-            {product.reviews.map((r) => (
-              <div key={r.id} className="border border-gray-200 rounded p-4">
-                <span className="text-sm font-medium">★ {r.rating}/5</span>
-                {r.comment && <p className="text-sm text-gray-700 mt-1">{r.comment}</p>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <ReviewsSection productId={product.id} initialReviews={product.reviews} />
     </main>
   );
 }

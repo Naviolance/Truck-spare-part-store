@@ -1,7 +1,10 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { useCart } from "@/context/CartContext";
 import { useRouter } from "next/navigation";
+import { formatMoney } from "@/lib/money";
+import { isUnoptimizableImage } from "@/lib/image";
 
 export default function CartPage() {
   const { items, subtotal, loading, updateQuantity, removeItem } = useCart();
@@ -27,12 +30,16 @@ export default function CartPage() {
         {items.map((item) => (
           <div key={item.id} className="flex items-center gap-4 border border-gray-200 rounded-lg p-4 bg-white">
             {item.product.images[0] ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={item.product.images[0].url}
-                alt={item.product.name}
-                className="w-20 h-20 object-cover rounded border border-gray-200"
-              />
+              <div className="relative w-20 h-20 shrink-0">
+                <Image
+                  src={item.product.images[0].url}
+                  alt={item.product.name}
+                  fill
+                  sizes="80px"
+                  unoptimized={isUnoptimizableImage(item.product.images[0].url)}
+                  className="object-cover rounded border border-gray-200"
+                />
+              </div>
             ) : (
               <div className="w-20 h-20 bg-gray-100 rounded flex items-center justify-center text-xs text-gray-400">
                 No image
@@ -43,7 +50,7 @@ export default function CartPage() {
               <Link href={`/products/${item.product.slug}`} className="font-medium hover:underline">
                 {item.product.name}
               </Link>
-              <p className="text-sm text-gray-500">${item.product.price} each</p>
+              <p className="text-sm text-gray-500">{formatMoney(item.product.price)} each</p>
             </div>
 
             <div className="flex items-center gap-2">
@@ -63,7 +70,7 @@ export default function CartPage() {
             </div>
 
             <div className="w-20 text-right font-medium">
-              ${(Number(item.product.price) * item.quantity).toFixed(2)}
+              {formatMoney(Number(item.product.price) * item.quantity)}
             </div>
 
             <button
@@ -78,7 +85,7 @@ export default function CartPage() {
 
       <div className="mt-8 border-t border-gray-200 pt-6 flex items-center justify-between">
         <span className="text-lg font-semibold">Subtotal</span>
-        <span className="text-lg font-bold">${subtotal.toFixed(2)}</span>
+        <span className="text-lg font-bold">{formatMoney(subtotal)}</span>
       </div>
 
         <button

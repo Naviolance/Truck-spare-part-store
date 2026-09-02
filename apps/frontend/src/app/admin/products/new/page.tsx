@@ -66,7 +66,7 @@ export default function NewProductPage() {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium mb-1">Price</label>
-            <input required type="number" step="0.01" value={form.price} onChange={(e) => update("price", e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2" />
+            <input required type="number" step="1" value={form.price} onChange={(e) => update("price", e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2" />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Quantity</label>
@@ -117,7 +117,7 @@ export default function NewProductPage() {
         {error && <p className="text-red-600 text-sm">{error}</p>}
         <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2">Create product</button>
       </form>
-      <p className="text-xs text-gray-500 mt-3">New products start as drafts — publish them from the products list.</p>
+      <p className="text-xs text-gray-500 mt-3">New products are published immediately — set them to draft from the products list if you're not ready to sell yet.</p>
     </div>
   );
 }

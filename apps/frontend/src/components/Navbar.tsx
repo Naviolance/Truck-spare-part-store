@@ -17,11 +17,15 @@ export function Navbar() {
         <div className="flex items-center gap-4 text-sm">
         {loading ? null : user ? (
           <>
-            <Link href="/cart" className="hover:underline">
-              Cart{itemCount > 0 && ` (${itemCount})`}
-            </Link>
-            <Link href="/orders" className="hover:underline">Orders</Link>
-            <span className="text-gray-600">Hi, {user.firstName}</span>
+            {user.role !== "ADMIN" && (
+              <>
+                <Link href="/cart" className="hover:underline">
+                  Cart{itemCount > 0 && ` (${itemCount})`}
+                </Link>
+                <Link href="/orders" className="hover:underline">Orders</Link>
+              </>
+            )}
+            <Link href="/account" className="text-gray-600 hover:underline">Hi, {user.firstName}</Link>
             {user.role === "ADMIN" && (
               <Link href="/admin" className="hover:underline">Admin</Link>
             )}

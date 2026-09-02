@@ -12,7 +12,7 @@ export class ProductsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(query: QueryProductsDto) {
-    const where: Prisma.ProductWhereInput = { status: ProductStatus.PUBLISHED };
+    const where: Prisma.ProductWhereInput = { status: ProductStatus.PUBLISHED, quantity: { gt: 0 } };
 
     if (query.search) {
       // Case-insensitive match across name and description.
@@ -27,17 +27,27 @@ export class ProductsService {
     if (query.brandId) where.brandId = query.brandId;
     if (query.condition) where.condition = query.condition;
 
-    if (query.minPrice || query.maxPrice) {
+    if (query.minPrice !== undefined || query.maxPrice !== undefined) {
       where.price = {};
-      if (query.minPrice) where.price.gte = Number(query.minPrice);
-      if (query.maxPrice) where.price.lte = Number(query.maxPrice);
+      if (query.minPrice !== undefined) where.price.gte = query.minPrice;
+      if (query.maxPrice !== undefined) where.price.lte = query.maxPrice;
     }
 
-    return this.prisma.product.findMany({
-      where,
-      include: { category: true, brand: true, images: { orderBy: { position: "asc" }, take: 1 } },
-      orderBy: { createdAt: "desc" },
-    });
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 24;
+
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.product.findMany({
+        where,
+        include: { category: true, brand: true, images: { orderBy: { position: "asc" }, take: 1 } },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+
+    return { items, total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)) };
   }
 
   async findOne(slug: string) {
@@ -89,7 +99,7 @@ export class ProductsService {
       data: {
         ...rest,
         slug,
-        status: ProductStatus.DRAFT,
+        status: ProductStatus.PUBLISHED,
         images: imageUrls?.length
           ? { create: imageUrls.map((url, position) => ({ url, position })) }
           : undefined,

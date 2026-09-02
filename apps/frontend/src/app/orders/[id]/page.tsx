@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
+import { formatMoney } from "@/lib/money";
 
 type Order = {
   id: string;
@@ -45,12 +46,12 @@ export default function OrderDetailPage() {
         {order.items.map((item) => (
           <div key={item.id} className="flex justify-between p-3 text-sm">
             <span>{item.productName} × {item.quantity}</span>
-            <span>${(Number(item.unitPrice) * item.quantity).toFixed(2)}</span>
+            <span>{formatMoney(Number(item.unitPrice) * item.quantity)}</span>
           </div>
         ))}
         <div className="flex justify-between p-3 font-semibold">
           <span>Total</span>
-          <span>${order.total}</span>
+          <span>{formatMoney(order.total)}</span>
         </div>
       </div>
 

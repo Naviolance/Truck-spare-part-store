@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { PasswordInput } from "@/components/PasswordInput";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -65,8 +66,7 @@ export default function RegisterPage() {
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Password</label>
-          <input
-            type="password"
+          <PasswordInput
             required
             value={form.password}
             onChange={(e) => update("password", e.target.value)}

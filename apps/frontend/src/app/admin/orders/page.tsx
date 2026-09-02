@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
+import { formatMoney } from "@/lib/money";
 
 type Order = {
   id: string;
@@ -92,7 +93,7 @@ export default function AdminOrdersPage() {
                   <div className="text-xs text-gray-400">{o.user.email}</div>
                 </td>
                 <td className="p-3 text-gray-500">{new Date(o.createdAt).toLocaleDateString()}</td>
-                <td className="p-3 font-medium">${o.total}</td>
+                <td className="p-3 font-medium">{formatMoney(o.total)}</td>
                 <td className="p-3">
                   <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[o.status] || "bg-gray-100"}`}>
                     {o.status}

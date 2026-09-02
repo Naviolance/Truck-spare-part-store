@@ -1,4 +1,4 @@
-import { IsString, MinLength } from "class-validator";
+import { IsString, IsOptional, MinLength } from "class-validator";
 
 export class CreateOrderDto {
   @IsString()
@@ -12,4 +12,8 @@ export class CreateOrderDto {
   @IsString()
   @MinLength(6)
   shippingPhone!: string;
+
+  @IsOptional()
+  @IsString()
+  couponCode?: string;
 }

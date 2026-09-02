@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { PasswordInput } from "@/components/PasswordInput";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -41,9 +42,11 @@ export default function LoginPage() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Password</label>
-          <input
-            type="password"
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-sm font-medium">Password</label>
+            <Link href="/forgot-password" className="text-xs text-gray-500 underline">Forgot password?</Link>
+          </div>
+          <PasswordInput
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}

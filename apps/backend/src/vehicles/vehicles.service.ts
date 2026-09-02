@@ -42,6 +42,7 @@ export class VehiclesService {
     return this.prisma.product.findMany({
       where: {
         status: ProductStatus.PUBLISHED,
+        quantity: { gt: 0 },
         compatibility: { some: { vehicleId } },
       },
       include: { category: true, brand: true, images: { orderBy: { position: "asc" }, take: 1 } },

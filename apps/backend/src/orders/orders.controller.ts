@@ -18,6 +18,11 @@ export class OrdersController {
     return this.ordersService.checkout(user.userId, dto);
   }
 
+  @Post(":id/pay")
+  initiatePayment(@CurrentUser() user: { userId: string }, @Param("id") id: string) {
+    return this.ordersService.initiatePayment(user.userId, id);
+  }
+
   @Get()
   findMyOrders(@CurrentUser() user: { userId: string }) {
     return this.ordersService.findMyOrders(user.userId);

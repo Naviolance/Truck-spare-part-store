@@ -64,17 +64,22 @@ model User {
   firstName    String
   lastName     String
   phone        String?
+  defaultShippingAddress String?
+  defaultShippingCity    String?
+  defaultShippingPhone   String?
   role         UserRole @default(CUSTOMER)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  cart          Cart?
-  orders        Order[]
-  reviews       Review[]
-  refreshTokens RefreshToken[]
+  cart                Cart?
+  orders              Order[]
+  reviews             Review[]
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
 
   @@map("users")
 }
+
 // Refresh tokens are stored hashed (never plaintext) so a database leak alone
 // can't be used to impersonate users. Each row is one login session/device.
 model RefreshToken {
@@ -89,19 +94,35 @@ model RefreshToken {
   @@index([userId])
   @@map("refresh_tokens")
 }
+
+// Same pattern as RefreshToken — hashed token, short expiry, single-use via
+// usedAt — so a DB leak alone can't be used to reset anyone's password.
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
 // ---------------------------------------------------------------------------
 // Catalog: categories, brands, vehicles
 // ---------------------------------------------------------------------------
 
 model Category {
-  id        String    @id @default(uuid())
-  name      String    @unique
-  slug      String    @unique
+  id        String     @id @default(uuid())
+  name      String     @unique
+  slug      String     @unique
   parentId  String?
-  parent    Category? @relation("CategoryToCategory", fields: [parentId], references: [id])
+  parent    Category?  @relation("CategoryToCategory", fields: [parentId], references: [id])
   children  Category[] @relation("CategoryToCategory")
   products  Product[]
-  createdAt DateTime  @default(now())
+  createdAt DateTime   @default(now())
 
   @@map("categories")
 }
@@ -117,7 +138,7 @@ model Brand {
 }
 
 model Vehicle {
-  id           String   @id @default(uuid())
+  id           String  @id @default(uuid())
   manufacturer String
   model        String
   yearStart    Int
@@ -137,23 +158,23 @@ model Vehicle {
 // ---------------------------------------------------------------------------
 
 model Product {
-  id              String           @id @default(uuid())
-  name            String
-  slug            String           @unique
-  description     String
-  price           Decimal          @db.Decimal(12, 2)
-  quantity        Int              @default(0)
-  condition       ProductCondition
-  conditionNotes  String? // required in app logic when condition = USED
-  status          ProductStatus    @default(DRAFT)
-  partNumber      String? // OEM / manufacturer part number
-  crossReference  String[]         @default([]) // alternative part numbers
+  id             String           @id @default(uuid())
+  name           String
+  slug           String           @unique
+  description    String
+  price          Decimal          @db.Decimal(12, 2)
+  quantity       Int              @default(0)
+  condition      ProductCondition
+  conditionNotes String? // required in app logic when condition = USED
+  status         ProductStatus    @default(DRAFT)
+  partNumber     String? // OEM / manufacturer part number
+  crossReference String[]         @default([]) // alternative part numbers
 
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
 
   brandId String?
-  brand   Brand? @relation(fields: [brandId], references: [id])
+  brand   Brand?  @relation(fields: [brandId], references: [id])
 
   images        ProductImage[]
   compatibility ProductCompatibility[]
@@ -231,8 +252,12 @@ model Order {
   user          User        @relation(fields: [userId], references: [id])
   status        OrderStatus @default(PAYMENT_PENDING)
   subtotal      Decimal     @db.Decimal(12, 2)
-  shippingTotal Decimal     @db.Decimal(12, 2) @default(0)
+  shippingTotal Decimal     @default(0) @db.Decimal(12, 2)
+  discountTotal Decimal     @default(0) @db.Decimal(12, 2)
   total         Decimal     @db.Decimal(12, 2)
+
+  couponId String?
+  coupon   Coupon? @relation(fields: [couponId], references: [id])
 
   shippingAddress String
   shippingCity    String
@@ -247,6 +272,30 @@ model Order {
   @@index([userId])
   @@index([status])
   @@map("orders")
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED
+}
+
+model Coupon {
+  id     String     @id @default(uuid())
+  code   String     @unique
+  type   CouponType
+  value  Decimal    @db.Decimal(12, 2) // percentage (0-100) or fixed FCFA amount, depending on type
+  active Boolean    @default(true)
+
+  minOrderTotal Decimal?  @db.Decimal(12, 2)
+  maxUses       Int? // null = unlimited
+  usedCount     Int       @default(0)
+  expiresAt     DateTime?
+
+  orders Order[]
+
+  createdAt DateTime @default(now())
+
+  @@map("coupons")
 }
 
 model OrderItem {

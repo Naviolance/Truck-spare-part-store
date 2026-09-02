@@ -1,6 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { formatMoney } from "@/lib/money";
+import { isUnoptimizableImage } from "@/lib/image";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -117,8 +120,16 @@ export default function FindMyPartPage() {
                   className="rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                 >
                   {product.images[0] && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={product.images[0].url} alt={product.name} className="w-full h-40 object-cover" />
+                    <div className="relative w-full h-40">
+                      <Image
+                        src={product.images[0].url}
+                        alt={product.name}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        unoptimized={isUnoptimizableImage(product.images[0].url)}
+                        className="object-cover"
+                      />
+                    </div>
                   )}
                   <div className="p-4">
                     <p className="text-xs uppercase tracking-wide text-gray-400">
@@ -126,7 +137,7 @@ export default function FindMyPartPage() {
                     </p>
                     <h3 className="font-semibold mt-1">{product.name}</h3>
                     <div className="flex items-center justify-between mt-2">
-                      <span className="font-bold">${product.price}</span>
+                      <span className="font-bold">{formatMoney(product.price)}</span>
                       <span className="text-xs rounded-full bg-gray-100 px-2 py-0.5">{product.condition}</span>
                     </div>
                   </div>

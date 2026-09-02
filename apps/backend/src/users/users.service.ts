@@ -29,4 +29,14 @@ export class UsersService {
       },
     });
   }
+    updateProfile(id: string, data: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    defaultShippingAddress?: string;
+    defaultShippingCity?: string;
+    defaultShippingPhone?: string;
+  }) {
+    return this.prisma.user.update({ where: { id }, data });
+  }
 }

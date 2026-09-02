@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
+import { formatMoney } from "@/lib/money";
 
 type Order = { id: string; orderNumber: string; status: string; total: string; createdAt: string };
 
@@ -36,7 +37,7 @@ export default function OrdersPage() {
                 <p className="text-xs text-gray-500">{new Date(o.createdAt).toLocaleDateString()}</p>
               </div>
               <div className="text-right">
-                <p className="font-semibold">${o.total}</p>
+                <p className="font-semibold">{formatMoney(o.total)}</p>
                 <p className="text-xs text-gray-500">{o.status}</p>
               </div>
             </Link>

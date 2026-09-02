@@ -1,4 +1,5 @@
-import { IsOptional, IsString, IsEnum, IsNumberString } from "class-validator";
+import { IsOptional, IsString, IsEnum, IsNumber, IsInt, Min, Max } from "class-validator";
+import { Type } from "class-transformer";
 import { ProductCondition } from "@truckparts/prisma";
 
 export class QueryProductsDto {
@@ -19,10 +20,27 @@ export class QueryProductsDto {
   condition?: ProductCondition;
 
   @IsOptional()
-  @IsNumberString()
-  minPrice?: string;
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  minPrice?: number;
 
   @IsOptional()
-  @IsNumberString()
-  maxPrice?: string;
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  maxPrice?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(60)
+  limit?: number;
 }

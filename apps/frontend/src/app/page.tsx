@@ -1,4 +1,7 @@
 import Link from "next/link";
+import Image from "next/image";
+import { formatMoney } from "@/lib/money";
+import { isUnoptimizableImage } from "@/lib/image";
 type Product = {
   id: string;
   slug: string;
@@ -13,9 +16,10 @@ type Product = {
 async function getProducts(): Promise<Product[]> {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
   try {
-    const res = await fetch(`${apiUrl}/products`, { cache: "no-store" });
+    const res = await fetch(`${apiUrl}/products?limit=12`, { cache: "no-store" });
     if (!res.ok) return [];
-    return res.json();
+    const data = await res.json();
+    return data.items;
   } catch {
     // Backend not reachable yet — fail gracefully so the page still renders
     return [];
@@ -48,12 +52,16 @@ export default async function HomePage() {
               className="rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow"
             >
               {product.images[0] && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={product.images[0].url}
-                  alt={product.images[0].altText ?? product.name}
-                  className="w-full h-40 object-cover"
-                />
+                <div className="relative w-full h-40">
+                  <Image
+                    src={product.images[0].url}
+                    alt={product.images[0].altText ?? product.name}
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    unoptimized={isUnoptimizableImage(product.images[0].url)}
+                    className="object-cover"
+                  />
+                </div>
               )}
               <div className="p-4">
                 <p className="text-xs uppercase tracking-wide text-gray-400">
@@ -61,7 +69,7 @@ export default async function HomePage() {
                 </p>
                 <h2 className="font-semibold mt-1">{product.name}</h2>
                 <div className="flex items-center justify-between mt-2">
-                  <span className="font-bold">${product.price}</span>
+                  <span className="font-bold">{formatMoney(product.price)}</span>
                   <span className="text-xs rounded-full bg-gray-100 px-2 py-0.5">{product.condition}</span>
                 </div>
               </div>

@@ -83,7 +83,7 @@ const [vehicleIds, setVehicleIds] = useState<string[]>([]);
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium mb-1">Price</label>
-            <input required type="number" step="0.01" value={form.price} onChange={(e) => update("price", e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2" />
+            <input required type="number" step="1" value={form.price} onChange={(e) => update("price", e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2" />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Quantity</label>
