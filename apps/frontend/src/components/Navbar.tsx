@@ -4,6 +4,7 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
+import { AuthModal } from "@/components/AuthModal";
 
 function CartIcon() {
   return (
@@ -71,6 +72,7 @@ export function Navbar() {
   const { user, logout, loading } = useAuth();
   const { itemCount } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
   const closeMenu = () => setMenuOpen(false);
 
   return (
@@ -85,6 +87,7 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-6">
             <NavLink href="/find-my-part">Find My Part</NavLink>
             <NavLink href="/products">All Parts</NavLink>
+            <NavLink href="/about">About</NavLink>
           </div>
 
           <div className="flex items-center gap-4">
@@ -106,14 +109,13 @@ export function Navbar() {
                     </>
                   )}
                   <Link
-                    href="/account"
+                    href={user.role === "ADMIN" ? "/admin" : "/account"}
                     className="text-zinc-600 transition-colors duration-200 hover:text-zinc-900"
-                    aria-label="Account"
-                    title={`Hi, ${user.firstName}`}
+                    aria-label={user.role === "ADMIN" ? "Admin dashboard" : "Account"}
+                    title={user.role === "ADMIN" ? `Hi, ${user.firstName} — dashboard` : `Hi, ${user.firstName}`}
                   >
                     <ProfileIcon />
                   </Link>
-                  {user.role === "ADMIN" && <NavLink href="/admin">Admin</NavLink>}
                   <button
                     onClick={logout}
                     className="text-zinc-600 transition-colors duration-200 hover:text-red-600"
@@ -124,12 +126,12 @@ export function Navbar() {
                   </button>
                 </>
               ) : (
-                <Link
-                  href="/login"
+                <button
+                  onClick={() => setAuthOpen(true)}
                   className="rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 px-4 py-2 text-white shadow-sm transition-all duration-200 hover:from-zinc-600 hover:to-zinc-800 hover:shadow-md"
                 >
                   Log in
-                </Link>
+                </button>
               )}
             </div>
 
@@ -167,12 +169,14 @@ export function Navbar() {
         <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col gap-4 text-sm">
           <NavLink href="/find-my-part" onClick={closeMenu}>Find My Part</NavLink>
           <NavLink href="/products" onClick={closeMenu}>All Parts</NavLink>
+          <NavLink href="/about" onClick={closeMenu}>About</NavLink>
 
           {loading ? null : user ? (
             <>
               {user.role !== "ADMIN" && <NavLink href="/orders" onClick={closeMenu}>Orders</NavLink>}
-              <NavLink href="/account" onClick={closeMenu}>{`Hi, ${user.firstName}`}</NavLink>
-              {user.role === "ADMIN" && <NavLink href="/admin" onClick={closeMenu}>Admin</NavLink>}
+              <NavLink href={user.role === "ADMIN" ? "/admin" : "/account"} onClick={closeMenu}>
+                {user.role === "ADMIN" ? "Dashboard" : `Hi, ${user.firstName}`}
+              </NavLink>
               <button
                 onClick={() => {
                   closeMenu();
@@ -184,16 +188,20 @@ export function Navbar() {
               </button>
             </>
           ) : (
-            <Link
-              href="/login"
-              onClick={closeMenu}
+            <button
+              onClick={() => {
+                closeMenu();
+                setAuthOpen(true);
+              }}
               className="inline-block w-fit rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 px-4 py-2 text-white shadow-sm transition-all duration-200 hover:from-zinc-600 hover:to-zinc-800"
             >
               Log in
-            </Link>
+            </button>
           )}
         </div>
       </div>
+
+      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </nav>
   );
 }

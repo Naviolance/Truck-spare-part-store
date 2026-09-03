@@ -1,11 +1,10 @@
 import Link from "next/link";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { AddToCartButton } from "./AddToCartButton";
 import { ReviewsSection } from "./ReviewsSection";
+import { ProductGallery } from "./ProductGallery";
 import { formatMoney } from "@/lib/money";
-import { isUnoptimizableImage } from "@/lib/image";
 
 type Product = {
   id: string;
@@ -68,41 +67,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mt-6">
         {/* Images */}
-        <div>
-          {product.images[0] ? (
-            <div className="relative w-full aspect-square rounded-lg border border-zinc-200 overflow-hidden">
-              <Image
-                src={product.images[0].url}
-                alt={product.images[0].altText ?? product.name}
-                fill
-                sizes="(max-width: 768px) 100vw, 50vw"
-                priority
-                unoptimized={isUnoptimizableImage(product.images[0].url)}
-                className="object-cover"
-              />
-            </div>
-          ) : (
-            <div className="w-full aspect-square bg-zinc-100 rounded-lg flex items-center justify-center text-zinc-400">
-              No image
-            </div>
-          )}
-          {product.images.length > 1 && (
-            <div className="flex gap-2 mt-3 overflow-x-auto">
-              {product.images.slice(1).map((img) => (
-                <div key={img.url} className="relative w-20 h-20 shrink-0">
-                  <Image
-                    src={img.url}
-                    alt={img.altText ?? product.name}
-                    fill
-                    sizes="80px"
-                    unoptimized={isUnoptimizableImage(img.url)}
-                    className="object-cover rounded-lg border border-zinc-200"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <ProductGallery images={product.images} productName={product.name} />
 
         {/* Details */}
         <div>

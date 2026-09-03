@@ -52,8 +52,8 @@ export default function NewProductPage() {
   }
 
   return (
-    <div className="max-w-lg">
-      <h1 className="text-2xl font-bold mb-6">New product</h1>
+    <div className="max-w-2xl">
+      <h1 className="text-2xl font-bold text-zinc-900 tracking-tight mb-6">New product</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">Name</label>

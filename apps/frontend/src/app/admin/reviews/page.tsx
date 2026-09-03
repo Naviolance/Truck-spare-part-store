@@ -33,7 +33,7 @@ export default function AdminReviewsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Reviews</h1>
+      <h1 className="text-2xl font-bold text-zinc-900 tracking-tight mb-6">Reviews</h1>
       {reviews.length === 0 ? (
         <p className="text-zinc-500">No reviews yet.</p>
       ) : (

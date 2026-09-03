@@ -11,7 +11,7 @@ function mockPrisma() {
       findUnique: jest.fn(),
       update: jest.fn(),
     },
-    refreshToken: {
+    session: {
       create: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
@@ -21,7 +21,7 @@ function mockPrisma() {
   };
 }
 
-describe("AuthService password reset", () => {
+describe("AuthService", () => {
   let prisma: ReturnType<typeof mockPrisma>;
   let usersService: { findByEmail: jest.Mock; findById: jest.Mock };
   let jwtService: { sign: jest.Mock };
@@ -119,83 +119,94 @@ describe("AuthService password reset", () => {
       expect(prisma.passwordResetToken.update).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id: "token-1" }, data: { usedAt: expect.any(Date) } }),
       );
-      expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
+      expect(prisma.session.updateMany).toHaveBeenCalledWith({
         where: { userId: "user-1", revokedAt: null },
         data: { revokedAt: expect.any(Date) },
       });
     });
   });
 
-  describe("refresh", () => {
+  describe("touchSession", () => {
     it("rejects an unknown token", async () => {
-      prisma.refreshToken.findUnique.mockResolvedValue(null);
-      await expect(service.refresh("bogus")).rejects.toThrow(/expired/);
+      prisma.session.findUnique.mockResolvedValue(null);
+      await expect(service.touchSession("bogus")).rejects.toThrow(/expired/);
     });
 
-    it("rejects an expired token", async () => {
-      prisma.refreshToken.findUnique.mockResolvedValue({
-        id: "rt-1",
+    it("rejects a token past its absolute expiry, even if recently active", async () => {
+      prisma.session.findUnique.mockResolvedValue({
+        id: "s-1",
         userId: "user-1",
-        expiresAt: new Date(Date.now() - 1000),
+        lastActiveAt: new Date(), // active right now
+        expiresAt: new Date(Date.now() - 1000), // but the 30-day cap already passed
         revokedAt: null,
       });
-      await expect(service.refresh("expired")).rejects.toThrow(/expired/);
+      await expect(service.touchSession("token")).rejects.toThrow(/expired/);
     });
 
-    it("rotates a valid token: revokes the old one and issues a new one", async () => {
-      prisma.refreshToken.findUnique.mockResolvedValue({
-        id: "rt-1",
+    it("rejects an explicitly revoked session (e.g. after logout or password reset)", async () => {
+      prisma.session.findUnique.mockResolvedValue({
+        id: "s-1",
         userId: "user-1",
-        expiresAt: new Date(Date.now() + 100_000),
+        lastActiveAt: new Date(),
+        expiresAt: new Date(Date.now() + 1_000_000),
+        revokedAt: new Date(),
+      });
+      await expect(service.touchSession("token")).rejects.toThrow(/expired/);
+    });
+
+    it("rejects and revokes a session that's been inactive past the 15-minute window", async () => {
+      prisma.session.findUnique.mockResolvedValue({
+        id: "s-1",
+        userId: "user-1",
+        lastActiveAt: new Date(Date.now() - 16 * 60 * 1000), // 16 minutes idle
+        expiresAt: new Date(Date.now() + 1_000_000),
+        revokedAt: null,
+      });
+
+      await expect(service.touchSession("token")).rejects.toThrow(/expired/);
+      expect(prisma.session.update).toHaveBeenCalledWith({
+        where: { id: "s-1" },
+        data: { revokedAt: expect.any(Date) },
+      });
+    });
+
+    it("touches lastActiveAt and returns a fresh access token for an active session", async () => {
+      prisma.session.findUnique.mockResolvedValue({
+        id: "s-1",
+        userId: "user-1",
+        lastActiveAt: new Date(Date.now() - 60 * 1000), // active 1 minute ago
+        expiresAt: new Date(Date.now() + 1_000_000),
         revokedAt: null,
       });
       usersService.findById.mockResolvedValue({ id: "user-1", role: "CUSTOMER" });
 
-      await service.refresh("valid-token");
+      const result = await service.touchSession("token");
 
-      expect(prisma.refreshToken.update).toHaveBeenCalledWith({
-        where: { id: "rt-1" },
-        data: { revokedAt: expect.any(Date) },
+      expect(prisma.session.update).toHaveBeenCalledWith({
+        where: { id: "s-1" },
+        data: { lastActiveAt: expect.any(Date) },
       });
-      expect(prisma.refreshToken.create).toHaveBeenCalledTimes(1);
-
-      // The whole point of the sliding window: the new token gets ~15
-      // fresh minutes from THIS moment, not a fixed long-lived lifetime —
-      // otherwise an inactive user's session would never actually expire.
-      const newExpiresAt: Date = prisma.refreshToken.create.mock.calls[0][0].data.expiresAt;
-      const minutesFromNow = (newExpiresAt.getTime() - Date.now()) / 60_000;
-      expect(minutesFromNow).toBeGreaterThan(14);
-      expect(minutesFromNow).toBeLessThanOrEqual(15);
+      expect(result).toEqual({ accessToken: "fake.jwt.token" });
     });
 
-    it("a token reused moments after rotation fails, but does NOT nuke the winning call's new session", async () => {
-      // This is the exact race two near-simultaneous refresh calls produce:
-      // both read the same cookie, one wins and rotates it, the other
-      // arrives a beat later and finds it already revoked.
-      prisma.refreshToken.findUnique.mockResolvedValue({
-        id: "rt-1",
+    it("the same token can be touched by any number of concurrent calls with no rotation to race on", async () => {
+      // This is the whole point of the redesign: unlike the old rotating
+      // refresh token, there is nothing here for two near-simultaneous
+      // calls to race over — they both just read and touch the same row.
+      const session = {
+        id: "s-1",
         userId: "user-1",
-        expiresAt: new Date(Date.now() + 100_000),
-        revokedAt: new Date(Date.now() - 500), // revoked half a second ago
-      });
+        lastActiveAt: new Date(Date.now() - 60 * 1000),
+        expiresAt: new Date(Date.now() + 1_000_000),
+        revokedAt: null,
+      };
+      prisma.session.findUnique.mockResolvedValue(session);
+      usersService.findById.mockResolvedValue({ id: "user-1", role: "CUSTOMER" });
 
-      await expect(service.refresh("just-rotated")).rejects.toThrow(/Session invalid/);
-      expect(prisma.refreshToken.updateMany).not.toHaveBeenCalled();
-    });
+      const [first, second] = await Promise.all([service.touchSession("token"), service.touchSession("token")]);
 
-    it("a token reused long after rotation IS treated as theft — revokes every session", async () => {
-      prisma.refreshToken.findUnique.mockResolvedValue({
-        id: "rt-1",
-        userId: "user-1",
-        expiresAt: new Date(Date.now() + 100_000),
-        revokedAt: new Date(Date.now() - 60_000), // revoked a full minute ago
-      });
-
-      await expect(service.refresh("old-replayed-token")).rejects.toThrow(/Session invalid/);
-      expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
-        where: { userId: "user-1", revokedAt: null },
-        data: { revokedAt: expect.any(Date) },
-      });
+      expect(first).toEqual({ accessToken: "fake.jwt.token" });
+      expect(second).toEqual({ accessToken: "fake.jwt.token" });
     });
   });
 });

@@ -13,17 +13,20 @@ import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 
 const BCRYPT_ROUNDS = 12; // higher = slower to brute-force, 12 is a solid modern default
-const REFRESH_TOKEN_BYTES = 64;
+const SESSION_TOKEN_BYTES = 64;
 const RESET_TOKEN_BYTES = 32;
 const RESET_TOKEN_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
-const REUSE_GRACE_MS = 10_000; // see refresh()'s reuse-detection comment
 
-// The refresh token is a SLIDING window, not a fixed lifetime — every
-// successful refresh renews it another 15 minutes from that moment. As
-// long as the frontend keeps refreshing (which apiFetch does silently on
-// any 401, i.e. real activity), the session never disrupts the user; if
-// 15 minutes pass with zero requests, this is what actually logs them out.
-export const REFRESH_TOKEN_SLIDING_MS = 15 * 60 * 1000;
+// Two independent, server-enforced limits on a session — checked on every
+// touchSession() call:
+//   - SESSION_INACTIVITY_MS: sliding. Must be touched at least this often or
+//     it's treated as the user having genuinely left — this is what makes
+//     "logged out only if inactive" actually true.
+//   - SESSION_ABSOLUTE_MS: fixed from creation, regardless of activity. A
+//     backstop so a session token can't be kept alive forever by activity
+//     alone (e.g. a stolen token used sporadically for months).
+export const SESSION_INACTIVITY_MS = 15 * 60 * 1000;
+export const SESSION_ABSOLUTE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 @Injectable()
 export class AuthService {
@@ -48,7 +51,7 @@ export class AuthService {
       lastName: dto.lastName,
     });
 
-    return this.issueTokens(user.id, user.role);
+    return this.createSession(user.id, user.role);
   }
 
   async login(dto: LoginDto) {
@@ -60,70 +63,64 @@ export class AuthService {
     const passwordMatches = await bcrypt.compare(dto.password, user.passwordHash);
     if (!passwordMatches) throw genericError();
 
-    return this.issueTokens(user.id, user.role);
+    return this.createSession(user.id, user.role);
   }
 
-  private async issueTokens(userId: string, role: string) {
+  // Called once, at login/register — issues the ONE session token that will
+  // be reused, unchanged, for the entire session's lifetime (see the Session
+  // model comment in schema.prisma for why nothing rotates it).
+  private async createSession(userId: string, role: string) {
     const accessToken = this.jwtService.sign({ sub: userId, role });
 
-    const refreshTokenPlain = crypto.randomBytes(REFRESH_TOKEN_BYTES).toString("hex");
-    const refreshTokenHash = this.hashToken(refreshTokenPlain);
+    const sessionTokenPlain = crypto.randomBytes(SESSION_TOKEN_BYTES).toString("hex");
+    const tokenHash = this.hashToken(sessionTokenPlain);
+    const now = new Date();
 
-    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_SLIDING_MS);
-
-    await this.prisma.refreshToken.create({
-      data: { userId, tokenHash: refreshTokenHash, expiresAt },
+    await this.prisma.session.create({
+      data: {
+        userId,
+        tokenHash,
+        lastActiveAt: now,
+        expiresAt: new Date(now.getTime() + SESSION_ABSOLUTE_MS),
+      },
     });
 
-    return { accessToken, refreshToken: refreshTokenPlain };
+    return { accessToken, sessionToken: sessionTokenPlain };
   }
 
   private hashToken(token: string) {
     return crypto.createHash("sha256").update(token).digest("hex");
   }
 
-  async refresh(refreshTokenPlain: string) {
-    const tokenHash = this.hashToken(refreshTokenPlain);
-    const stored = await this.prisma.refreshToken.findUnique({ where: { tokenHash } });
+  // Called whenever the frontend needs a fresh access token — on mount, and
+  // whenever apiFetch sees a 401 from an expired one. Since the session
+  // token never rotates, this is naturally idempotent: any number of
+  // concurrent calls just read the same still-valid row and touch it. There
+  // is nothing to race on.
+  async touchSession(sessionTokenPlain: string) {
+    const tokenHash = this.hashToken(sessionTokenPlain);
+    const session = await this.prisma.session.findUnique({ where: { tokenHash } });
 
-    if (!stored || stored.expiresAt < new Date()) {
-      throw new UnauthorizedException("Session expired, please log in again");
+    const invalid = () => new UnauthorizedException("Session expired, please log in again");
+    if (!session || session.revokedAt || session.expiresAt < new Date()) throw invalid();
+
+    if (Date.now() - session.lastActiveAt.getTime() > SESSION_INACTIVITY_MS) {
+      await this.prisma.session.update({ where: { id: session.id }, data: { revokedAt: new Date() } });
+      throw invalid();
     }
 
-    if (stored.revokedAt) {
-      // A revoked token being reused looks like theft — someone replaying
-      // an old token after we already rotated it — but it's also exactly
-      // what two near-simultaneous legitimate refresh calls produce (two
-      // tabs, a page that double-fires its mount effect, a flaky-network
-      // retry): both read the same not-yet-rotated cookie, one wins the
-      // race and rotates it, the other arrives moments later and finds it
-      // already revoked. Only escalate to "nuke every session" if this
-      // token has been dead for longer than that could plausibly explain —
-      // a replay minutes or hours later is what actually indicates theft.
-      const revokedRecently = Date.now() - stored.revokedAt.getTime() < REUSE_GRACE_MS;
-      if (!revokedRecently) {
-        await this.prisma.refreshToken.updateMany({
-          where: { userId: stored.userId, revokedAt: null },
-          data: { revokedAt: new Date() },
-        });
-      }
-      throw new UnauthorizedException("Session invalid, please log in again");
-    }
+    await this.prisma.session.update({ where: { id: session.id }, data: { lastActiveAt: new Date() } });
 
-    await this.prisma.refreshToken.update({
-      where: { id: stored.id },
-      data: { revokedAt: new Date() },
-    });
+    const user = await this.usersService.findById(session.userId);
+    if (!user) throw invalid();
 
-    const user = await this.usersService.findById(stored.userId);
-    if (!user) throw new UnauthorizedException("Account no longer exists");
-
-    return this.issueTokens(user.id, user.role);
+    const accessToken = this.jwtService.sign({ sub: user.id, role: user.role });
+    return { accessToken };
   }
 
-  async logout(refreshTokenPlain: string) {
-    const tokenHash = this.hashToken(refreshTokenPlain);
-    await this.prisma.refreshToken.updateMany({
+  async logout(sessionTokenPlain: string) {
+    const tokenHash = this.hashToken(sessionTokenPlain);
+    await this.prisma.session.updateMany({
       where: { tokenHash, revokedAt: null },
       data: { revokedAt: new Date() },
     });
@@ -170,7 +167,7 @@ export class AuthService {
     await this.prisma.$transaction([
       this.prisma.user.update({ where: { id: stored.userId }, data: { passwordHash } }),
       this.prisma.passwordResetToken.update({ where: { id: stored.id }, data: { usedAt: new Date() } }),
-      this.prisma.refreshToken.updateMany({
+      this.prisma.session.updateMany({
         where: { userId: stored.userId, revokedAt: null },
         data: { revokedAt: new Date() },
       }),

@@ -16,6 +16,16 @@ export class ProductsController {
     return this.productsService.findAll(query);
   }
 
+  @Get("most-searched")
+  findMostSearched(@Query("limit") limit?: string) {
+    return this.productsService.findMostSearched(limit ? Number(limit) : undefined);
+  }
+
+  @Get("most-purchased")
+  findMostPurchased(@Query("limit") limit?: string) {
+    return this.productsService.findMostPurchased(limit ? Number(limit) : undefined);
+  }
+
   @Get(":slug")
   findOne(@Param("slug") slug: string) {
     return this.productsService.findOne(slug);

@@ -37,7 +37,7 @@ export default function AdminBrandsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Brands</h1>
+      <h1 className="text-2xl font-bold text-zinc-900 tracking-tight mb-6">Brands</h1>
       <form onSubmit={handleAdd} className="flex gap-2 mb-6">
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="New brand name" className="border border-zinc-300 rounded-lg px-3 py-2 flex-1" required />
         <button className="bg-zinc-900 text-white rounded-lg px-4 py-2">Add</button>

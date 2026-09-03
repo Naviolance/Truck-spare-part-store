@@ -18,11 +18,10 @@ import { MailModule } from "../mail/mail.module";
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>("JWT_SECRET"),
-        // Deliberately shorter than the refresh token's 15-minute sliding
-        // window (see auth.service.ts) — this is what forces a refresh
-        // attempt (and therefore a real activity check) at least every 5
-        // minutes during active use, while leaving comfortable buffer
-        // before the refresh token itself could expire.
+        // Short-lived on purpose — this is what makes a 401 mid-session just
+        // "time to touch the session," not "something's wrong." The actual
+        // session lifetime is governed separately by the Session row's
+        // sliding inactivity window (see auth.service.ts), not by this.
         signOptions: { expiresIn: config.get<string>("JWT_ACCESS_EXPIRES_IN") ?? "5m" },
       }),
     }),

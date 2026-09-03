@@ -5,8 +5,8 @@ export function Footer() {
 
   return (
     <footer className="border-t border-zinc-200 bg-white mt-auto">
-      <div className="max-w-6xl mx-auto px-4 py-10 grid grid-cols-2 sm:grid-cols-4 gap-8">
-        <div className="col-span-2 sm:col-span-1">
+      <div className="max-w-6xl mx-auto px-4 py-10 grid grid-cols-1 sm:grid-cols-4 gap-8">
+        <div>
           <p className="font-bold text-lg text-zinc-900 tracking-tight">TruckParts</p>
           <p className="text-sm text-zinc-500 mt-2">
             Quality new and used truck spare parts, with vehicle compatibility lookup.
@@ -19,6 +19,7 @@ export function Footer() {
             <li><Link href="/products" className="transition-colors duration-200 hover:text-zinc-900">All Parts</Link></li>
             <li><Link href="/find-my-part" className="transition-colors duration-200 hover:text-zinc-900">Find My Part</Link></li>
             <li><Link href="/cart" className="transition-colors duration-200 hover:text-zinc-900">Cart</Link></li>
+            <li><Link href="/about" className="transition-colors duration-200 hover:text-zinc-900">About</Link></li>
           </ul>
         </div>
 

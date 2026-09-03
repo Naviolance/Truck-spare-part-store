@@ -82,7 +82,7 @@ export default function AdminOrdersPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Orders</h1>
+      <h1 className="text-2xl font-bold text-zinc-900 tracking-tight mb-6">Orders</h1>
 
       {orders.length === 0 ? (
         <p className="text-zinc-500">No orders yet.</p>

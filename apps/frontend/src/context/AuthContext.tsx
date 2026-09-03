@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { apiFetch, setAccessToken, refreshSession, onSessionExpire } from "@/lib/api";
 
 type User = {
@@ -24,6 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   async function fetchMe() {
     const res = await apiFetch("/users/me");
@@ -60,6 +62,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // The refresh token's 15-minute sliding window (see auth.service.ts) only
+  // renews when an actual API call happens — but plenty of genuine activity
+  // (reading a long page, filling out a form, scrolling reviews) fires zero
+  // backend requests for stretches longer than that, which silently expires
+  // the session out from under someone who never actually stopped using the
+  // site. This tracks real interaction events and pings refreshSession()
+  // periodically as long as the user has been active recently, so "inactive
+  // for 15 minutes" means what it says — no mouse/keyboard/touch/scroll at
+  // all — rather than "happened not to trigger a request."
+  useEffect(() => {
+    if (!user) return;
+
+    let lastActivity = Date.now();
+    const markActive = () => {
+      lastActivity = Date.now();
+    };
+    const events: (keyof WindowEventMap)[] = ["mousemove", "keydown", "click", "scroll", "touchstart"];
+    events.forEach((e) => window.addEventListener(e, markActive, { passive: true }));
+
+    const HEARTBEAT_INTERVAL_MS = 5 * 60 * 1000; // check well within the 15-min window
+    const IDLE_THRESHOLD_MS = 14 * 60 * 1000; // renew if active anytime in the last 14 min
+
+    const interval = setInterval(() => {
+      if (Date.now() - lastActivity < IDLE_THRESHOLD_MS) {
+        refreshSession();
+      }
+    }, HEARTBEAT_INTERVAL_MS);
+
+    return () => {
+      events.forEach((e) => window.removeEventListener(e, markActive));
+      clearInterval(interval);
+    };
+  }, [user]);
+
   async function login(email: string, password: string) {
     const res = await apiFetch("/auth/login", {
       method: "POST",
@@ -94,6 +130,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await apiFetch("/auth/logout", { method: "POST" });
     setAccessToken(null);
     setUser(null);
+    // Redirect off whatever page was open — it may show order history,
+    // saved addresses, or other account-specific content.
+    router.push("/");
   }
 
   return (

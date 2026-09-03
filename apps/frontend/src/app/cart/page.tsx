@@ -5,6 +5,7 @@ import { useCart } from "@/context/CartContext";
 import { useRouter } from "next/navigation";
 import { formatMoney } from "@/lib/money";
 import { isUnoptimizableImage } from "@/lib/image";
+import { RelatedProducts } from "./RelatedProducts";
 
 export default function CartPage() {
   const { items, subtotal, loading, updateQuantity, removeItem } = useCart();
@@ -24,10 +25,14 @@ export default function CartPage() {
     );
   }
 
+  const categoryIds = Array.from(new Set(items.map((item) => item.product.categoryId)));
+  const excludeProductIds = items.map((item) => item.product.id);
+
   return (
-    <main className="max-w-3xl mx-auto px-4 py-10">
+    <main className="max-w-5xl mx-auto px-4 py-10">
       <h1 className="text-2xl font-bold text-zinc-900 tracking-tight mb-6">Your cart</h1>
 
+      <div className="max-w-3xl">
       <div className="space-y-4">
         {items.map((item) => (
           <div key={item.id} className="flex flex-wrap sm:flex-nowrap items-center gap-4 border border-zinc-200 rounded-lg p-4 bg-white transition-shadow duration-200 hover:shadow-sm">
@@ -98,6 +103,9 @@ export default function CartPage() {
       >
         Checkout
       </button>
+      </div>
+
+      <RelatedProducts categoryIds={categoryIds} excludeProductIds={excludeProductIds} />
     </main>
   );
 }

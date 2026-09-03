@@ -1,21 +1,17 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
+import { AuthModal } from "@/components/AuthModal";
 
 export function AddToCartButton({ productId, inStock }: { productId: string; inStock: boolean }) {
   const { user } = useAuth();
   const { addToCart } = useCart();
-  const router = useRouter();
   const [status, setStatus] = useState<"idle" | "adding" | "added">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [authOpen, setAuthOpen] = useState(false);
 
-  async function handleClick() {
-    if (!user) {
-      router.push("/login");
-      return;
-    }
+  async function doAdd() {
     setStatus("adding");
     setError(null);
     const result = await addToCart(productId, 1);
@@ -28,6 +24,14 @@ export function AddToCartButton({ productId, inStock }: { productId: string; inS
     setTimeout(() => setStatus("idle"), 1500);
   }
 
+  function handleClick() {
+    if (!user) {
+      setAuthOpen(true);
+      return;
+    }
+    doAdd();
+  }
+
   return (
     <div>
       <button
@@ -38,6 +42,13 @@ export function AddToCartButton({ productId, inStock }: { productId: string; inS
         {!inStock ? "Out of stock" : status === "adding" ? "Adding…" : status === "added" ? "Added ✓" : "Add to cart"}
       </button>
       {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
+
+      <AuthModal
+        open={authOpen}
+        onClose={() => setAuthOpen(false)}
+        onAuthenticated={doAdd}
+        message="Log in or create an account to add this to your cart."
+      />
     </div>
   );
 }

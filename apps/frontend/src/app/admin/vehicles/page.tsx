@@ -53,7 +53,7 @@ export default function AdminVehiclesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Vehicles</h1>
+      <h1 className="text-2xl font-bold text-zinc-900 tracking-tight mb-6">Vehicles</h1>
 
       <form onSubmit={handleAdd} className="grid grid-cols-2 gap-3 mb-6 bg-white border border-zinc-200 rounded-lg p-4">
         <div>

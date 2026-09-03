@@ -1,8 +1,8 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { apiFetch } from "@/lib/api";
+import { AuthModal } from "@/components/AuthModal";
 
 const EDIT_WINDOW_MS = 10 * 60 * 1000;
 
@@ -16,13 +16,13 @@ type Review = {
 
 export function ReviewsSection({ productId, initialReviews }: { productId: string; initialReviews: Review[] }) {
   const { user } = useAuth();
-  const router = useRouter();
   const [reviews, setReviews] = useState(initialReviews);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [authOpen, setAuthOpen] = useState(false);
 
   const ownReview = user ? reviews.find((r) => r.userId === user.id) : undefined;
   const isEditing = editingId !== null;
@@ -48,7 +48,7 @@ export function ReviewsSection({ productId, initialReviews }: { productId: strin
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!user) {
-      router.push("/login");
+      setAuthOpen(true);
       return;
     }
     setSubmitting(true);
@@ -146,9 +146,15 @@ export function ReviewsSection({ productId, initialReviews }: { productId: strin
 
       {!user && (
         <p className="text-sm text-zinc-500">
-          <button onClick={() => router.push("/login")} className="underline hover:text-zinc-700 transition-colors duration-200">Log in</button> to write a review.
+          <button onClick={() => setAuthOpen(true)} className="underline hover:text-zinc-700 transition-colors duration-200">Log in</button> to write a review.
         </p>
       )}
+
+      <AuthModal
+        open={authOpen}
+        onClose={() => setAuthOpen(false)}
+        message="Log in or create an account to write a review."
+      />
     </div>
   );
 }

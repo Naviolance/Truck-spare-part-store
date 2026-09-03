@@ -2,23 +2,19 @@ import { Controller, Post, Body, Res, Req, UnauthorizedException, ForbiddenExcep
 import { Throttle } from "@nestjs/throttler";
 import type { Response, Request } from "express";
 import * as crypto from "crypto";
-import { AuthService, REFRESH_TOKEN_SLIDING_MS } from "./auth.service";
+import { AuthService, SESSION_ABSOLUTE_MS } from "./auth.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
 
-const REFRESH_COOKIE_NAME = "refresh_token";
-// Matches the DB-side sliding expiry in auth.service.ts — no point letting
-// the browser hold onto a cookie for longer than the token behind it is
-// ever actually valid for.
-const REFRESH_COOKIE_MAX_AGE_MS = REFRESH_TOKEN_SLIDING_MS;
+const SESSION_COOKIE_NAME = "session_token";
 
 // /auth/refresh and /auth/logout are the only two routes that trust the
 // httpOnly cookie alone with no Bearer token to back it up — every other
 // authenticated route requires the Authorization header, which a
 // cross-site attacker can't forge (it lives in JS memory, never a cookie).
-// sameSite=lax on the refresh cookie already blocks the classic cross-site
+// sameSite=lax on the session cookie already blocks the classic cross-site
 // POST attack in modern browsers, but this double-submit token is a second,
 // independent layer: it only validates if the caller's JS could read a
 // cookie value set on OUR origin, which a different origin's page cannot.
@@ -32,8 +28,8 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post("register")
   async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
-    const { accessToken, refreshToken } = await this.authService.register(dto);
-    this.setRefreshCookie(res, refreshToken);
+    const { accessToken, sessionToken } = await this.authService.register(dto);
+    this.setSessionCookies(res, sessionToken);
     return { accessToken };
   }
 
@@ -41,27 +37,30 @@ export class AuthController {
   @HttpCode(200)
   @Post("login")
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
-    const { accessToken, refreshToken } = await this.authService.login(dto);
-    this.setRefreshCookie(res, refreshToken);
+    const { accessToken, sessionToken } = await this.authService.login(dto);
+    this.setSessionCookies(res, sessionToken);
     return { accessToken };
   }
 
+  // Unlike the old refresh-token design, this does NOT issue a new cookie —
+  // the session token is stable for its whole lifetime (see auth.service.ts).
+  // This just validates it, touches lastActiveAt, and hands back a fresh
+  // short-lived access token.
   @HttpCode(200)
   @Post("refresh")
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    const token = req.cookies?.[REFRESH_COOKIE_NAME];
-    if (!token) throw new UnauthorizedException("No refresh token provided");
+    void res; // no cookie to set — kept for a consistent handler signature
+    const token = req.cookies?.[SESSION_COOKIE_NAME];
+    if (!token) throw new UnauthorizedException("No session provided");
     this.verifyCsrf(req);
 
-    const { accessToken, refreshToken } = await this.authService.refresh(token);
-    this.setRefreshCookie(res, refreshToken);
-    return { accessToken };
+    return this.authService.touchSession(token);
   }
 
   @HttpCode(200)
   @Post("logout")
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    const token = req.cookies?.[REFRESH_COOKIE_NAME];
+    const token = req.cookies?.[SESSION_COOKIE_NAME];
     if (token) {
       this.verifyCsrf(req);
       await this.authService.logout(token);
@@ -69,7 +68,7 @@ export class AuthController {
     // clearCookie must be called with the SAME path the cookie was set
     // with, or the browser treats it as a different cookie entirely and
     // the real one is left behind.
-    res.clearCookie(REFRESH_COOKIE_NAME, { path: "/auth" });
+    res.clearCookie(SESSION_COOKIE_NAME, { path: "/auth" });
     res.clearCookie(CSRF_COOKIE_NAME, { path: "/" });
     return { success: true };
   }
@@ -90,12 +89,12 @@ export class AuthController {
     return { message: "Password updated successfully" };
   }
 
-  private setRefreshCookie(res: Response, token: string) {
-    res.cookie(REFRESH_COOKIE_NAME, token, {
+  private setSessionCookies(res: Response, token: string) {
+    res.cookie(SESSION_COOKIE_NAME, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: REFRESH_COOKIE_MAX_AGE_MS,
+      maxAge: SESSION_ABSOLUTE_MS,
       path: "/auth",
     });
 
@@ -105,7 +104,7 @@ export class AuthController {
     // but their JS can never read a cookie that belongs to our origin, so
     // they can't produce a header that matches.
     //
-    // path MUST be "/" here, unlike the refresh cookie — document.cookie
+    // path MUST be "/" here, unlike the session cookie — document.cookie
     // visibility is checked against the CURRENT PAGE's path, and the
     // frontend has no pages under /auth/*, so path: "/auth" would make this
     // cookie permanently invisible to the frontend and break every refresh.
@@ -113,7 +112,7 @@ export class AuthController {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: REFRESH_COOKIE_MAX_AGE_MS,
+      maxAge: SESSION_ABSOLUTE_MS,
       path: "/",
     });
   }

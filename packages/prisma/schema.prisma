@@ -74,25 +74,33 @@ model User {
   cart                Cart?
   orders              Order[]
   reviews             Review[]
-  refreshTokens       RefreshToken[]
+  sessions            Session[]
   passwordResetTokens PasswordResetToken[]
 
   @@map("users")
 }
 
-// Refresh tokens are stored hashed (never plaintext) so a database leak alone
-// can't be used to impersonate users. Each row is one login session/device.
-model RefreshToken {
-  id        String    @id @default(uuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash String    @unique
-  expiresAt DateTime
-  revokedAt DateTime?
-  createdAt DateTime  @default(now())
+// One row per login session/device. The token is stable for the session's
+// whole lifetime — nothing rotates it — so there is no possible race
+// between concurrent requests touching the same session (the entire prior
+// design's bug class). Session validity is instead governed by two
+// independent checks, both enforced server-side on every touch:
+// lastActiveAt (sliding — must be touched at least this often) and
+// expiresAt (a fixed absolute outer cap, regardless of activity).
+// tokenHash is stored, never the plaintext, so a database leak alone can't
+// be used to impersonate a session.
+model Session {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash    String    @unique
+  lastActiveAt DateTime  @default(now())
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime  @default(now())
 
   @@index([userId])
-  @@map("refresh_tokens")
+  @@map("sessions")
 }
 
 // Same pattern as RefreshToken — hashed token, short expiry, single-use via
@@ -169,6 +177,7 @@ model Product {
   status         ProductStatus    @default(DRAFT)
   partNumber     String? // OEM / manufacturer part number
   crossReference String[]         @default([]) // alternative part numbers
+  searchHits     Int              @default(0) // incremented each time this product appears in a search-with-query result — powers "most searched"
 
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])

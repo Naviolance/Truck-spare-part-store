@@ -32,8 +32,17 @@ app.use(
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.useGlobalFilters(new AllExceptionsFilter());
 
+  // Allows localhost, any private-LAN origin on port 3000 (phone on the same
+  // Wi-Fi, e.g. http://<lan-ip>:3000), and any ngrok tunnel domain (dynamic
+  // subdomain each run, so we match the domain suffix rather than hardcoding
+  // one URL) — all for local dev/mobile testing, not a production concern.
+  const DEV_ORIGIN_RE =
+    /^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)(:3000)?$|^https:\/\/[a-z0-9-]+\.ngrok-free\.(app|dev)$|^https:\/\/[a-z0-9-]+\.ngrok\.io$/;
   app.enableCors({
-    origin: "http://localhost:3000",
+    origin: (origin, callback) => {
+      if (!origin || DEV_ORIGIN_RE.test(origin)) return callback(null, true);
+      callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   });
 

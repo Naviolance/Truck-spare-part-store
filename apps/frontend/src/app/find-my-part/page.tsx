@@ -1,30 +1,22 @@
 "use client";
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { formatMoney } from "@/lib/money";
-import { isUnoptimizableImage } from "@/lib/image";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+import { ProductCard, ProductCardData } from "@/components/ProductCard";
+import { publicFetch } from "@/lib/api";
 
 type VehicleConfig = { id: string; manufacturer: string; model: string; yearStart: number; yearEnd: number | null; engine: string | null };
-type Product = {
-  id: string; slug: string; name: string; price: string; condition: string;
-  images: { url: string }[]; category: { name: string }; brand: { name: string } | null;
-};
 
 export default function FindMyPartPage() {
   const [manufacturers, setManufacturers] = useState<string[]>([]);
   const [models, setModels] = useState<string[]>([]);
   const [configs, setConfigs] = useState<VehicleConfig[]>([]);
-  const [products, setProducts] = useState<Product[] | null>(null);
+  const [products, setProducts] = useState<ProductCardData[] | null>(null);
 
   const [manufacturer, setManufacturer] = useState("");
   const [model, setModel] = useState("");
   const [vehicleId, setVehicleId] = useState("");
 
   useEffect(() => {
-    fetch(`${API_URL}/vehicles/manufacturers`).then((r) => r.json()).then(setManufacturers);
+    publicFetch(`/vehicles/manufacturers`).then((r) => r.json()).then(setManufacturers);
   }, []);
 
   useEffect(() => {
@@ -33,7 +25,7 @@ export default function FindMyPartPage() {
     setVehicleId("");
     setProducts(null);
     if (!manufacturer) return setModels([]);
-    fetch(`${API_URL}/vehicles/models?manufacturer=${encodeURIComponent(manufacturer)}`)
+    publicFetch(`/vehicles/models?manufacturer=${encodeURIComponent(manufacturer)}`)
       .then((r) => r.json())
       .then(setModels);
   }, [manufacturer]);
@@ -42,14 +34,14 @@ export default function FindMyPartPage() {
     setVehicleId("");
     setProducts(null);
     if (!manufacturer || !model) return setConfigs([]);
-    fetch(`${API_URL}/vehicles/configs?manufacturer=${encodeURIComponent(manufacturer)}&model=${encodeURIComponent(model)}`)
+    publicFetch(`/vehicles/configs?manufacturer=${encodeURIComponent(manufacturer)}&model=${encodeURIComponent(model)}`)
       .then((r) => r.json())
       .then(setConfigs);
   }, [manufacturer, model]);
 
   useEffect(() => {
     if (!vehicleId) return setProducts(null);
-    fetch(`${API_URL}/vehicles/${vehicleId}/products`)
+    publicFetch(`/vehicles/${vehicleId}/products`)
       .then((r) => r.json())
       .then(setProducts);
   }, [vehicleId]);
@@ -114,34 +106,7 @@ export default function FindMyPartPage() {
           {products.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {products.map((product) => (
-                <Link
-                  key={product.id}
-                  href={`/products/${product.slug}`}
-                  className="group rounded-lg border border-zinc-200 bg-white overflow-hidden shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 hover:border-zinc-300"
-                >
-                  {product.images[0] && (
-                    <div className="relative w-full h-40 overflow-hidden">
-                      <Image
-                        src={product.images[0].url}
-                        alt={product.name}
-                        fill
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        unoptimized={isUnoptimizableImage(product.images[0].url)}
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                    </div>
-                  )}
-                  <div className="p-4">
-                    <p className="text-xs uppercase tracking-wide text-zinc-400">
-                      {product.brand?.name ?? "Unbranded"} · {product.category.name}
-                    </p>
-                    <h3 className="font-semibold mt-1 text-zinc-900">{product.name}</h3>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="font-bold text-zinc-900">{formatMoney(product.price)}</span>
-                      <span className="text-xs rounded-full bg-zinc-100 text-zinc-600 px-2 py-0.5">{product.condition}</span>
-                    </div>
-                  </div>
-                </Link>
+                <ProductCard key={product.id} product={product} />
               ))}
             </div>
           )}

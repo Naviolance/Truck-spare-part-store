@@ -12,6 +12,7 @@ type CartItem = {
     name: string;
     slug: string;
     price: string;
+    categoryId: string;
     images: { url: string }[];
   };
 };

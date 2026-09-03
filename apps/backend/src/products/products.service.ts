@@ -22,6 +22,7 @@ export class ProductsService {
         { partNumber: { contains: query.search, mode: "insensitive" } },
       ];
     }
+    const isSearch = Boolean(query.search);
 
     if (query.categoryId) where.categoryId = query.categoryId;
     if (query.brandId) where.brandId = query.brandId;
@@ -47,7 +48,48 @@ export class ProductsService {
       this.prisma.product.count({ where }),
     ]);
 
+    if (isSearch && items.length > 0) {
+      // Fire-and-forget — powers "most searched", not worth delaying the response for.
+      this.prisma.product
+        .updateMany({ where: { id: { in: items.map((p) => p.id) } }, data: { searchHits: { increment: 1 } } })
+        .catch(() => {});
+    }
+
     return { items, total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)) };
+  }
+
+  async findMostSearched(limit = 6) {
+    return this.prisma.product.findMany({
+      where: { status: ProductStatus.PUBLISHED, quantity: { gt: 0 }, searchHits: { gt: 0 } },
+      include: { category: true, brand: true, images: { orderBy: { position: "asc" }, take: 1 } },
+      orderBy: { searchHits: "desc" },
+      take: limit,
+    });
+  }
+
+  async findMostPurchased(limit = 6) {
+    // "Purchased" = appeared in an order that actually completed payment —
+    // a still-pending or failed order shouldn't count.
+    const grouped = await this.prisma.orderItem.groupBy({
+      by: ["productId"],
+      where: {
+        order: { status: { in: ["PAID", "PROCESSING", "SHIPPED", "DELIVERED"] } },
+      },
+      _sum: { quantity: true },
+      orderBy: { _sum: { quantity: "desc" } },
+      take: limit,
+    });
+
+    if (grouped.length === 0) return [];
+
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: grouped.map((g) => g.productId) }, status: ProductStatus.PUBLISHED, quantity: { gt: 0 } },
+      include: { category: true, brand: true, images: { orderBy: { position: "asc" }, take: 1 } },
+    });
+
+    // groupBy doesn't preserve order through the second query — restore it.
+    const order = grouped.map((g) => g.productId);
+    return products.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
   }
 
   async findOne(slug: string) {

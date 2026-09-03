@@ -1,12 +1,8 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
-import { formatMoney } from "@/lib/money";
-import { isUnoptimizableImage } from "@/lib/image";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+import { ProductCard } from "@/components/ProductCard";
+import { publicFetch } from "@/lib/api";
 
 type Product = {
   id: string; slug: string; name: string; price: string; condition: string;
@@ -46,8 +42,8 @@ function ProductsPageInner() {
   const PAGE_SIZE = 24;
 
   useEffect(() => {
-    fetch(`${API_URL}/categories`).then((r) => r.json()).then(setCategories);
-    fetch(`${API_URL}/brands`).then((r) => r.json()).then(setBrands);
+    publicFetch(`/categories`).then((r) => r.json()).then(setCategories);
+    publicFetch(`/brands`).then((r) => r.json()).then(setBrands);
   }, []);
 
   useEffect(() => {
@@ -67,7 +63,7 @@ function ProductsPageInner() {
     requestParams.set("limit", String(PAGE_SIZE));
 
     setLoading(true);
-    fetch(`${API_URL}/products?${requestParams.toString()}`)
+    publicFetch(`/products?${requestParams.toString()}`)
       .then((r) => (r.ok ? r.json() : { items: [], total: 0, totalPages: 1 }))
       .then((data) => {
         setProducts(data.items);
@@ -175,34 +171,7 @@ function ProductsPageInner() {
               <p className="text-sm text-zinc-500 mb-4">{total} result{total !== 1 ? "s" : ""}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {products.map((product) => (
-                  <Link
-                    key={product.id}
-                    href={`/products/${product.slug}`}
-                    className="group rounded-lg border border-zinc-200 bg-white overflow-hidden shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 hover:border-zinc-300"
-                  >
-                    {product.images[0] && (
-                      <div className="relative w-full h-40 overflow-hidden">
-                        <Image
-                          src={product.images[0].url}
-                          alt={product.name}
-                          fill
-                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                          unoptimized={isUnoptimizableImage(product.images[0].url)}
-                          className="object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                      </div>
-                    )}
-                    <div className="p-4">
-                      <p className="text-xs uppercase tracking-wide text-zinc-400">
-                        {product.brand?.name ?? "Unbranded"} · {product.category.name}
-                      </p>
-                      <h2 className="font-semibold mt-1 text-zinc-900">{product.name}</h2>
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="font-bold text-zinc-900">{formatMoney(product.price)}</span>
-                        <span className="text-xs rounded-full bg-zinc-100 text-zinc-600 px-2 py-0.5">{product.condition}</span>
-                      </div>
-                    </div>
-                  </Link>
+                  <ProductCard key={product.id} product={product} />
                 ))}
               </div>
               {totalPages > 1 && (

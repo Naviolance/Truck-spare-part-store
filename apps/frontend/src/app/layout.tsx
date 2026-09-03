@@ -5,6 +5,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { PageTransition } from "@/components/PageTransition";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
 
@@ -36,7 +37,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <CartProvider>
             <Navbar />
-            <div className="flex-1 flex flex-col">{children}</div>
+            <div className="flex-1">
+              <PageTransition>{children}</PageTransition>
+            </div>
             <Footer />
           </CartProvider>
         </AuthProvider>
