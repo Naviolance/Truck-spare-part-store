@@ -79,38 +79,38 @@ export function ReviewsSection({ productId, initialReviews }: { productId: strin
 
   return (
     <div className="mt-16 max-w-2xl">
-      <h2 className="text-xl font-bold mb-4">Reviews</h2>
+      <h2 className="text-xl font-bold text-zinc-900 tracking-tight mb-4">Reviews</h2>
 
       {reviews.length > 0 && (
         <div className="space-y-4 mb-6">
           {reviews.map((r) => (
-            <div key={r.id} className="border border-gray-200 rounded p-4">
+            <div key={r.id} className="border border-zinc-200 rounded-lg p-4 bg-white">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">
-                  ★ {r.rating}/5 {user?.id === r.userId && <span className="text-gray-400">(your review)</span>}
+                <span className="text-sm font-medium text-zinc-900">
+                  ★ {r.rating}/5 {user?.id === r.userId && <span className="text-zinc-400 font-normal">(your review)</span>}
                 </span>
                 {user?.id === r.userId && canModify(r) && (
                   <div className="flex gap-3 text-xs">
-                    <button onClick={() => startEdit(r)} className="underline text-gray-600">Edit</button>
-                    <button onClick={() => handleDelete(r.id)} className="underline text-red-600">Delete</button>
+                    <button onClick={() => startEdit(r)} className="underline text-zinc-500 transition-colors duration-200 hover:text-zinc-800">Edit</button>
+                    <button onClick={() => handleDelete(r.id)} className="underline text-red-600 transition-colors duration-200 hover:text-red-800">Delete</button>
                   </div>
                 )}
               </div>
-              {r.comment && <p className="text-sm text-gray-700 mt-1">{r.comment}</p>}
+              {r.comment && <p className="text-sm text-zinc-700 mt-1">{r.comment}</p>}
             </div>
           ))}
         </div>
       )}
 
       {user && (!ownReview || isEditing) && (
-        <form onSubmit={handleSubmit} className="border border-gray-200 rounded p-4 space-y-3">
-          <h3 className="text-sm font-semibold">{isEditing ? "Edit your review" : "Write a review"}</h3>
+        <form onSubmit={handleSubmit} className="border border-zinc-200 rounded-lg p-4 space-y-3 bg-white">
+          <h3 className="text-sm font-semibold text-zinc-900">{isEditing ? "Edit your review" : "Write a review"}</h3>
           <div>
-            <label className="block text-xs font-medium mb-1">Rating</label>
+            <label className="block text-xs font-medium mb-1 text-zinc-600">Rating</label>
             <select
               value={rating}
               onChange={(e) => setRating(Number(e.target.value))}
-              className="border border-gray-300 rounded px-3 py-2 text-sm"
+              className="border border-zinc-300 rounded-lg px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:border-zinc-500"
             >
               {[5, 4, 3, 2, 1].map((n) => (
                 <option key={n} value={n}>{n} star{n !== 1 ? "s" : ""}</option>
@@ -118,12 +118,12 @@ export function ReviewsSection({ productId, initialReviews }: { productId: strin
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium mb-1">Comment (optional)</label>
+            <label className="block text-xs font-medium mb-1 text-zinc-600">Comment (optional)</label>
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               rows={3}
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+              className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:border-zinc-500"
             />
           </div>
           {error && <p className="text-red-600 text-sm">{error}</p>}
@@ -131,12 +131,12 @@ export function ReviewsSection({ productId, initialReviews }: { productId: strin
             <button
               type="submit"
               disabled={submitting}
-              className="bg-gray-900 text-white rounded px-4 py-2 text-sm disabled:opacity-50"
+              className="rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 text-white px-4 py-2 text-sm font-medium shadow-sm transition-all duration-200 hover:from-zinc-600 hover:to-zinc-800 hover:shadow-md disabled:opacity-50"
             >
               {submitting ? "Saving…" : isEditing ? "Save changes" : "Submit review"}
             </button>
             {isEditing && (
-              <button type="button" onClick={cancelEdit} className="text-sm text-gray-500 underline">
+              <button type="button" onClick={cancelEdit} className="text-sm text-zinc-500 underline transition-colors duration-200 hover:text-zinc-700">
                 Cancel
               </button>
             )}
@@ -145,8 +145,8 @@ export function ReviewsSection({ productId, initialReviews }: { productId: strin
       )}
 
       {!user && (
-        <p className="text-sm text-gray-500">
-          <button onClick={() => router.push("/login")} className="underline">Log in</button> to write a review.
+        <p className="text-sm text-zinc-500">
+          <button onClick={() => router.push("/login")} className="underline hover:text-zinc-700 transition-colors duration-200">Log in</button> to write a review.
         </p>
       )}
     </div>

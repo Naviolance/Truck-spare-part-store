@@ -58,7 +58,7 @@ export function ImageUploader({ imageUrls, onChange }: Props) {
         <div className="flex gap-2 flex-wrap mb-3">
           {imageUrls.map((url) => (
             <div key={url} className="relative w-20 h-20">
-              <Image src={url} alt="" fill sizes="80px" className="object-cover rounded border border-gray-200" />
+              <Image src={url} alt="" fill sizes="80px" className="object-cover rounded border border-zinc-200" />
               <button
                 type="button"
                 onClick={() => removeImage(url)}
@@ -78,7 +78,7 @@ export function ImageUploader({ imageUrls, onChange }: Props) {
         disabled={uploading}
         className="text-sm"
       />
-      {uploading && <p className="text-xs text-gray-500 mt-1">Uploading…</p>}
+      {uploading && <p className="text-xs text-zinc-500 mt-1">Uploading…</p>}
       {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
     </div>
   );

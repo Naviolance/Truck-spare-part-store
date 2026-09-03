@@ -1,5 +1,7 @@
 "use client";
 import Link from "next/link";
+import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 
@@ -39,29 +41,102 @@ function LogoutIcon() {
   );
 }
 
+function MenuIcon({ open }: { open: boolean }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+      {open ? (
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+      ) : (
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
+      )}
+    </svg>
+  );
+}
+
+function NavLink({ href, children, onClick }: { href: string; children: React.ReactNode; onClick?: () => void }) {
+  const pathname = usePathname();
+  const active = pathname === href;
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className={`text-sm transition-colors duration-200 ${active ? "text-zinc-900 font-medium" : "text-zinc-600 hover:text-zinc-900"}`}
+    >
+      {children}
+    </Link>
+  );
+}
+
 export function Navbar() {
   const { user, logout, loading } = useAuth();
   const { itemCount } = useCart();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const closeMenu = () => setMenuOpen(false);
+
   return (
-    <nav className="border-b border-zinc-200 bg-white">
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="font-bold text-lg text-zinc-900 tracking-tight transition-colors hover:text-zinc-600">
-          TruckParts
-        </Link>
+    <nav className="sticky top-0 z-40 border-b border-zinc-200 bg-white/95 backdrop-blur">
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="flex items-center justify-between py-3">
+          <Link href="/" className="font-bold text-lg text-zinc-900 tracking-tight transition-colors hover:text-zinc-600">
+            TruckParts
+          </Link>
 
-        <Link href="/find-my-part" className="text-sm text-zinc-600 transition-colors duration-200 hover:text-zinc-900">
-          Find My Part
-        </Link>
-        <Link href="/products" className="text-sm text-zinc-600 transition-colors duration-200 hover:text-zinc-900">
-          All Parts
-        </Link>
+          {/* Desktop links */}
+          <div className="hidden md:flex items-center gap-6">
+            <NavLink href="/find-my-part">Find My Part</NavLink>
+            <NavLink href="/products">All Parts</NavLink>
+          </div>
 
-        <div className="flex items-center gap-4 text-sm">
-        {loading ? null : user ? (
-          <>
-            {user.role !== "ADMIN" && (
-              <>
-                <Link href="/cart" className="relative text-zinc-600 transition-colors duration-200 hover:text-zinc-900" aria-label="Cart">
+          <div className="flex items-center gap-4">
+            {/* Desktop right-side actions */}
+            <div className="hidden md:flex items-center gap-4 text-sm">
+              {loading ? null : user ? (
+                <>
+                  {user.role !== "ADMIN" && (
+                    <>
+                      <Link href="/cart" className="relative text-zinc-600 transition-colors duration-200 hover:text-zinc-900" aria-label="Cart">
+                        <CartIcon />
+                        {itemCount > 0 && (
+                          <span className="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-zinc-900 px-1 text-[10px] font-medium text-white">
+                            {itemCount}
+                          </span>
+                        )}
+                      </Link>
+                      <NavLink href="/orders">Orders</NavLink>
+                    </>
+                  )}
+                  <Link
+                    href="/account"
+                    className="text-zinc-600 transition-colors duration-200 hover:text-zinc-900"
+                    aria-label="Account"
+                    title={`Hi, ${user.firstName}`}
+                  >
+                    <ProfileIcon />
+                  </Link>
+                  {user.role === "ADMIN" && <NavLink href="/admin">Admin</NavLink>}
+                  <button
+                    onClick={logout}
+                    className="text-zinc-600 transition-colors duration-200 hover:text-red-600"
+                    aria-label="Log out"
+                    title="Log out"
+                  >
+                    <LogoutIcon />
+                  </button>
+                </>
+              ) : (
+                <Link
+                  href="/login"
+                  className="rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 px-4 py-2 text-white shadow-sm transition-all duration-200 hover:from-zinc-600 hover:to-zinc-800 hover:shadow-md"
+                >
+                  Log in
+                </Link>
+              )}
+            </div>
+
+            {/* Mobile: cart icon (customers only) + hamburger */}
+            <div className="flex md:hidden items-center gap-4">
+              {!loading && user && user.role !== "ADMIN" && (
+                <Link href="/cart" className="relative text-zinc-600" aria-label="Cart">
                   <CartIcon />
                   {itemCount > 0 && (
                     <span className="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-zinc-900 px-1 text-[10px] font-medium text-white">
@@ -69,37 +144,50 @@ export function Navbar() {
                     </span>
                   )}
                 </Link>
-                <Link href="/orders" className="text-zinc-600 transition-colors duration-200 hover:text-zinc-900">
-                  Orders
-                </Link>
-              </>
-            )}
-            <Link
-              href="/account"
-              className="text-zinc-600 transition-colors duration-200 hover:text-zinc-900"
-              aria-label="Account"
-              title={`Hi, ${user.firstName}`}
-            >
-              <ProfileIcon />
-            </Link>
-            {user.role === "ADMIN" && (
-              <Link href="/admin" className="text-zinc-600 transition-colors duration-200 hover:text-zinc-900">
-                Admin
-              </Link>
-            )}
-            <button
-              onClick={logout}
-              className="text-zinc-600 transition-colors duration-200 hover:text-red-600"
-              aria-label="Log out"
-              title="Log out"
-            >
-              <LogoutIcon />
-            </button>
-          </>
-        ) : (
+              )}
+              <button
+                onClick={() => setMenuOpen((o) => !o)}
+                className="text-zinc-700"
+                aria-label={menuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={menuOpen}
+              >
+                <MenuIcon open={menuOpen} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile menu panel */}
+      <div
+        className={`md:hidden overflow-hidden transition-[max-height] duration-300 ease-in-out border-t border-zinc-100 ${
+          menuOpen ? "max-h-96" : "max-h-0 border-t-0"
+        }`}
+      >
+        <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col gap-4 text-sm">
+          <NavLink href="/find-my-part" onClick={closeMenu}>Find My Part</NavLink>
+          <NavLink href="/products" onClick={closeMenu}>All Parts</NavLink>
+
+          {loading ? null : user ? (
+            <>
+              {user.role !== "ADMIN" && <NavLink href="/orders" onClick={closeMenu}>Orders</NavLink>}
+              <NavLink href="/account" onClick={closeMenu}>{`Hi, ${user.firstName}`}</NavLink>
+              {user.role === "ADMIN" && <NavLink href="/admin" onClick={closeMenu}>Admin</NavLink>}
+              <button
+                onClick={() => {
+                  closeMenu();
+                  logout();
+                }}
+                className="text-left text-zinc-600 transition-colors duration-200 hover:text-red-600"
+              >
+                Log out
+              </button>
+            </>
+          ) : (
             <Link
               href="/login"
-              className="rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 px-4 py-2 text-white shadow-sm transition-all duration-200 hover:from-zinc-600 hover:to-zinc-800 hover:shadow-md"
+              onClick={closeMenu}
+              className="inline-block w-fit rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 px-4 py-2 text-white shadow-sm transition-all duration-200 hover:from-zinc-600 hover:to-zinc-800"
             >
               Log in
             </Link>

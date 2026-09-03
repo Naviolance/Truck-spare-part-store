@@ -39,14 +39,14 @@ export default function AdminBrandsPage() {
     <div>
       <h1 className="text-2xl font-bold mb-6">Brands</h1>
       <form onSubmit={handleAdd} className="flex gap-2 mb-6">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="New brand name" className="border border-gray-300 rounded px-3 py-2 flex-1" required />
-        <button className="bg-gray-900 text-white rounded px-4 py-2">Add</button>
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="New brand name" className="border border-zinc-300 rounded-lg px-3 py-2 flex-1" required />
+        <button className="bg-zinc-900 text-white rounded-lg px-4 py-2">Add</button>
       </form>
       {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
-      <ul className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
+      <ul className="bg-white border border-zinc-200 rounded-lg divide-y divide-zinc-100">
         {brands.map((b) => (
           <li key={b.id} className="flex items-center justify-between p-3 text-sm">
-            <span>{b.name} <span className="text-gray-400">({b._count.products} products)</span></span>
+            <span>{b.name} <span className="text-zinc-400">({b._count.products} products)</span></span>
             <button onClick={() => handleDelete(b.id)} className="text-red-600 underline">Delete</button>
           </li>
         ))}

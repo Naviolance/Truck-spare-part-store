@@ -25,19 +25,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [loading, user, router]);
 
   if (loading || !user || user.role !== "ADMIN") {
-    return <div className="max-w-6xl mx-auto px-4 py-16 text-gray-500">Checking access…</div>;
+    return <div className="max-w-6xl mx-auto px-4 py-16 text-zinc-500">Checking access…</div>;
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 flex gap-8">
-      <aside className="w-48 shrink-0">
-        <nav className="space-y-1">
+    <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col sm:flex-row gap-6 sm:gap-8">
+      <aside className="sm:w-48 shrink-0">
+        <nav className="flex sm:flex-col gap-1 overflow-x-auto sm:overflow-visible -mx-1 px-1 sm:mx-0 sm:px-0">
           {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className={`block px-3 py-2 rounded text-sm ${
-                pathname === link.href ? "bg-gray-900 text-white" : "hover:bg-gray-100"
+              className={`block px-3 py-2 rounded-lg text-sm whitespace-nowrap transition-colors duration-200 ${
+                pathname === link.href ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
               }`}
             >
               {link.label}
@@ -45,7 +45,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           ))}
         </nav>
       </aside>
-      <div className="flex-1">{children}</div>
+      <div className="flex-1 min-w-0">{children}</div>
     </div>
   );
 }

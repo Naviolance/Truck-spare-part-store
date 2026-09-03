@@ -33,7 +33,7 @@ export function AddToCartButton({ productId, inStock }: { productId: string; inS
       <button
         onClick={handleClick}
         disabled={!inStock || status === "adding"}
-        className="w-full bg-gray-900 text-white rounded py-3 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+        className="w-full rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 text-white py-3 font-medium shadow-sm transition-all duration-200 hover:from-zinc-600 hover:to-zinc-800 hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-sm"
       >
         {!inStock ? "Out of stock" : status === "adding" ? "Adding…" : status === "added" ? "Added ✓" : "Add to cart"}
       </button>

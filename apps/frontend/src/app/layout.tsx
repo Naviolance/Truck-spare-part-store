@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
 
@@ -31,11 +32,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} min-h-screen bg-zinc-50 text-zinc-900`}>
+      <body className={`${inter.className} min-h-screen bg-zinc-50 text-zinc-900 flex flex-col`}>
         <AuthProvider>
           <CartProvider>
             <Navbar />
-            {children}
+            <div className="flex-1 flex flex-col">{children}</div>
+            <Footer />
           </CartProvider>
         </AuthProvider>
       </body>

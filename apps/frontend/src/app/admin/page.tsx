@@ -34,7 +34,7 @@ export default function AdminDashboardPage() {
     });
   }, []);
 
-  if (!stats) return <p className="text-gray-500">Loading…</p>;
+  if (!stats) return <p className="text-zinc-500">Loading…</p>;
 
   const cards = [
     { label: "Revenue (paid orders)", value: formatMoney(stats.revenue) },
@@ -49,36 +49,36 @@ export default function AdminDashboardPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+      <h1 className="text-2xl font-bold text-zinc-900 tracking-tight mb-6">Dashboard</h1>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {cards.map((c) => (
-          <div key={c.label} className="border border-gray-200 rounded-lg p-4 bg-white">
-            <p className="text-sm text-gray-500">{c.label}</p>
-            <p className={`text-2xl font-bold ${c.warn ? "text-amber-600" : ""}`}>{c.value}</p>
+          <div key={c.label} className="border border-zinc-200 rounded-lg p-4 bg-white transition-shadow duration-200 hover:shadow-sm">
+            <p className="text-sm text-zinc-500">{c.label}</p>
+            <p className={`text-2xl font-bold ${c.warn ? "text-amber-600" : "text-zinc-900"}`}>{c.value}</p>
           </div>
         ))}
       </div>
 
-      <h2 className="text-lg font-semibold mb-3">Recent orders</h2>
+      <h2 className="text-lg font-semibold text-zinc-900 mb-3">Recent orders</h2>
       {stats.recentOrders.length === 0 ? (
-        <p className="text-gray-500 text-sm">No orders yet.</p>
+        <p className="text-zinc-500 text-sm">No orders yet.</p>
       ) : (
-        <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
+        <div className="bg-white border border-zinc-200 rounded-lg divide-y divide-zinc-100">
           {stats.recentOrders.map((o) => (
             <Link
               key={o.id}
               href={`/admin/orders`}
-              className="flex items-center justify-between p-3 text-sm hover:bg-gray-50"
+              className="flex items-center justify-between p-3 text-sm transition-colors duration-200 hover:bg-zinc-50"
             >
               <div>
-                <p className="font-medium">#{o.orderNumber}</p>
-                <p className="text-xs text-gray-400">
+                <p className="font-medium text-zinc-900">#{o.orderNumber}</p>
+                <p className="text-xs text-zinc-400">
                   {o.user.firstName} {o.user.lastName} · {new Date(o.createdAt).toLocaleDateString()}
                 </p>
               </div>
               <div className="text-right">
-                <p className="font-semibold">{formatMoney(o.total)}</p>
-                <p className="text-xs text-gray-500">{o.status}</p>
+                <p className="font-semibold text-zinc-900">{formatMoney(o.total)}</p>
+                <p className="text-xs text-zinc-500">{o.status}</p>
               </div>
             </Link>
           ))}

@@ -67,49 +67,49 @@ export default function AdminCouponsPage() {
     load();
   }
 
-  if (loading) return <p className="text-gray-500">Loading…</p>;
+  if (loading) return <p className="text-zinc-500">Loading…</p>;
 
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Coupons</h1>
 
-      <form onSubmit={handleCreate} className="grid grid-cols-2 gap-3 mb-6 bg-white border border-gray-200 rounded-lg p-4">
+      <form onSubmit={handleCreate} className="grid grid-cols-2 gap-3 mb-6 bg-white border border-zinc-200 rounded-lg p-4">
         <div>
           <label className="block text-xs font-medium mb-1">Code</label>
-          <input required value={form.code} onChange={(e) => update("code", e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+          <input required value={form.code} onChange={(e) => update("code", e.target.value)} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm" />
         </div>
         <div>
           <label className="block text-xs font-medium mb-1">Type</label>
-          <select value={form.type} onChange={(e) => update("type", e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+          <select value={form.type} onChange={(e) => update("type", e.target.value)} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm">
             <option value="PERCENTAGE">Percentage off</option>
             <option value="FIXED">Fixed amount off (FCFA)</option>
           </select>
         </div>
         <div>
           <label className="block text-xs font-medium mb-1">Value</label>
-          <input required type="number" min="0" value={form.value} onChange={(e) => update("value", e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+          <input required type="number" min="0" value={form.value} onChange={(e) => update("value", e.target.value)} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm" />
         </div>
         <div>
           <label className="block text-xs font-medium mb-1">Min. order total (optional)</label>
-          <input type="number" min="0" value={form.minOrderTotal} onChange={(e) => update("minOrderTotal", e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+          <input type="number" min="0" value={form.minOrderTotal} onChange={(e) => update("minOrderTotal", e.target.value)} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm" />
         </div>
         <div>
           <label className="block text-xs font-medium mb-1">Max uses (optional)</label>
-          <input type="number" min="1" value={form.maxUses} onChange={(e) => update("maxUses", e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+          <input type="number" min="1" value={form.maxUses} onChange={(e) => update("maxUses", e.target.value)} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm" />
         </div>
         <div>
           <label className="block text-xs font-medium mb-1">Expires (optional)</label>
-          <input type="date" value={form.expiresAt} onChange={(e) => update("expiresAt", e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+          <input type="date" value={form.expiresAt} onChange={(e) => update("expiresAt", e.target.value)} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm" />
         </div>
         {error && <p className="col-span-2 text-red-600 text-sm">{error}</p>}
-        <button className="col-span-2 bg-gray-900 text-white rounded py-2 text-sm">Create coupon</button>
+        <button className="col-span-2 bg-zinc-900 text-white rounded-lg py-2 text-sm">Create coupon</button>
       </form>
 
       {coupons.length === 0 ? (
-        <p className="text-gray-500">No coupons yet.</p>
+        <p className="text-zinc-500">No coupons yet.</p>
       ) : (
-        <table className="w-full text-sm bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <thead className="bg-gray-50 text-left">
+        <table className="w-full text-sm bg-white border border-zinc-200 rounded-lg overflow-hidden">
+          <thead className="bg-zinc-50 text-left">
             <tr>
               <th className="p-3">Code</th>
               <th className="p-3">Discount</th>
@@ -122,7 +122,7 @@ export default function AdminCouponsPage() {
           </thead>
           <tbody>
             {coupons.map((c) => (
-              <tr key={c.id} className="border-t border-gray-100">
+              <tr key={c.id} className="border-t border-zinc-100">
                 <td className="p-3 font-mono">{c.code}</td>
                 <td className="p-3">{c.type === "PERCENTAGE" ? `${c.value}%` : formatMoney(c.value)}</td>
                 <td className="p-3">{c.minOrderTotal ? formatMoney(c.minOrderTotal) : "—"}</td>
@@ -130,7 +130,7 @@ export default function AdminCouponsPage() {
                 <td className="p-3">{c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : "—"}</td>
                 <td className="p-3">
                   <button onClick={() => toggleActive(c)}
-                    className={`text-xs px-2 py-1 rounded-full ${c.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
+                    className={`text-xs px-2 py-1 rounded-full ${c.active ? "bg-green-100 text-green-700" : "bg-zinc-100 text-zinc-600"}`}>
                     {c.active ? "ACTIVE" : "INACTIVE"}
                   </button>
                 </td>
