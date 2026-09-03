@@ -32,14 +32,19 @@ export function RelatedProducts({ categoryIds, excludeProductIds }: { categoryId
       if (cancelled) return;
       const seen = new Set(excludeProductIds);
       const merged: Product[] = [];
-      for (const list of results) {
-        for (const p of list) {
-          if (seen.has(p.id)) continue;
+      // Round-robin across categories so one category's results can't
+      // monopolize the final list — take one from each list per pass.
+      const maxLen = Math.max(0, ...results.map((list) => list.length));
+      for (let i = 0; i < maxLen && merged.length < 4; i++) {
+        for (const list of results) {
+          if (merged.length >= 4) break;
+          const p = list[i];
+          if (!p || seen.has(p.id)) continue;
           seen.add(p.id);
           merged.push(p);
         }
       }
-      setProducts(merged.slice(0, 4));
+      setProducts(merged);
     });
 
     return () => {

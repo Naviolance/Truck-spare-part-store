@@ -11,6 +11,7 @@ type Order = {
   total: string;
   createdAt: string;
   user: { firstName: string; lastName: string; email: string };
+  payments: { provider: string; status: string }[];
 };
 
 // CANCELLED and REFUNDED aren't in this list on purpose — those only happen
@@ -68,6 +69,14 @@ export default function AdminOrdersPage() {
     setUpdatingId(null);
   }
 
+  async function handleConfirmCash(order: Order) {
+    if (!confirm(`Mark order #${order.orderNumber} as paid in cash?`)) return;
+    setUpdatingId(order.id);
+    await apiFetch(`/orders/${order.id}/confirm-cash`, { method: "POST" });
+    await load();
+    setUpdatingId(null);
+  }
+
   async function handleCancel(order: Order) {
     if (!confirm(`Cancel order #${order.orderNumber}? This restores stock for its items${order.status === "PAID" || order.status === "PROCESSING" || order.status === "SHIPPED" || order.status === "DELIVERED" ? " and marks the payment as refunded (you still need to actually send the refund via Notch Pay)" : ""}.`)) {
       return;
@@ -99,7 +108,9 @@ export default function AdminOrdersPage() {
             </tr>
           </thead>
           <tbody>
-            {orders.map((o) => (
+            {orders.map((o) => {
+              const pendingCash = o.status === "PAYMENT_PENDING" && o.payments.some((p) => p.provider === "cash" && p.status === "PENDING");
+              return (
               <tr key={o.id} className="border-t border-zinc-100">
                 <td className="p-3 font-medium">#{o.orderNumber}</td>
                 <td className="p-3">
@@ -112,6 +123,9 @@ export default function AdminOrdersPage() {
                   <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[o.status] || "bg-zinc-100"}`}>
                     {o.status}
                   </span>
+                  {pendingCash && (
+                    <span className="block text-xs text-amber-600 mt-1">Cash — awaiting pickup</span>
+                  )}
                 </td>
                 <td className="p-3">
                   <div className="flex items-center gap-2">
@@ -125,6 +139,15 @@ export default function AdminOrdersPage() {
                         <option key={s} value={s}>{s}</option>
                       ))}
                     </select>
+                    {pendingCash && (
+                      <button
+                        onClick={() => handleConfirmCash(o)}
+                        disabled={updatingId === o.id}
+                        className="text-xs text-emerald-700 underline disabled:opacity-50"
+                      >
+                        Mark paid (cash)
+                      </button>
+                    )}
                     {!TERMINAL_STATUSES.includes(o.status) && (
                       <button
                         onClick={() => handleCancel(o)}
@@ -137,7 +160,8 @@ export default function AdminOrdersPage() {
                   </div>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       )}

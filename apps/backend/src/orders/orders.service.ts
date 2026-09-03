@@ -178,6 +178,53 @@ export class OrdersService {
     return { checkoutUrl: payment.authorization_url };
   }
 
+  // Customer chose to pay cash at pickup instead of online — no gateway
+  // involved, so there's no checkoutUrl to redirect to. The order stays
+  // PAYMENT_PENDING (stock is already reserved from checkout()) until an
+  // admin confirms cash was actually received, via confirmCashPayment below.
+  async selectCashPayment(userId: string, orderId: string) {
+    const order = await this.prisma.order.findFirst({ where: { id: orderId, userId } });
+    if (!order) throw new NotFoundException("Order not found");
+    if (order.status !== OrderStatus.PAYMENT_PENDING) {
+      throw new BadRequestException("This order has already been processed");
+    }
+
+    await this.prisma.payment.create({
+      data: {
+        orderId: order.id,
+        provider: "cash",
+        amount: order.total,
+        status: PaymentStatus.PENDING,
+      },
+    });
+
+    return order;
+  }
+
+  // Admin-triggered — the counterpart to confirmPayment() for orders paid in
+  // person rather than through the webhook. Only usable on an order that
+  // actually has a pending cash payment, so a normal online order can't be
+  // marked paid through this shortcut.
+  async confirmCashPayment(orderId: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException("Order not found");
+    if (order.status !== OrderStatus.PAYMENT_PENDING) {
+      throw new BadRequestException("This order has already been processed");
+    }
+
+    const cashPayment = await this.prisma.payment.findFirst({
+      where: { orderId, provider: "cash", status: PaymentStatus.PENDING },
+    });
+    if (!cashPayment) throw new BadRequestException("This order has no pending cash payment");
+
+    await this.prisma.$transaction([
+      this.prisma.order.update({ where: { id: order.id }, data: { status: OrderStatus.PAID } }),
+      this.prisma.payment.update({ where: { id: cashPayment.id }, data: { status: PaymentStatus.SUCCEEDED } }),
+    ]);
+
+    await this.notifyStatusChange(order.id, OrderStatus.PAID);
+  }
+
   // Called by the webhook handler once Notch Pay confirms payment success.
   // This is where the order actually becomes final — atomically, since stock
   // was already safely reserved at checkout time.
@@ -275,7 +322,7 @@ export class OrdersService {
   async findOne(userId: string, orderId: string, isAdmin: boolean) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
-      include: { items: true, user: { select: { firstName: true, lastName: true, email: true } } },
+      include: { items: true, payments: true, user: { select: { firstName: true, lastName: true, email: true } } },
     });
 
     if (!order) throw new NotFoundException("Order not found");
@@ -288,7 +335,7 @@ export class OrdersService {
 
   async findAllAdmin() {
     return this.prisma.order.findMany({
-      include: { items: true, user: { select: { firstName: true, lastName: true, email: true } } },
+      include: { items: true, payments: true, user: { select: { firstName: true, lastName: true, email: true } } },
       orderBy: { createdAt: "desc" },
     });
   }

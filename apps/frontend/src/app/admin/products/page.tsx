@@ -5,7 +5,7 @@ import { apiFetch } from "@/lib/api";
 import { formatMoney } from "@/lib/money";
 
 type Product = {
-  id: string; name: string; price: string; status: string; quantity: number;
+  id: string; name: string; price: string; status: string; quantity: number; createdAt: string;
   category: { name: string }; brand: { name: string } | null;
 };
 
@@ -51,7 +51,7 @@ export default function AdminProductsPage() {
       )}
       <table className="w-full text-sm bg-white border border-zinc-200 rounded-lg overflow-hidden">
         <thead className="bg-zinc-50 text-left">
-          <tr><th className="p-3">Name</th><th className="p-3">Category</th><th className="p-3">Price</th><th className="p-3">Stock</th><th className="p-3">Status</th><th className="p-3"></th></tr>
+          <tr><th className="p-3">Name</th><th className="p-3">Category</th><th className="p-3">Price</th><th className="p-3">Stock</th><th className="p-3">Added</th><th className="p-3">Status</th><th className="p-3"></th></tr>
         </thead>
         <tbody>
           {products.map((p) => (
@@ -60,6 +60,9 @@ export default function AdminProductsPage() {
               <td className="p-3">{p.category.name}</td>
               <td className="p-3">{formatMoney(p.price)}</td>
               <td className={`p-3 ${p.quantity === 0 ? "text-red-600 font-medium" : ""}`}>{p.quantity}</td>
+              <td className="p-3 text-zinc-500" title={new Date(p.createdAt).toLocaleString()}>
+                {new Date(p.createdAt).toLocaleDateString()}
+              </td>
               <td className="p-3">
                 <button onClick={() => togglePublish(p)}
                   className={`text-xs px-2 py-1 rounded-full ${p.status === "PUBLISHED" ? "bg-green-100 text-green-700" : "bg-zinc-100 text-zinc-600"}`}>

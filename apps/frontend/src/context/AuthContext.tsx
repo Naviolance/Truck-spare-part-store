@@ -49,9 +49,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // between this and some other page's request) from ever racing on the
     // same not-yet-rotated cookie.
     refreshSession()
-      .then(async (restored) => {
-        if (cancelled) return;
-        if (restored) await fetchMe();
+      .then(({ ok, user: refreshedUser }) => {
+        if (cancelled || !ok) return;
+        // touchSession() already looked this row up while rotating the
+        // session — use it directly instead of firing a redundant
+        // GET /users/me right after.
+        setUser((refreshedUser as User) ?? null);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -62,14 +65,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // The refresh token's 15-minute sliding window (see auth.service.ts) only
+  // The refresh token's 60-minute sliding window (see auth.service.ts) only
   // renews when an actual API call happens — but plenty of genuine activity
   // (reading a long page, filling out a form, scrolling reviews) fires zero
   // backend requests for stretches longer than that, which silently expires
   // the session out from under someone who never actually stopped using the
   // site. This tracks real interaction events and pings refreshSession()
   // periodically as long as the user has been active recently, so "inactive
-  // for 15 minutes" means what it says — no mouse/keyboard/touch/scroll at
+  // for 60 minutes" means what it says — no mouse/keyboard/touch/scroll at
   // all — rather than "happened not to trigger a request."
   useEffect(() => {
     if (!user) return;
@@ -81,8 +84,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const events: (keyof WindowEventMap)[] = ["mousemove", "keydown", "click", "scroll", "touchstart"];
     events.forEach((e) => window.addEventListener(e, markActive, { passive: true }));
 
-    const HEARTBEAT_INTERVAL_MS = 5 * 60 * 1000; // check well within the 15-min window
-    const IDLE_THRESHOLD_MS = 14 * 60 * 1000; // renew if active anytime in the last 14 min
+    const HEARTBEAT_INTERVAL_MS = 15 * 60 * 1000; // check well within the 60-min window
+    const IDLE_THRESHOLD_MS = 55 * 60 * 1000; // renew if active anytime in the last 55 min
 
     const interval = setInterval(() => {
       if (Date.now() - lastActivity < IDLE_THRESHOLD_MS) {

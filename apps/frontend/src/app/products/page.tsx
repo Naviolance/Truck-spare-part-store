@@ -2,6 +2,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ProductCard } from "@/components/ProductCard";
+import { RequestProductForm } from "@/components/RequestProductForm";
 import { publicFetch } from "@/lib/api";
 
 type Product = {
@@ -39,6 +40,7 @@ function ProductsPageInner() {
   const [page, setPage] = useState(Number(searchParams.get("page")) || 1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [fuzzy, setFuzzy] = useState(false);
   const PAGE_SIZE = 24;
 
   useEffect(() => {
@@ -69,6 +71,7 @@ function ProductsPageInner() {
         setProducts(data.items);
         setTotal(data.total);
         setTotalPages(data.totalPages);
+        setFuzzy(Boolean(data.fuzzy));
       })
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -165,10 +168,14 @@ function ProductsPageInner() {
             <div className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-500">
               <p className="font-medium">No parts match your filters.</p>
               <button onClick={clearFilters} className="text-sm underline mt-2">Clear filters</button>
+              <RequestProductForm prefillDescription={search ? `Looking for: ${search}` : ""} />
             </div>
           ) : (
             <>
-              <p className="text-sm text-zinc-500 mb-4">{total} result{total !== 1 ? "s" : ""}</p>
+              <p className="text-sm text-zinc-500 mb-4">
+                {total} result{total !== 1 ? "s" : ""}
+                {fuzzy && " — showing close matches for your search"}
+              </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {products.map((product) => (
                   <ProductCard key={product.id} product={product} />

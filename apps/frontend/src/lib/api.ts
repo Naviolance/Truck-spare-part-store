@@ -51,9 +51,15 @@ function getCsrfToken(): string | null {
 // The backend session token doesn't rotate (see auth.service.ts), so there's
 // no correctness reason for this beyond avoiding redundant round trips when
 // several callers happen to want a fresh access token at once.
-let refreshPromise: Promise<boolean> | null = null;
+type RefreshResult = { ok: boolean; user: unknown | null };
 
-export function refreshSession(): Promise<boolean> {
+let refreshPromise: Promise<RefreshResult> | null = null;
+
+// Resolves with the user row the backend already looked up while rotating
+// the session (see auth.service.ts's touchSession) — callers that need the
+// current user can use it directly instead of following up with their own
+// GET /users/me, which would just re-fetch the same row a moment later.
+export function refreshSession(): Promise<RefreshResult> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       const csrfToken = getCsrfToken();
@@ -66,12 +72,12 @@ export function refreshSession(): Promise<boolean> {
       if (!res.ok) {
         setAccessToken(null);
         onSessionExpired?.();
-        return false;
+        return { ok: false, user: null };
       }
 
       const data = await res.json();
       setAccessToken(data.accessToken);
-      return true;
+      return { ok: true, user: data.user ?? null };
     })().finally(() => {
       refreshPromise = null;
     });
@@ -117,8 +123,8 @@ export async function apiFetch(path: string, options: FetchOptions = {}) {
   // from real inactivity, which is the one case this should NOT paper over).
   const isAuthEndpoint = path.startsWith("/auth/");
   if (res.status === 401 && !options.skipAuth && !isAuthEndpoint && !options._retried) {
-    const restored = await refreshSession();
-    if (restored) {
+    const { ok } = await refreshSession();
+    if (ok) {
       return rawFetch(path, { ...options, _retried: true });
     }
   }

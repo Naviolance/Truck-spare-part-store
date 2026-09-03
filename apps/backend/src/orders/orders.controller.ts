@@ -23,6 +23,18 @@ export class OrdersController {
     return this.ordersService.initiatePayment(user.userId, id);
   }
 
+  @Post(":id/pay-cash")
+  selectCashPayment(@CurrentUser() user: { userId: string }, @Param("id") id: string) {
+    return this.ordersService.selectCashPayment(user.userId, id);
+  }
+
+  @Post(":id/confirm-cash")
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  confirmCashPayment(@Param("id") id: string) {
+    return this.ordersService.confirmCashPayment(id);
+  }
+
   @Get()
   findMyOrders(@CurrentUser() user: { userId: string }) {
     return this.ordersService.findMyOrders(user.userId);

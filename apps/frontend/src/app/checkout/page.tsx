@@ -12,6 +12,7 @@ export default function CheckoutPage() {
   const { items, subtotal, refresh } = useCart();
   const router = useRouter();
   const [form, setForm] = useState({ shippingAddress: "", shippingCity: "", shippingPhone: "" });
+  const [paymentMethod, setPaymentMethod] = useState<"online" | "cash">("online");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   useEffect(() => {
@@ -85,6 +86,20 @@ export default function CheckoutPage() {
 
     const order = await res.json();
     await refresh(); // cart is now empty on the backend, sync frontend state
+
+    if (paymentMethod === "cash") {
+      // No gateway involved — the order stays PAYMENT_PENDING until an
+      // admin confirms cash was received at pickup.
+      const cashRes = await apiFetch(`/orders/${order.id}/pay-cash`, { method: "POST" });
+      if (!cashRes.ok) {
+        const err = await cashRes.json().catch(() => ({}));
+        setError(err.message || "Could not record order");
+        setSubmitting(false);
+        return;
+      }
+      router.push(`/orders/${order.id}`);
+      return;
+    }
 
     // Order is created but not yet paid — now start the actual payment and
     // send the customer to Notch Pay's hosted checkout page.
@@ -192,13 +207,41 @@ export default function CheckoutPage() {
             className={inputClass}
           />
         </div>
+        <div>
+          <label className={labelClass}>Payment method</label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("online")}
+              className={`rounded-lg border px-3 py-2 text-sm text-left transition-colors duration-200 ${
+                paymentMethod === "online" ? "border-zinc-900 bg-zinc-50" : "border-zinc-300 hover:border-zinc-400"
+              }`}
+            >
+              <span className="block font-medium text-zinc-900">Pay online</span>
+              <span className="block text-xs text-zinc-500 mt-0.5">Mobile money / card</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("cash")}
+              className={`rounded-lg border px-3 py-2 text-sm text-left transition-colors duration-200 ${
+                paymentMethod === "cash" ? "border-zinc-900 bg-zinc-50" : "border-zinc-300 hover:border-zinc-400"
+              }`}
+            >
+              <span className="block font-medium text-zinc-900">Cash at pickup</span>
+              <span className="block text-xs text-zinc-500 mt-0.5">Pay when you collect it</span>
+            </button>
+          </div>
+        </div>
+
         {error && <p className="text-red-600 text-sm">{error}</p>}
         <button
           type="submit"
           disabled={submitting}
           className="w-full rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 text-white py-3 font-medium shadow-sm transition-all duration-200 hover:from-zinc-600 hover:to-zinc-800 hover:shadow-md disabled:opacity-50"
         >
-          {submitting ? "Redirecting to payment…" : `Pay ${formatMoney(total)}`}
+          {submitting
+            ? paymentMethod === "cash" ? "Placing order…" : "Redirecting to payment…"
+            : paymentMethod === "cash" ? `Place order — pay ${formatMoney(total)} at pickup` : `Pay ${formatMoney(total)}`}
         </button>
       </form>
     </main>

@@ -7,6 +7,20 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { UserRole } from "@truckparts/prisma";
+
+const MAX_RANKED_LIMIT = 24;
+
+// A non-numeric or out-of-range ?limit= should fall back to the service's
+// own default, not produce NaN — Number("abc") is NaN, which is a defined
+// value, so a naive `limit ? Number(limit) : undefined` would pass NaN
+// straight through to Prisma's `take`, which throws.
+function parseLimit(raw: string | undefined): number | undefined {
+  if (!raw) return undefined;
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed < 1) return undefined;
+  return Math.min(parsed, MAX_RANKED_LIMIT);
+}
+
 @Controller("products")
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
@@ -18,12 +32,12 @@ export class ProductsController {
 
   @Get("most-searched")
   findMostSearched(@Query("limit") limit?: string) {
-    return this.productsService.findMostSearched(limit ? Number(limit) : undefined);
+    return this.productsService.findMostSearched(parseLimit(limit));
   }
 
   @Get("most-purchased")
   findMostPurchased(@Query("limit") limit?: string) {
-    return this.productsService.findMostPurchased(limit ? Number(limit) : undefined);
+    return this.productsService.findMostPurchased(parseLimit(limit));
   }
 
   @Get(":slug")

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { ProductCard, ProductCardData } from "@/components/ProductCard";
+import { RequestProductForm } from "@/components/RequestProductForm";
 import { publicFetch } from "@/lib/api";
 
 type VehicleConfig = { id: string; manufacturer: string; model: string; yearStart: number; yearEnd: number | null; engine: string | null };
@@ -23,7 +24,6 @@ export default function FindMyPartPage() {
     setModel("");
     setConfigs([]);
     setVehicleId("");
-    setProducts(null);
     if (!manufacturer) return setModels([]);
     publicFetch(`/vehicles/models?manufacturer=${encodeURIComponent(manufacturer)}`)
       .then((r) => r.json())
@@ -32,19 +32,24 @@ export default function FindMyPartPage() {
 
   useEffect(() => {
     setVehicleId("");
-    setProducts(null);
     if (!manufacturer || !model) return setConfigs([]);
     publicFetch(`/vehicles/configs?manufacturer=${encodeURIComponent(manufacturer)}&model=${encodeURIComponent(model)}`)
       .then((r) => r.json())
       .then(setConfigs);
   }, [manufacturer, model]);
 
+  // Progressive results: as soon as a manufacturer is picked, show matching
+  // parts — model and then year/engine only narrow that set further, rather
+  // than requiring the whole vehicle to be pinned down before anything shows.
   useEffect(() => {
-    if (!vehicleId) return setProducts(null);
-    publicFetch(`/vehicles/${vehicleId}/products`)
+    if (!manufacturer) return setProducts(null);
+    const params = new URLSearchParams({ manufacturer });
+    if (model) params.set("model", model);
+    if (vehicleId) params.set("vehicleId", vehicleId);
+    publicFetch(`/vehicles/products?${params.toString()}`)
       .then((r) => r.json())
       .then(setProducts);
-  }, [vehicleId]);
+  }, [manufacturer, model, vehicleId]);
 
   return (
     <main className="max-w-4xl mx-auto px-4 py-10">
@@ -100,14 +105,20 @@ export default function FindMyPartPage() {
           <h2 className="font-semibold text-zinc-900 mb-4">
             {products.length > 0
               ? `${products.length} part${products.length !== 1 ? "s" : ""} found`
-              : "No parts found for this vehicle yet"}
+              : "No parts found yet"}
           </h2>
 
-          {products.length > 0 && (
+          {products.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {products.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <RequestProductForm
+                prefillDescription={`Looking for a part for: ${manufacturer}${model ? ` ${model}` : ""}`}
+              />
             </div>
           )}
         </div>

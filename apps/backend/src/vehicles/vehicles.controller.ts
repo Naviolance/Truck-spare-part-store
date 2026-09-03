@@ -30,6 +30,18 @@ export class VehiclesController {
     return this.vehiclesService.getProductsForVehicle(id);
   }
 
+  // Progressive Find My Part search — see vehicles.service.ts's
+  // getProductsForFilter for why this takes any subset of the three filters
+  // instead of requiring a fully resolved vehicleId.
+  @Get("products")
+  getProductsForFilter(
+    @Query("manufacturer") manufacturer?: string,
+    @Query("model") model?: string,
+    @Query("vehicleId") vehicleId?: string,
+  ) {
+    return this.vehiclesService.getProductsForFilter({ manufacturer, model, vehicleId });
+  }
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Get("admin/all")

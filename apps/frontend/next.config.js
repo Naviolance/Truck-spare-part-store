@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Lets the dev server accept requests for its own assets (HMR, RSC
+  // payloads) from your phone's LAN address when testing at
+  // http://192.168.1.64:3000 — Next.js will require this explicitly in a
+  // future major version, so this is here ahead of that.
+  allowedDevOrigins: ["192.168.1.64"],
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "placehold.co" },

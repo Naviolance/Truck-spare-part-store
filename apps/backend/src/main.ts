@@ -35,12 +35,17 @@ app.use(
   // Allows localhost, any private-LAN origin on port 3000 (phone on the same
   // Wi-Fi, e.g. http://<lan-ip>:3000), and any ngrok tunnel domain (dynamic
   // subdomain each run, so we match the domain suffix rather than hardcoding
-  // one URL) — all for local dev/mobile testing, not a production concern.
+  // one URL) — for local dev/mobile testing ONLY. Gated behind NODE_ENV so a
+  // production deploy of this same file can't inherit a CORS policy that
+  // trusts any LAN device or anyone's own free ngrok tunnel.
+  const isProduction = process.env.NODE_ENV === "production";
   const DEV_ORIGIN_RE =
     /^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)(:3000)?$|^https:\/\/[a-z0-9-]+\.ngrok-free\.(app|dev)$|^https:\/\/[a-z0-9-]+\.ngrok\.io$/;
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin || DEV_ORIGIN_RE.test(origin)) return callback(null, true);
+      if (!origin) return callback(null, true);
+      if (!isProduction && DEV_ORIGIN_RE.test(origin)) return callback(null, true);
+      if (isProduction && origin === process.env.FRONTEND_URL) return callback(null, true);
       callback(new Error("Not allowed by CORS"));
     },
     credentials: true,

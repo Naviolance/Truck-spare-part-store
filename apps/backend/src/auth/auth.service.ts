@@ -22,11 +22,20 @@ const RESET_TOKEN_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 //   - SESSION_INACTIVITY_MS: sliding. Must be touched at least this often or
 //     it's treated as the user having genuinely left — this is what makes
 //     "logged out only if inactive" actually true.
-//   - SESSION_ABSOLUTE_MS: fixed from creation, regardless of activity. A
-//     backstop so a session token can't be kept alive forever by activity
-//     alone (e.g. a stolen token used sporadically for months).
-export const SESSION_INACTIVITY_MS = 15 * 60 * 1000;
+//   - SESSION_ABSOLUTE_MS: fixed from the ORIGINAL login, never extended by
+//     rotation — a backstop so a session can't be kept alive forever by
+//     activity alone (e.g. a stolen token used sporadically for months).
+export const SESSION_INACTIVITY_MS = 60 * 60 * 1000;
 export const SESSION_ABSOLUTE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+// A replayed already-rotated token is what theft looks like — but it's also
+// exactly what two near-simultaneous LEGITIMATE calls produce (two tabs, a
+// page whose mount effect double-fires, a flaky-network retry): both read
+// the same not-yet-rotated row, one wins the race and rotates it, the other
+// arrives a beat later and finds it already revoked. Only escalate to "nuke
+// every session" once a replay is too old to plausibly be that race —
+// see touchSession()'s revokedAt branch.
+const REUSE_GRACE_MS = 10_000;
 
 @Injectable()
 export class AuthService {
@@ -93,29 +102,61 @@ export class AuthService {
   }
 
   // Called whenever the frontend needs a fresh access token — on mount, and
-  // whenever apiFetch sees a 401 from an expired one. Since the session
-  // token never rotates, this is naturally idempotent: any number of
-  // concurrent calls just read the same still-valid row and touch it. There
-  // is nothing to race on.
+  // whenever apiFetch sees a 401 from an expired one. Rotates the session
+  // token on every successful call: this is what makes a stolen-and-replayed
+  // token detectable at all (see the revokedAt branch below). The absolute
+  // expiry is carried over unchanged from the original session, not reset —
+  // rotation extends the inactivity window, never the 30-day hard cap.
   async touchSession(sessionTokenPlain: string) {
     const tokenHash = this.hashToken(sessionTokenPlain);
     const session = await this.prisma.session.findUnique({ where: { tokenHash } });
 
     const invalid = () => new UnauthorizedException("Session expired, please log in again");
-    if (!session || session.revokedAt || session.expiresAt < new Date()) throw invalid();
+    if (!session || session.expiresAt < new Date()) throw invalid();
+
+    if (session.revokedAt) {
+      const revokedRecently = Date.now() - session.revokedAt.getTime() < REUSE_GRACE_MS;
+      if (!revokedRecently) {
+        // Replayed well after rotation — too old to be the benign race
+        // above. Treat as theft: kill every session this user has.
+        await this.prisma.session.updateMany({
+          where: { userId: session.userId, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+      }
+      throw invalid();
+    }
 
     if (Date.now() - session.lastActiveAt.getTime() > SESSION_INACTIVITY_MS) {
       await this.prisma.session.update({ where: { id: session.id }, data: { revokedAt: new Date() } });
       throw invalid();
     }
 
-    await this.prisma.session.update({ where: { id: session.id }, data: { lastActiveAt: new Date() } });
-
     const user = await this.usersService.findById(session.userId);
     if (!user) throw invalid();
 
+    const newSessionTokenPlain = crypto.randomBytes(SESSION_TOKEN_BYTES).toString("hex");
+    const now = new Date();
+
+    await this.prisma.$transaction([
+      this.prisma.session.update({ where: { id: session.id }, data: { revokedAt: now } }),
+      this.prisma.session.create({
+        data: {
+          userId: session.userId,
+          tokenHash: this.hashToken(newSessionTokenPlain),
+          lastActiveAt: now,
+          expiresAt: session.expiresAt, // absolute cap is NOT extended by rotation
+        },
+      }),
+    ]);
+
     const accessToken = this.jwtService.sign({ sub: user.id, role: user.role });
-    return { accessToken };
+    // Callers (the /auth/refresh route) hand this straight to the frontend,
+    // which already fetches this exact row via GET /users/me on the same
+    // page load — returning it here lets the frontend skip that redundant
+    // second round trip. Never send the hash back over the wire.
+    const { passwordHash, ...safeUser } = user;
+    return { accessToken, sessionToken: newSessionTokenPlain, user: safeUser };
   }
 
   async logout(sessionTokenPlain: string) {

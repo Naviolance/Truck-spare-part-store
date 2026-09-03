@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ProductCard, ProductCardData } from "@/components/ProductCard";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
@@ -57,7 +58,16 @@ export default async function HomePage() {
     <main className="flex-1">
       {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-br from-zinc-800 to-zinc-950 text-white">
-        <div className="max-w-6xl mx-auto px-4 py-16 sm:py-24">
+        <Image
+          src="/hero-bg.png"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover opacity-40"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-950/60 to-transparent" />
+        <div className="relative max-w-6xl mx-auto px-4 py-16 sm:py-24">
           <p className="text-zinc-400 text-sm font-medium uppercase tracking-wide mb-3">New &amp; used, inspected</p>
           <h1 className="text-3xl sm:text-5xl font-bold tracking-tight max-w-xl">
             Truck parts that fit, without the guesswork.

@@ -127,13 +127,20 @@ export function AuthModal({ open, onClose, onAuthenticated, message }: Props) {
             onChange={(e) => update("email", e.target.value)}
             className={inputClass}
           />
-          <PasswordInput
-            placeholder="Password"
-            required
-            value={form.password}
-            onChange={(e) => update("password", e.target.value)}
-            className={inputClass}
-          />
+          <div>
+            <PasswordInput
+              placeholder="Password"
+              required
+              value={form.password}
+              onChange={(e) => update("password", e.target.value)}
+              className={inputClass}
+            />
+            {mode === "register" && (
+              <p className="text-xs text-zinc-500 mt-1">
+                At least 10 characters, with uppercase, lowercase, a number, and a symbol.
+              </p>
+            )}
+          </div>
 
           {error && <p className="text-red-600 text-sm">{error}</p>}
 

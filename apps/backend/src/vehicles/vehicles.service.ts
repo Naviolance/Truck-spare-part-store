@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { CreateVehicleDto } from "./dto/create-vehicle.dto";
-import { ProductStatus } from "@truckparts/prisma";
+import { ProductStatus, Prisma } from "@truckparts/prisma";
 
 @Injectable()
 export class VehiclesService {
@@ -32,6 +32,35 @@ export class VehiclesService {
     return this.prisma.vehicle.findMany({
       where: { manufacturer, model },
       orderBy: { yearStart: "desc" },
+    });
+  }
+
+  // Progressive Find-My-Part search: results narrow as more of manufacturer
+  // / model / vehicleId are picked, instead of showing nothing until a
+  // single exact vehicle config is fully selected. vehicleId (the most
+  // specific filter) takes priority alone when present — manufacturer/model
+  // are still sent by the frontend at that point, but they'd only narrow a
+  // set that's already down to one exact vehicle.
+  async getProductsForFilter(filter: { manufacturer?: string; model?: string; vehicleId?: string }) {
+    if (!filter.manufacturer && !filter.model && !filter.vehicleId) {
+      throw new BadRequestException("At least one of manufacturer, model, or vehicleId is required");
+    }
+
+    const vehicleWhere: Prisma.VehicleWhereInput = filter.vehicleId
+      ? { id: filter.vehicleId }
+      : {
+          ...(filter.manufacturer ? { manufacturer: filter.manufacturer } : {}),
+          ...(filter.model ? { model: filter.model } : {}),
+        };
+
+    return this.prisma.product.findMany({
+      where: {
+        status: ProductStatus.PUBLISHED,
+        quantity: { gt: 0 },
+        compatibility: { some: { vehicle: vehicleWhere } },
+      },
+      include: { category: true, brand: true, images: { orderBy: { position: "asc" }, take: 1 } },
+      orderBy: { createdAt: "desc" },
     });
   }
 

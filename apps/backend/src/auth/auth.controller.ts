@@ -42,19 +42,20 @@ export class AuthController {
     return { accessToken };
   }
 
-  // Unlike the old refresh-token design, this does NOT issue a new cookie —
-  // the session token is stable for its whole lifetime (see auth.service.ts).
-  // This just validates it, touches lastActiveAt, and hands back a fresh
-  // short-lived access token.
+  // Rotates the session token on every call (see auth.service.ts's
+  // touchSession for why) — so this reissues the cookie, unlike a simple
+  // "just validate and hand back an access token" refresh would.
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @HttpCode(200)
   @Post("refresh")
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    void res; // no cookie to set — kept for a consistent handler signature
     const token = req.cookies?.[SESSION_COOKIE_NAME];
     if (!token) throw new UnauthorizedException("No session provided");
     this.verifyCsrf(req);
 
-    return this.authService.touchSession(token);
+    const { accessToken, sessionToken, user } = await this.authService.touchSession(token);
+    this.setSessionCookies(res, sessionToken);
+    return { accessToken, user };
   }
 
   @HttpCode(200)

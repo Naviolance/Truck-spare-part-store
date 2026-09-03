@@ -19,6 +19,7 @@ import { PaymentsModule } from "./payments/payments.module";
 import { ReviewsModule } from "./reviews/reviews.module";
 import { CouponsModule } from "./coupons/coupons.module";
 import { MailModule } from "./mail/mail.module";
+import { ProductRequestsModule } from "./product-requests/product-requests.module";
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { MailModule } from "./mail/mail.module";
     ReviewsModule,
     CouponsModule,
     MailModule,
+    ProductRequestsModule,
   ],
   controllers: [AppController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
