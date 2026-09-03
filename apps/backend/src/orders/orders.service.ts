@@ -314,7 +314,7 @@ export class OrdersService {
   async findMyOrders(userId: string) {
     return this.prisma.order.findMany({
       where: { userId },
-      include: { items: true },
+      include: { items: true, payments: true },
       orderBy: { createdAt: "desc" },
     });
   }

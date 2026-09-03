@@ -1,13 +1,15 @@
 import { PrismaClient, ProductCondition, ProductStatus, UserRole } from "./generated/client";
 import { faker } from "@faker-js/faker";
-import crypto from "crypto";
+import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
 
-// Simple placeholder hash so we don't need bcrypt wired up just for seed data.
-// The real auth module will use bcrypt/argon2 — this is ONLY for local seed convenience.
+// Must match auth.service.ts's hashing (bcrypt) — a sha256 digest here would
+// never match bcrypt.compare() at login time, silently locking these
+// documented seed accounts out of the real login flow.
+const BCRYPT_ROUNDS = 12;
 function fakeHash(password: string) {
-  return crypto.createHash("sha256").update(password).digest("hex");
+  return bcrypt.hashSync(password, BCRYPT_ROUNDS);
 }
 
 async function main() {

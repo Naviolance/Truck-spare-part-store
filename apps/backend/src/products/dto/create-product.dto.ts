@@ -11,8 +11,10 @@ export class CreateProductDto {
   @MinLength(10)
   description!: string;
 
+  // XAF is zero-decimal, so 1 is the smallest real, non-free price — @Min(0)
+  // would let a product be published and actually sold for free.
   @IsNumber()
-  @Min(0)
+  @Min(1)
   price!: number;
 
   @IsNumber()

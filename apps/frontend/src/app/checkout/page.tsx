@@ -213,8 +213,8 @@ export default function CheckoutPage() {
             <button
               type="button"
               onClick={() => setPaymentMethod("online")}
-              className={`rounded-lg border px-3 py-2 text-sm text-left transition-colors duration-200 ${
-                paymentMethod === "online" ? "border-zinc-900 bg-zinc-50" : "border-zinc-300 hover:border-zinc-400"
+              className={`rounded-lg border-2 px-3 py-2 text-sm text-left transition-colors duration-200 ${
+                paymentMethod === "online" ? "border-zinc-900 bg-zinc-100" : "border-zinc-300 hover:border-zinc-400"
               }`}
             >
               <span className="block font-medium text-zinc-900">Pay online</span>
@@ -223,8 +223,8 @@ export default function CheckoutPage() {
             <button
               type="button"
               onClick={() => setPaymentMethod("cash")}
-              className={`rounded-lg border px-3 py-2 text-sm text-left transition-colors duration-200 ${
-                paymentMethod === "cash" ? "border-zinc-900 bg-zinc-50" : "border-zinc-300 hover:border-zinc-400"
+              className={`rounded-lg border-2 px-3 py-2 text-sm text-left transition-colors duration-200 ${
+                paymentMethod === "cash" ? "border-zinc-900 bg-zinc-100" : "border-zinc-300 hover:border-zinc-400"
               }`}
             >
               <span className="block font-medium text-zinc-900">Cash at pickup</span>

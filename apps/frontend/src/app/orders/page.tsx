@@ -4,7 +4,15 @@ import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { formatMoney } from "@/lib/money";
 
-type Order = { id: string; orderNumber: string; status: string; total: string; createdAt: string };
+type Order = {
+  id: string; orderNumber: string; status: string; total: string; createdAt: string;
+  payments: { provider: string; status: string }[];
+};
+
+function statusLabel(order: Order) {
+  const pendingCash = order.status === "PAYMENT_PENDING" && order.payments.some((p) => p.provider === "cash" && p.status === "PENDING");
+  return pendingCash ? "Awaiting pickup & cash payment" : order.status;
+}
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -38,7 +46,7 @@ export default function OrdersPage() {
               </div>
               <div className="text-right">
                 <p className="font-semibold text-zinc-900">{formatMoney(o.total)}</p>
-                <p className="text-xs text-zinc-500">{o.status}</p>
+                <p className="text-xs text-zinc-500">{statusLabel(o)}</p>
               </div>
             </Link>
           ))}

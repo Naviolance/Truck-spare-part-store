@@ -16,6 +16,7 @@ type Order = {
   shippingPhone: string;
   createdAt: string;
   items: { id: string; productName: string; unitPrice: string; quantity: number }[];
+  payments: { provider: string; status: string }[];
 };
 
 export default function OrderDetailPage() {
@@ -32,6 +33,8 @@ export default function OrderDetailPage() {
 
   if (loading) return <main className="max-w-2xl mx-auto px-4 py-16 text-zinc-500">Loading…</main>;
   if (!order) return <main className="max-w-2xl mx-auto px-4 py-16 text-zinc-500">Order not found.</main>;
+
+  const pendingCash = order.status === "PAYMENT_PENDING" && order.payments.some((p) => p.provider === "cash" && p.status === "PENDING");
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-10">
@@ -55,8 +58,14 @@ export default function OrderDetailPage() {
         </div>
       </div>
 
+      {pendingCash && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-sm text-amber-900">
+          Pay <span className="font-semibold">{formatMoney(order.total)}</span> in cash when you pick up your order — no online payment needed.
+        </div>
+      )}
+
       <div className="text-sm text-zinc-600 space-y-1 mb-6">
-        <p><span className="font-medium text-zinc-700">Status:</span> {order.status}</p>
+        <p><span className="font-medium text-zinc-700">Status:</span> {pendingCash ? "Awaiting pickup & cash payment" : order.status}</p>
         <p><span className="font-medium text-zinc-700">Contact address:</span> {order.shippingAddress}, {order.shippingCity}</p>
         <p><span className="font-medium text-zinc-700">Phone:</span> {order.shippingPhone}</p>
       </div>

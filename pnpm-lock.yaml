@@ -156,10 +156,16 @@ importers:
       '@prisma/client':
         specifier: ^5.20.0
         version: 5.22.0(prisma@5.22.0)
+      bcrypt:
+        specifier: ^5.1.1
+        version: 5.1.1(supports-color@8.1.1)
     devDependencies:
       '@faker-js/faker':
         specifier: ^9.0.0
         version: 9.9.0
+      '@types/bcrypt':
+        specifier: ^5.0.2
+        version: 5.0.2
       prisma:
         specifier: ^5.20.0
         version: 5.22.0
