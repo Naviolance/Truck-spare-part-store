@@ -12,6 +12,7 @@ type Product = {
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pendingId, setPendingId] = useState<string | null>(null);
 
   async function load() {
     const res = await apiFetch("/products/admin/all");
@@ -22,15 +23,19 @@ export default function AdminProductsPage() {
   useEffect(() => { load(); }, []);
 
   async function togglePublish(product: Product) {
+    setPendingId(product.id);
     const nextStatus = product.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED";
     await apiFetch(`/products/${product.id}`, { method: "PATCH", body: JSON.stringify({ status: nextStatus }) });
-    load();
+    await load();
+    setPendingId(null);
   }
 
   async function remove(id: string) {
     if (!confirm("Delete this product? This cannot be undone.")) return;
+    setPendingId(id);
     await apiFetch(`/products/${id}`, { method: "DELETE" });
-    load();
+    await load();
+    setPendingId(null);
   }
 
   if (loading) return <p className="text-zinc-500">Loading…</p>;
@@ -65,14 +70,16 @@ export default function AdminProductsPage() {
                 {new Date(p.createdAt).toLocaleDateString()}
               </td>
               <td className="p-3">
-                <button onClick={() => togglePublish(p)}
-                  className={`text-xs px-2 py-1 rounded-full ${p.status === "PUBLISHED" ? "bg-green-100 text-green-700" : "bg-zinc-100 text-zinc-600"}`}>
-                  {p.status}
+                <button onClick={() => togglePublish(p)} disabled={pendingId === p.id}
+                  className={`text-xs px-2 py-1 rounded-full disabled:opacity-50 ${p.status === "PUBLISHED" ? "bg-green-100 text-green-700" : "bg-zinc-100 text-zinc-600"}`}>
+                  {pendingId === p.id ? "…" : p.status}
                 </button>
               </td>
               <td className="p-3 text-right space-x-3">
                 <Link href={`/admin/products/${p.id}/edit`} className="underline">Edit</Link>
-                <button onClick={() => remove(p.id)} className="text-red-600 underline">Delete</button>
+                <button onClick={() => remove(p.id)} disabled={pendingId === p.id} className="text-red-600 underline disabled:opacity-50">
+                  {pendingId === p.id ? "Deleting…" : "Delete"}
+                </button>
               </td>
             </tr>
           ))}

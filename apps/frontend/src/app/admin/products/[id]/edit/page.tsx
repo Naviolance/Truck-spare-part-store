@@ -16,6 +16,7 @@ export default function EditProductPage() {
   const [brands, setBrands] = useState<Option[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     name: "", description: "", price: "", quantity: "", condition: "NEW",
     categoryId: "", brandId: "", partNumber: "", conditionNotes: "",
@@ -47,6 +48,7 @@ const [vehicleIds, setVehicleIds] = useState<string[]>([]);
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setSubmitting(true);
     const res = await apiFetch(`/products/${id}`, {
       method: "PATCH",
       body: JSON.stringify({
@@ -61,6 +63,7 @@ const [vehicleIds, setVehicleIds] = useState<string[]>([]);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       setError(err.message || "Failed to update product");
+      setSubmitting(false);
       return;
     }
     router.push("/admin/products");
@@ -120,7 +123,7 @@ const [vehicleIds, setVehicleIds] = useState<string[]>([]);
         <VehicleCompatibilityPicker selectedIds={vehicleIds} onChange={setVehicleIds} />
         
         {error && <p className="text-red-600 text-sm">{error}</p>}
-        <button type="submit" className="bg-zinc-900 text-white rounded-lg px-4 py-2">Save changes</button>
+        <button type="submit" disabled={submitting} className="bg-zinc-900 text-white rounded-lg px-4 py-2 disabled:opacity-50">{submitting ? "Saving…" : "Save changes"}</button>
       </form>
     </div>
   );

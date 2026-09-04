@@ -20,6 +20,8 @@ export default function AdminCouponsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({ code: "", type: "PERCENTAGE", value: "", minOrderTotal: "", maxUses: "", expiresAt: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [pendingId, setPendingId] = useState<string | null>(null);
 
   async function load() {
     const res = await apiFetch("/coupons/admin/all");
@@ -36,6 +38,7 @@ export default function AdminCouponsPage() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setSubmitting(true);
     const res = await apiFetch("/coupons", {
       method: "POST",
       body: JSON.stringify({
@@ -50,21 +53,27 @@ export default function AdminCouponsPage() {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       setError(err.message || "Failed to create coupon");
+      setSubmitting(false);
       return;
     }
     setForm({ code: "", type: "PERCENTAGE", value: "", minOrderTotal: "", maxUses: "", expiresAt: "" });
-    load();
+    await load();
+    setSubmitting(false);
   }
 
   async function toggleActive(coupon: Coupon) {
+    setPendingId(coupon.id);
     await apiFetch(`/coupons/${coupon.id}`, { method: "PATCH", body: JSON.stringify({ active: !coupon.active }) });
-    load();
+    await load();
+    setPendingId(null);
   }
 
   async function remove(id: string) {
     if (!confirm("Delete this coupon?")) return;
+    setPendingId(id);
     await apiFetch(`/coupons/${id}`, { method: "DELETE" });
-    load();
+    await load();
+    setPendingId(null);
   }
 
   if (loading) return <p className="text-zinc-500">Loading…</p>;
@@ -102,7 +111,7 @@ export default function AdminCouponsPage() {
           <input type="date" value={form.expiresAt} onChange={(e) => update("expiresAt", e.target.value)} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm" />
         </div>
         {error && <p className="col-span-2 text-red-600 text-sm">{error}</p>}
-        <button className="col-span-2 bg-zinc-900 text-white rounded-lg py-2 text-sm">Create coupon</button>
+        <button disabled={submitting} className="col-span-2 bg-zinc-900 text-white rounded-lg py-2 text-sm disabled:opacity-50">{submitting ? "Creating…" : "Create coupon"}</button>
       </form>
 
       {coupons.length === 0 ? (
@@ -130,13 +139,15 @@ export default function AdminCouponsPage() {
                 <td className="p-3">{c.usedCount}{c.maxUses ? ` / ${c.maxUses}` : ""}</td>
                 <td className="p-3">{c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : "—"}</td>
                 <td className="p-3">
-                  <button onClick={() => toggleActive(c)}
-                    className={`text-xs px-2 py-1 rounded-full ${c.active ? "bg-green-100 text-green-700" : "bg-zinc-100 text-zinc-600"}`}>
-                    {c.active ? "ACTIVE" : "INACTIVE"}
+                  <button onClick={() => toggleActive(c)} disabled={pendingId === c.id}
+                    className={`text-xs px-2 py-1 rounded-full disabled:opacity-50 ${c.active ? "bg-green-100 text-green-700" : "bg-zinc-100 text-zinc-600"}`}>
+                    {pendingId === c.id ? "…" : c.active ? "ACTIVE" : "INACTIVE"}
                   </button>
                 </td>
                 <td className="p-3 text-right">
-                  <button onClick={() => remove(c.id)} className="text-red-600 underline">Delete</button>
+                  <button onClick={() => remove(c.id)} disabled={pendingId === c.id} className="text-red-600 underline disabled:opacity-50">
+                    {pendingId === c.id ? "Deleting…" : "Delete"}
+                  </button>
                 </td>
               </tr>
             ))}

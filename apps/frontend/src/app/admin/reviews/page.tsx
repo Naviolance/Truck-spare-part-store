@@ -14,6 +14,7 @@ type Review = {
 export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function load() {
     const res = await apiFetch("/reviews/admin/all");
@@ -25,8 +26,10 @@ export default function AdminReviewsPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this review?")) return;
+    setDeletingId(id);
     await apiFetch(`/reviews/admin/${id}`, { method: "DELETE" });
-    load();
+    await load();
+    setDeletingId(null);
   }
 
   if (loading) return <p className="text-zinc-500">Loading…</p>;
@@ -61,7 +64,9 @@ export default function AdminReviewsPage() {
                 <td className="p-3 max-w-xs truncate">{r.comment}</td>
                 <td className="p-3 text-zinc-500">{new Date(r.createdAt).toLocaleDateString()}</td>
                 <td className="p-3 text-right">
-                  <button onClick={() => handleDelete(r.id)} className="text-red-600 underline">Delete</button>
+                  <button onClick={() => handleDelete(r.id)} disabled={deletingId === r.id} className="text-red-600 underline disabled:opacity-50">
+                    {deletingId === r.id ? "Deleting…" : "Delete"}
+                  </button>
                 </td>
               </tr>
             ))}

@@ -12,7 +12,8 @@ export default function NewProductPage() {
   const [categories, setCategories] = useState<Option[]>([]);
   const [brands, setBrands] = useState<Option[]>([]);
   const [error, setError] = useState<string | null>(null);
-  
+  const [submitting, setSubmitting] = useState(false);
+
   const [form, setForm] = useState({
     name: "", description: "", price: "", quantity: "", condition: "NEW",
     categoryId: "", brandId: "", partNumber: "", conditionNotes: "",
@@ -32,6 +33,7 @@ export default function NewProductPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setSubmitting(true);
     const res = await apiFetch("/products", {
       method: "POST",
         body: JSON.stringify({
@@ -46,6 +48,7 @@ export default function NewProductPage() {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       setError(err.message || "Failed to create product");
+      setSubmitting(false);
       return;
     }
     router.push("/admin/products");
@@ -115,7 +118,7 @@ export default function NewProductPage() {
         <ImageUploader imageUrls={imageUrls} onChange={setImageUrls} />
         <VehicleCompatibilityPicker selectedIds={vehicleIds} onChange={setVehicleIds} />
         {error && <p className="text-red-600 text-sm">{error}</p>}
-        <button type="submit" className="bg-zinc-900 text-white rounded-lg px-4 py-2">Create product</button>
+        <button type="submit" disabled={submitting} className="bg-zinc-900 text-white rounded-lg px-4 py-2 disabled:opacity-50">{submitting ? "Creating…" : "Create product"}</button>
       </form>
       <p className="text-xs text-zinc-500 mt-3">New products are published immediately — set them to draft from the products list if you're not ready to sell yet.</p>
     </div>

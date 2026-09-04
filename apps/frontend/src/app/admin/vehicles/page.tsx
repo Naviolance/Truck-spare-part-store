@@ -11,6 +11,8 @@ export default function AdminVehiclesPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [form, setForm] = useState({ manufacturer: "", model: "", yearStart: "", yearEnd: "", engine: "" });
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function load() {
     const res = await apiFetch("/vehicles/admin/all");
@@ -26,6 +28,7 @@ export default function AdminVehiclesPage() {
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setSubmitting(true);
     const res = await apiFetch("/vehicles", {
       method: "POST",
       body: JSON.stringify({
@@ -39,16 +42,20 @@ export default function AdminVehiclesPage() {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       setError(err.message || "Failed to add vehicle");
+      setSubmitting(false);
       return;
     }
     setForm({ manufacturer: "", model: "", yearStart: "", yearEnd: "", engine: "" });
-    load();
+    await load();
+    setSubmitting(false);
   }
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this vehicle configuration?")) return;
+    setDeletingId(id);
     await apiFetch(`/vehicles/${id}`, { method: "DELETE" });
-    load();
+    await load();
+    setDeletingId(null);
   }
 
   return (
@@ -77,7 +84,7 @@ export default function AdminVehiclesPage() {
           <input value={form.engine} onChange={(e) => update("engine", e.target.value)} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm" />
         </div>
         {error && <p className="col-span-2 text-red-600 text-sm">{error}</p>}
-        <button className="col-span-2 bg-zinc-900 text-white rounded-lg py-2 text-sm">Add vehicle</button>
+        <button disabled={submitting} className="col-span-2 bg-zinc-900 text-white rounded-lg py-2 text-sm disabled:opacity-50">{submitting ? "Adding…" : "Add vehicle"}</button>
       </form>
 
       <ul className="bg-white border border-zinc-200 rounded-lg divide-y divide-zinc-100">
@@ -88,7 +95,9 @@ export default function AdminVehiclesPage() {
               {v.engine && ` · ${v.engine}`}
               <span className="text-zinc-400"> — {v._count.compatibilities} products</span>
             </span>
-            <button onClick={() => handleDelete(v.id)} className="text-red-600 underline">Delete</button>
+            <button onClick={() => handleDelete(v.id)} disabled={deletingId === v.id} className="text-red-600 underline disabled:opacity-50">
+              {deletingId === v.id ? "Deleting…" : "Delete"}
+            </button>
           </li>
         ))}
       </ul>

@@ -37,8 +37,11 @@ export function AddToCartButton({ productId, inStock }: { productId: string; inS
       <button
         onClick={handleClick}
         disabled={!inStock || status === "adding"}
-        className="w-full rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 text-white py-3 font-medium shadow-sm transition-all duration-200 hover:from-zinc-600 hover:to-zinc-800 hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-sm"
+        className="w-full rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 text-white py-3 font-medium shadow-sm transition-all duration-200 hover:from-zinc-600 hover:to-zinc-800 hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-sm flex items-center justify-center gap-2"
       >
+        {status === "adding" && (
+          <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+        )}
         {!inStock ? "Out of stock" : status === "adding" ? "Adding…" : status === "added" ? "Added ✓" : "Add to cart"}
       </button>
       {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
