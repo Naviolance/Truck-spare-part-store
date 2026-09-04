@@ -98,10 +98,18 @@ async function attemptRefresh(attempt: number): Promise<RefreshResult> {
     return attemptRefresh(attempt + 1);
   }
 
-  // Retries exhausted. Only a 401 is the endpoint's own signal that these
-  // credentials are genuinely no good — a 429/403/5xx just means something
-  // else is wrong right now, not that the user needs to log in again.
-  if (res.status === 401) {
+  // Retries exhausted. 401 is the endpoint's own "these credentials are no
+  // good" signal. 403 (CSRF mismatch) gets the same treatment here, but only
+  // AFTER retries: a same-device race would have resolved itself within the
+  // couple of seconds those retries took, so a 403 that's STILL happening
+  // isn't transient — it's a cookie that will never self-correct (e.g. a
+  // stale csrf_token left over from before a cookie-handling change). The
+  // only way out of that is a fresh login, which overwrites it with a
+  // matching pair — so treat it as a real logout instead of leaving the user
+  // stuck logged-out-but-never-shown-the-login-screen. A 429/5xx or network
+  // error still doesn't touch anything — those are just as likely to be a
+  // slow server as a real problem.
+  if (res.status === 401 || res.status === 403) {
     setAccessToken(null);
     onSessionExpired?.();
   }
