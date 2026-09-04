@@ -45,6 +45,24 @@ function getCsrfToken(): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+// Self-heals a stuck CSRF mismatch instead of requiring a manual "clear your
+// cookies" — this is the only cookie the frontend can touch itself (the
+// session cookie is httpOnly by design). A real cause: two cookies of the
+// same name can coexist at different paths (e.g. one left over from before
+// a cookie-handling change), and document.cookie's ordering isn't guaranteed
+// to match what the server's cookie-parser sees from the same raw header,
+// so the value the frontend reads and echoes back can differ from the one
+// the browser actually sent — a mismatch that no amount of retrying fixes,
+// since every retry just resends the same wrong value. Wiping every path
+// this app has ever used for this cookie guarantees the next login starts
+// from a clean, unambiguous slate.
+function clearCsrfCookie() {
+  if (typeof document === "undefined") return;
+  for (const path of ["/", "/auth"]) {
+    document.cookie = `csrf_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${path}`;
+  }
+}
+
 // Single-flight, module-level (not per-component) — every caller shares the
 // SAME in-flight request, whether it's AuthContext restoring the session on
 // mount, the activity heartbeat, or some deep API call retrying after a 401.
@@ -102,14 +120,11 @@ async function attemptRefresh(attempt: number): Promise<RefreshResult> {
   // good" signal. 403 (CSRF mismatch) gets the same treatment here, but only
   // AFTER retries: a same-device race would have resolved itself within the
   // couple of seconds those retries took, so a 403 that's STILL happening
-  // isn't transient — it's a cookie that will never self-correct (e.g. a
-  // stale csrf_token left over from before a cookie-handling change). The
-  // only way out of that is a fresh login, which overwrites it with a
-  // matching pair — so treat it as a real logout instead of leaving the user
-  // stuck logged-out-but-never-shown-the-login-screen. A 429/5xx or network
-  // error still doesn't touch anything — those are just as likely to be a
-  // slow server as a real problem.
+  // isn't transient — it's a stuck cookie mismatch that retrying can't fix.
+  // A 429/5xx or network error still doesn't touch anything — those are
+  // just as likely to be a slow server as a real problem.
   if (res.status === 401 || res.status === 403) {
+    if (res.status === 403) clearCsrfCookie(); // wipe it so the next login can't inherit the same stuck mismatch
     setAccessToken(null);
     onSessionExpired?.();
   }
