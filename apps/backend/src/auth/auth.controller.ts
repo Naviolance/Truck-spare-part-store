@@ -45,7 +45,13 @@ export class AuthController {
   // Rotates the session token on every call (see auth.service.ts's
   // touchSession for why) — so this reissues the cookie, unlike a simple
   // "just validate and hand back an access token" refresh would.
-  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  // 120/min, not the tighter limits on login/register: this fires on every
+  // page load, every 15 minutes from the activity heartbeat, AND once per
+  // open tab — a real user with a few tabs open plus a dev hot-reload cycle
+  // can legitimately rack up far more of these than a login attempt ever
+  // would, and hitting this limit incorrectly reads to the frontend as an
+  // expired session (see lib/api.ts's refreshSession retry-on-429).
+  @Throttle({ default: { limit: 120, ttl: 60_000 } })
   @HttpCode(200)
   @Post("refresh")
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {

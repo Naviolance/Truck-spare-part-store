@@ -55,30 +55,47 @@ type RefreshResult = { ok: boolean; user: unknown | null };
 
 let refreshPromise: Promise<RefreshResult> | null = null;
 
+async function attemptRefresh(retriesLeft: number): Promise<RefreshResult> {
+  const csrfToken = getCsrfToken();
+  const res = await fetch(`${API_URL}/auth/refresh`, {
+    method: "POST",
+    credentials: "include",
+    headers: { ...NGROK_BYPASS_HEADERS, ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}) },
+  });
+
+  if (!res.ok) {
+    // A 429 means the endpoint is temporarily rate-limited, NOT that the
+    // session is invalid — treating it like a real auth failure would log an
+    // active user out just for refreshing too many times in a row, having
+    // several tabs open, or a dev hot-reload remounting the app repeatedly.
+    // Retry a couple times with a short backoff before giving up — this is
+    // what stops the very call restoring the session on a page load from
+    // being the one that gets throttled and wrongly shows the user as logged
+    // out. Never touch the existing access token/user state for a 429.
+    if (res.status === 429) {
+      if (retriesLeft > 0) {
+        await new Promise((r) => setTimeout(r, 1500));
+        return attemptRefresh(retriesLeft - 1);
+      }
+      return { ok: false, user: null };
+    }
+    setAccessToken(null);
+    onSessionExpired?.();
+    return { ok: false, user: null };
+  }
+
+  const data = await res.json();
+  setAccessToken(data.accessToken);
+  return { ok: true, user: data.user ?? null };
+}
+
 // Resolves with the user row the backend already looked up while rotating
 // the session (see auth.service.ts's touchSession) — callers that need the
 // current user can use it directly instead of following up with their own
 // GET /users/me, which would just re-fetch the same row a moment later.
 export function refreshSession(): Promise<RefreshResult> {
   if (!refreshPromise) {
-    refreshPromise = (async () => {
-      const csrfToken = getCsrfToken();
-      const res = await fetch(`${API_URL}/auth/refresh`, {
-        method: "POST",
-        credentials: "include",
-        headers: { ...NGROK_BYPASS_HEADERS, ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}) },
-      });
-
-      if (!res.ok) {
-        setAccessToken(null);
-        onSessionExpired?.();
-        return { ok: false, user: null };
-      }
-
-      const data = await res.json();
-      setAccessToken(data.accessToken);
-      return { ok: true, user: data.user ?? null };
-    })().finally(() => {
+    refreshPromise = attemptRefresh(2).finally(() => {
       refreshPromise = null;
     });
   }
