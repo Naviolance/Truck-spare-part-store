@@ -144,18 +144,18 @@ export default function AdminOrdersPage() {
                       <button
                         onClick={() => handleConfirmCash(o)}
                         disabled={updatingId === o.id}
-                        className="text-xs text-emerald-700 underline disabled:opacity-50"
+                        className="text-xs font-medium text-emerald-700 border border-emerald-200 bg-emerald-50 rounded-lg px-2.5 py-1 transition-colors duration-200 hover:bg-emerald-100 disabled:opacity-50 disabled:hover:bg-emerald-50"
                       >
-                        Mark paid (cash)
+                        {updatingId === o.id ? "…" : "Mark paid (cash)"}
                       </button>
                     )}
                     {!TERMINAL_STATUSES.includes(o.status) && (
                       <button
                         onClick={() => handleCancel(o)}
                         disabled={updatingId === o.id}
-                        className="text-xs text-red-600 underline disabled:opacity-50"
+                        className="text-xs font-medium text-red-600 border border-red-200 bg-red-50 rounded-lg px-2.5 py-1 transition-colors duration-200 hover:bg-red-100 disabled:opacity-50 disabled:hover:bg-red-50"
                       >
-                        Cancel &amp; refund
+                        {updatingId === o.id ? "…" : "Cancel & refund"}
                       </button>
                     )}
                   </div>

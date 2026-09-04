@@ -59,7 +59,7 @@ export default async function HomePage() {
       {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-br from-zinc-800 to-zinc-950 text-white">
         <Image
-          src="/hero-bg.png"
+          src="/hero-bg.jpg"
           alt=""
           fill
           priority
