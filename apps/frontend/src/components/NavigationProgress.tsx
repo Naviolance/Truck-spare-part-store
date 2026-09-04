@@ -9,11 +9,13 @@ import { usePathname, useSearchParams } from "next/navigation";
 // internal link is clicked (before the browser/React has done anything),
 // and usePathname()/useSearchParams() changing is the reliable signal that
 // the new page has actually landed, since Next only updates them once the
-// transition commits.
+// transition commits. Shown as a small spinner right at the click point
+// (not a top bar) so the feedback appears exactly where attention already
+// is, instead of somewhere the user has to look away to notice.
 export function NavigationProgress() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [visible, setVisible] = useState(false);
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const safetyTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFirstRender = useRef(true);
 
@@ -24,7 +26,7 @@ export function NavigationProgress() {
       isFirstRender.current = false;
       return;
     }
-    setVisible(false);
+    setPos(null);
     if (safetyTimeout.current) clearTimeout(safetyTimeout.current);
   }, [pathname, searchParams]);
 
@@ -48,13 +50,13 @@ export function NavigationProgress() {
       if (url.origin !== window.location.origin) return;
       if (url.pathname === window.location.pathname && url.search === window.location.search) return;
 
-      setVisible(true);
+      setPos({ x: e.clientX, y: e.clientY });
       // Safety net: prefetched/cached navigations can be instant enough
       // that the pathname-change effect never gets a visible frame to
       // clear this — and if navigation genuinely fails, nothing else would
-      // ever turn the bar off. Never leave it stuck either way.
+      // ever turn the spinner off. Never leave it stuck either way.
       if (safetyTimeout.current) clearTimeout(safetyTimeout.current);
-      safetyTimeout.current = setTimeout(() => setVisible(false), 4000);
+      safetyTimeout.current = setTimeout(() => setPos(null), 4000);
     }
 
     // Capture phase: fires before any component's own onClick (e.g. a
@@ -63,11 +65,15 @@ export function NavigationProgress() {
     return () => document.removeEventListener("click", handleClick, true);
   }, []);
 
-  if (!visible) return null;
+  if (!pos) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] h-0.5 bg-zinc-200 overflow-hidden" aria-hidden="true">
-      <div className="h-full w-1/3 bg-zinc-900 animate-navProgress" />
+    <div
+      className="fixed z-[100] pointer-events-none"
+      style={{ left: pos.x, top: pos.y, transform: "translate(-50%, -50%)" }}
+      aria-hidden="true"
+    >
+      <span className="block w-6 h-6 border-[3px] border-zinc-300 border-t-zinc-900 rounded-full animate-spin" />
     </div>
   );
 }
