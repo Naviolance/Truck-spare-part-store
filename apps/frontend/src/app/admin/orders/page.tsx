@@ -96,6 +96,7 @@ export default function AdminOrdersPage() {
       {orders.length === 0 ? (
         <p className="text-zinc-500">No orders yet.</p>
       ) : (
+        <div className="overflow-x-auto">
         <table className="w-full text-sm bg-white border border-zinc-200 rounded-lg overflow-hidden">
           <thead className="bg-zinc-50 text-left">
             <tr>
@@ -164,6 +165,7 @@ export default function AdminOrdersPage() {
             })}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );

@@ -49,6 +49,7 @@ export default function AdminProductsPage() {
           {" "}— hidden from the storefront until restocked: {outOfStock.map((p) => p.name).join(", ")}
         </div>
       )}
+      <div className="overflow-x-auto">
       <table className="w-full text-sm bg-white border border-zinc-200 rounded-lg overflow-hidden">
         <thead className="bg-zinc-50 text-left">
           <tr><th className="p-3">Name</th><th className="p-3">Category</th><th className="p-3">Price</th><th className="p-3">Stock</th><th className="p-3">Added</th><th className="p-3">Status</th><th className="p-3"></th></tr>
@@ -77,6 +78,7 @@ export default function AdminProductsPage() {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
