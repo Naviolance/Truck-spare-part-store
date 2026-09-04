@@ -55,38 +55,57 @@ type RefreshResult = { ok: boolean; user: unknown | null };
 
 let refreshPromise: Promise<RefreshResult> | null = null;
 
-async function attemptRefresh(retriesLeft: number): Promise<RefreshResult> {
-  const csrfToken = getCsrfToken();
-  const res = await fetch(`${API_URL}/auth/refresh`, {
-    method: "POST",
-    credentials: "include",
-    headers: { ...NGROK_BYPASS_HEADERS, ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}) },
-  });
+const REFRESH_MAX_ATTEMPTS = 3;
+const REFRESH_RETRY_DELAY_MS = 800;
 
-  if (!res.ok) {
-    // A 429 means the endpoint is temporarily rate-limited, NOT that the
-    // session is invalid — treating it like a real auth failure would log an
-    // active user out just for refreshing too many times in a row, having
-    // several tabs open, or a dev hot-reload remounting the app repeatedly.
-    // Retry a couple times with a short backoff before giving up — this is
-    // what stops the very call restoring the session on a page load from
-    // being the one that gets throttled and wrongly shows the user as logged
-    // out. Never touch the existing access token/user state for a 429.
-    if (res.status === 429) {
-      if (retriesLeft > 0) {
-        await new Promise((r) => setTimeout(r, 1500));
-        return attemptRefresh(retriesLeft - 1);
-      }
-      return { ok: false, user: null };
+// A single failed refresh call proves almost nothing: the backend's /auth/
+// refresh returns the SAME generic 401 for "no cookie", "30-day cap passed",
+// "15+ min inactive", AND "this exact cookie was just rotated by another
+// near-simultaneous call" (see auth.service.ts's touchSession) — that last
+// one is a real, benign race two tabs (or a mount effect + the activity
+// heartbeat) can trigger on the SAME device: one call wins and rotates the
+// cookie, the other arrives a beat later and is rejected even though the
+// session is completely fine. A network hiccup, a 429 (rate-limited, not
+// invalid), or a flaky 500 tell us even less. Only a 401 that's STILL
+// happening after a few retries is treated as a real, final "you're logged
+// out" — everything else is assumed innocent and retried quietly.
+async function attemptRefresh(attempt: number): Promise<RefreshResult> {
+  const csrfToken = getCsrfToken();
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+      headers: { ...NGROK_BYPASS_HEADERS, ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}) },
+    });
+  } catch {
+    // Couldn't even reach the server — says nothing about session validity.
+    if (attempt < REFRESH_MAX_ATTEMPTS) {
+      await new Promise((r) => setTimeout(r, REFRESH_RETRY_DELAY_MS));
+      return attemptRefresh(attempt + 1);
     }
-    setAccessToken(null);
-    onSessionExpired?.();
     return { ok: false, user: null };
   }
 
-  const data = await res.json();
-  setAccessToken(data.accessToken);
-  return { ok: true, user: data.user ?? null };
+  if (res.ok) {
+    const data = await res.json();
+    setAccessToken(data.accessToken);
+    return { ok: true, user: data.user ?? null };
+  }
+
+  if (attempt < REFRESH_MAX_ATTEMPTS) {
+    await new Promise((r) => setTimeout(r, REFRESH_RETRY_DELAY_MS));
+    return attemptRefresh(attempt + 1);
+  }
+
+  // Retries exhausted. Only a 401 is the endpoint's own signal that these
+  // credentials are genuinely no good — a 429/403/5xx just means something
+  // else is wrong right now, not that the user needs to log in again.
+  if (res.status === 401) {
+    setAccessToken(null);
+    onSessionExpired?.();
+  }
+  return { ok: false, user: null };
 }
 
 // Resolves with the user row the backend already looked up while rotating
@@ -95,7 +114,7 @@ async function attemptRefresh(retriesLeft: number): Promise<RefreshResult> {
 // GET /users/me, which would just re-fetch the same row a moment later.
 export function refreshSession(): Promise<RefreshResult> {
   if (!refreshPromise) {
-    refreshPromise = attemptRefresh(2).finally(() => {
+    refreshPromise = attemptRefresh(1).finally(() => {
       refreshPromise = null;
     });
   }
