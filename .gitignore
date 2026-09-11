@@ -29,6 +29,12 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 
+# Debug/scratch output (not project files)
+cookies.txt
+compose-debug.txt
+diff_err.txt
+*.bak
+
 # IDE
 .vscode/
 .idea/
