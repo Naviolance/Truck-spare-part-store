@@ -97,10 +97,23 @@ export class AuthController {
   }
 
   private setSessionCookies(res: Response, token: string) {
+    const isProduction = process.env.NODE_ENV === "production";
+    // "none" in production: frontend (Vercel) and backend (Railway) are
+    // different sites, so a cross-site fetch with credentials:"include"
+    // needs SameSite=None to carry the cookie at all — "lax" would silently
+    // stop sending it on every call after the initial set. Requires
+    // secure:true (HTTPS-only), which both hosts provide. Losing SameSite's
+    // CSRF defense here is fine: the double-submit token below is an
+    // independent second layer that doesn't rely on SameSite (see comment
+    // above CSRF_COOKIE_NAME). Local dev stays "lax" since localhost calls
+    // are same-site.
+    const crossSiteCookieOptions = isProduction
+      ? ({ secure: true, sameSite: "none" as const })
+      : ({ secure: false, sameSite: "lax" as const });
+
     res.cookie(SESSION_COOKIE_NAME, token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      ...crossSiteCookieOptions,
       maxAge: SESSION_ABSOLUTE_MS,
       path: "/auth",
     });
@@ -117,8 +130,7 @@ export class AuthController {
     // cookie permanently invisible to the frontend and break every refresh.
     res.cookie(CSRF_COOKIE_NAME, crypto.randomBytes(24).toString("hex"), {
       httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      ...crossSiteCookieOptions,
       maxAge: SESSION_ABSOLUTE_MS,
       path: "/",
     });
