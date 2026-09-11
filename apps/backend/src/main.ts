@@ -51,7 +51,10 @@ app.use(
     credentials: true,
   });
 
-  const port = process.env.BACKEND_PORT || 4000;
+  // Railway (and most PaaS hosts) assign a dynamic port via PORT and route
+  // traffic to whatever the app actually listens on — BACKEND_PORT stays as
+  // the local-dev override since docker-compose/CLAUDE.md document it as 4000.
+  const port = process.env.PORT || process.env.BACKEND_PORT || 4000;
   await app.listen(port);
   console.log(`🚚 TruckParts backend running on http://localhost:${port}`);
   console.log(`   Health check: http://localhost:${port}/health`);

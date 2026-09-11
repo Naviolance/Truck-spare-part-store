@@ -55,12 +55,18 @@ importers:
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7
+      express:
+        specifier: ^4.21.0
+        version: 4.22.1(supports-color@8.1.1)
       helmet:
         specifier: ^7.2.0
         version: 7.2.0
       multer:
         specifier: ^1.4.5-lts.1
         version: 1.4.5-lts.2
+      nodemailer:
+        specifier: ^9.1.0
+        version: 9.1.0
       passport:
         specifier: ^0.7.0
         version: 0.7.0
@@ -107,9 +113,6 @@ importers:
       jest:
         specifier: ^30.5.1
         version: 30.5.1(@types/node@20.19.43)(supports-color@8.1.1)
-      nodemailer:
-        specifier: ^9.1.0
-        version: 9.1.0
       ts-jest:
         specifier: ^29.4.12
         version: 29.4.12(@babel/core@7.29.7(supports-color@8.1.1))(@jest/transform@30.5.1(supports-color@8.1.1))(@jest/types@30.5.1)(babel-jest@30.5.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(esbuild@0.28.2)(jest-util@30.5.1)(jest@30.5.1(@types/node@20.19.43)(supports-color@8.1.1))(typescript@5.9.3)
