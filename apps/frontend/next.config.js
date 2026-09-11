@@ -15,6 +15,9 @@ const nextConfig = {
       // The backend's ngrok tunnel — product images are proxied through the
       // backend, so once NEXT_PUBLIC_API_URL points here, images do too.
       { protocol: "https", hostname: "craftwork-zesty-impulsive.ngrok-free.dev" },
+      // Production backend (Railway) — same reasoning as the ngrok entry
+      // above, just the real deployed host instead of a dev tunnel.
+      { protocol: "https", hostname: "backend-production-1d62.up.railway.app" },
     ],
   },
 };
