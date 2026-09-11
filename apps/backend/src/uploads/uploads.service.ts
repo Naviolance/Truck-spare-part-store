@@ -15,7 +15,11 @@ export class UploadsService implements OnModuleInit {
 
     this.s3 = new S3Client({
       endpoint: process.env.MINIO_ENDPOINT || "http://localhost:9000",
-      region: "us-east-1", // MinIO ignores this but the SDK requires a value
+      // MinIO ignores this entirely; Cloudflare R2 requires exactly "auto";
+      // Backblaze B2 requires the bucket's actual region code (e.g.
+      // "us-west-004") — set MINIO_REGION to match whichever provider is
+      // actually behind MINIO_ENDPOINT.
+      region: process.env.MINIO_REGION || "us-east-1",
       credentials: {
         accessKeyId: process.env.MINIO_ROOT_USER || "truckparts_admin",
         secretAccessKey: process.env.MINIO_ROOT_PASSWORD || "truckparts_local_password",
