@@ -2,10 +2,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
+import { formatMoney } from "@/lib/money";
+import { ConditionTag } from "@/components/ProductCard";
 import { VehicleCompatibilityPicker } from "@/components/VehicleCompatibilityPicker";
 
 type PickedImage = { file: File; url: string };
 type Option = { id: string; name: string };
+type Vehicle = { id: string; manufacturer: string; model: string; yearStart: number; yearEnd: number | null; engine: string | null };
 
 type Details = {
   name: string;
@@ -65,11 +68,14 @@ export default function CreateProductPage() {
   const [vehicleIds, setVehicleIds] = useState<string[]>([]);
   const [categories, setCategories] = useState<Option[]>([]);
   const [brands, setBrands] = useState<Option[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [previewIndex, setPreviewIndex] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     apiFetch("/categories").then((res) => res.json()).then(setCategories);
     apiFetch("/brands").then((res) => res.json()).then(setBrands);
+    apiFetch("/vehicles/admin/all").then((res) => res.json()).then(setVehicles);
   }, []);
 
   function updateDetails<K extends keyof Details>(field: K, value: Details[K]) {
@@ -251,7 +257,78 @@ export default function CreateProductPage() {
         </div>
       )}
 
-      {step > 2 && (
+      {step === 3 && (
+        <div className="flex-1 p-4">
+          <h1 className="text-lg font-display font-bold text-ink mb-1">Preview</h1>
+          <p className="text-sm text-steel mb-4">This is how the listing will look to customers.</p>
+
+          <div className="relative aspect-square rounded-lg overflow-hidden border border-steel-light bg-steel-light">
+            {images[previewIndex] && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={images[previewIndex].url} alt="" className="w-full h-full object-cover" />
+            )}
+          </div>
+
+          {images.length > 1 && (
+            <div className="flex gap-2 mt-3 overflow-x-auto">
+              {images.map((img, i) => (
+                <button
+                  key={img.url}
+                  type="button"
+                  onClick={() => setPreviewIndex(i)}
+                  className={`relative w-16 h-16 shrink-0 rounded-lg overflow-hidden border-2 ${i === previewIndex ? "border-ink" : "border-transparent"}`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img.url} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+
+          <p className="text-sm text-steel mt-4">
+            {brands.find((b) => b.id === details.brandId)?.name ?? "Unbranded"} / {categories.find((c) => c.id === details.categoryId)?.name ?? "—"}
+          </p>
+          <h2 className="font-sans font-bold text-lg mt-1 text-ink leading-snug">{details.name || "Untitled product"}</h2>
+
+          <div className="flex items-center justify-between flex-wrap gap-x-2 gap-y-1 mt-2">
+            <p className="font-mono font-semibold text-lg text-ink">
+              {details.price ? formatMoney(details.price) : "—"}
+            </p>
+            <ConditionTag condition={details.condition} />
+          </div>
+
+          <p className="text-sm text-ink/60 mt-1">{details.quantity ? `${details.quantity} in stock` : "0 in stock"}</p>
+
+          {details.conditionNotes && (
+            <div className="mt-4 bg-amber/10 border-l-4 border-amber p-3 text-sm text-ink">
+              <span className="font-medium">Condition notes: </span>
+              {details.conditionNotes}
+            </div>
+          )}
+
+          <p className="text-steel mt-4 whitespace-pre-line leading-relaxed text-sm">{details.description}</p>
+
+          {details.descriptionFr && (
+            <div className="mt-3">
+              <p className="text-xs font-medium text-steel mb-1">French description</p>
+              <p className="text-steel whitespace-pre-line leading-relaxed text-sm">{details.descriptionFr}</p>
+            </div>
+          )}
+
+          {(details.partNumber || vehicleIds.length > 0) && (
+            <div className="mt-4 text-sm text-steel space-y-1">
+              {details.partNumber && <p>Part number: <span className="font-mono">{details.partNumber}</span></p>}
+              {vehicleIds.length > 0 && (
+                <p>
+                  Fits: {vehicles.filter((v) => vehicleIds.includes(v.id)).map((v) => `${v.manufacturer} ${v.model}`).join(", ")}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {step > 3 && (
         <div className="flex-1 p-4 flex items-center justify-center text-steel text-sm">
           Step {step} isn't built yet — coming in the next pass.
         </div>
