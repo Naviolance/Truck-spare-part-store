@@ -36,7 +36,11 @@ const EMPTY_DETAILS: Details = {
   partNumber: "",
 };
 
-const ACCEPTED_TYPES = "image/jpeg,image/png,image/webp";
+// Generic "image/*" rather than a narrow MIME list - some mobile browsers'
+// native photo pickers only offer multi-select with the generic form; a
+// specific list can make them fall back to single-select. The backend
+// still validates actual file types on upload regardless.
+const ACCEPTED_TYPES = "image/*";
 
 const fieldClass = "w-full border border-steel-light rounded-lg px-3 py-2.5 text-sm";
 
@@ -334,7 +338,7 @@ export default function CreateProductPage() {
         </div>
       )}
 
-      <div className="p-4 border-t border-steel-light">
+      <div className="sticky bottom-0 bg-paper p-4 border-t border-steel-light">
         <button
           type="button"
           disabled={!canAdvance}
