@@ -28,7 +28,7 @@ export function ConditionTag({ condition }: { condition: string }) {
   return <span className={tag.className}>{tag.label}</span>;
 }
 
-export function ProductCard({ product }: { product: ProductCardData }) {
+export function ProductCard({ product, eager = false }: { product: ProductCardData; eager?: boolean }) {
   return (
     <Link
       href={`/products/${product.slug}`}
@@ -41,6 +41,7 @@ export function ProductCard({ product }: { product: ProductCardData }) {
             alt={product.images[0].altText ?? product.name}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            loading={eager ? "eager" : "lazy"}
             unoptimized={isUnoptimizableImage(product.images[0].url)}
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
