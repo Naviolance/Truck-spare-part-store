@@ -1,4 +1,6 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+// Relative and same-origin on purpose - see the rewrites() comment in
+// next.config.js for why this can't be the backend's absolute URL.
+const API_URL = "/api/backend";
 
 // When NEXT_PUBLIC_API_URL points at an ngrok tunnel (phone testing over
 // LAN — see apps/frontend/.env.local), ngrok's free tier shows a browser
