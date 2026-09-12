@@ -54,7 +54,7 @@ export function ProductCard({ product }: { product: ProductCardData }) {
         <p className="text-xs text-steel">
           {product.brand?.name ?? "Unbranded"} / {product.category.name}
         </p>
-        <h2 className="font-display font-bold mt-1 text-ink leading-snug">{product.name}</h2>
+        <h2 className="font-sans font-bold mt-1 text-ink leading-snug">{product.name}</h2>
         <p className="font-mono font-semibold text-lg text-ink mt-2">{formatMoney(product.price)}</p>
       </div>
     </Link>

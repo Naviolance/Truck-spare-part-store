@@ -75,7 +75,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
           <p className="text-sm text-steel">
             {product.brand?.name ?? "Unbranded"} / {product.category.name}
           </p>
-          <h1 className="text-2xl font-display font-bold mt-1 text-ink tracking-tight">{product.name}</h1>
+          <h1 className="text-2xl font-sans font-bold mt-1 text-ink tracking-tight">{product.name}</h1>
 
           <div className="flex items-center gap-3 mt-3 flex-wrap">
             <span className="text-2xl font-mono font-semibold text-ink">{formatMoney(product.price)}</span>

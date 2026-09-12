@@ -56,11 +56,20 @@ export default async function HomePage() {
 
   return (
     <main className="flex-1">
-      {/* Hero — asymmetric two-up, not a full-bleed photo with text over it */}
-      <section className="bg-ink text-paper">
-        <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-5">
-          <div className="lg:col-span-3 py-16 sm:py-20 lg:pr-12 flex flex-col justify-center">
-            <h1 className="font-display font-black text-4xl sm:text-6xl leading-[0.95] tracking-tight max-w-xl">
+      {/* Hero — full-bleed background photo, text overlaid on a dark scrim */}
+      <section className="relative min-h-[480px] sm:min-h-[560px] flex items-center text-paper border-b-4 border-amber overflow-hidden">
+        <Image
+          src="/hero-bg.jpg"
+          alt="Truck parts on the shop floor"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-ink/95 via-ink/80 to-ink/40" />
+        <div className="relative max-w-6xl mx-auto px-4 py-16 sm:py-20 w-full">
+          <div className="max-w-xl">
+            <h1 className="font-display font-black text-4xl sm:text-6xl leading-[0.95] tracking-tight">
               Truck parts that fit, without the guesswork.
             </h1>
             <p className="text-paper/70 mt-6 max-w-md text-base sm:text-lg">
@@ -75,9 +84,6 @@ export default async function HomePage() {
                 Browse all parts
               </Link>
             </div>
-          </div>
-          <div className="lg:col-span-2 relative min-h-[280px] lg:min-h-0 border-t-4 lg:border-t-0 lg:border-l-4 border-amber">
-            <Image src="/hero-bg.jpg" alt="Truck parts on the shop floor" fill priority sizes="(min-width: 1024px) 40vw, 100vw" className="object-cover" />
           </div>
         </div>
       </section>

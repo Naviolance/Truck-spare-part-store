@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
 import { isUnoptimizableImage } from "@/lib/image";
 
@@ -17,8 +17,13 @@ function ChevronIcon({ direction }: { direction: "left" | "right" }) {
   );
 }
 
+// Swipes under this distance (px) are treated as taps, not gestures -
+// keeps accidental micro-drags from flipping the image.
+const SWIPE_THRESHOLD = 40;
+
 export function ProductGallery({ images, productName }: { images: ProductImage[]; productName: string }) {
   const [index, setIndex] = useState(0);
+  const touchStartX = useRef<number | null>(null);
 
   if (images.length === 0) {
     return (
@@ -38,9 +43,25 @@ export function ProductGallery({ images, productName }: { images: ProductImage[]
     setIndex((i) => (i + 1) % images.length);
   }
 
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX;
+  }
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return;
+    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    touchStartX.current = null;
+    if (!hasMultiple || Math.abs(delta) < SWIPE_THRESHOLD) return;
+    if (delta < 0) next();
+    else prev();
+  }
+
   return (
     <div>
-      <div className="relative w-full aspect-square rounded-lg border border-steel-light overflow-hidden bg-paper group">
+      <div
+        className="relative w-full aspect-square rounded-lg border border-steel-light overflow-hidden bg-paper group touch-pan-y"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         <Image
           key={active.url}
           src={active.url}
@@ -57,7 +78,7 @@ export function ProductGallery({ images, productName }: { images: ProductImage[]
               type="button"
               onClick={prev}
               aria-label="Previous image"
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 text-steel shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-white"
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 text-steel shadow-md flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 hover:bg-white"
             >
               <ChevronIcon direction="left" />
             </button>
@@ -65,7 +86,7 @@ export function ProductGallery({ images, productName }: { images: ProductImage[]
               type="button"
               onClick={next}
               aria-label="Next image"
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 text-steel shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-white"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 text-steel shadow-md flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 hover:bg-white"
             >
               <ChevronIcon direction="right" />
             </button>
