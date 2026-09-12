@@ -39,6 +39,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return <div className="max-w-6xl mx-auto px-4 py-16 text-steel">Checking access…</div>;
   }
 
+  // The post-style product composer is a focused, full-screen flow - the
+  // persistent sidebar nav would be noise there, same as a real app's post
+  // composer doesn't show its own tab bar. Still gated by the auth check
+  // above, just without the surrounding chrome.
+  const isFocusMode = pathname.startsWith("/admin/products/create");
+  if (isFocusMode) {
+    return <div className="max-w-lg mx-auto min-h-screen">{children}</div>;
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col sm:flex-row gap-6 sm:gap-8">
       <aside className="sm:w-48 shrink-0">
