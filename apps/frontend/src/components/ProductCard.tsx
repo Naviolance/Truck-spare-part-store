@@ -35,7 +35,7 @@ export function ProductCard({ product, eager = false }: { product: ProductCardDa
       className="group relative bg-white border border-steel-light overflow-hidden transition-colors duration-200 hover:border-ink"
     >
       {product.images[0] && (
-        <div className="relative w-full h-40 overflow-hidden bg-steel-light">
+        <div className="relative w-full aspect-square overflow-hidden bg-steel-light">
           <Image
             src={product.images[0].url}
             alt={product.images[0].altText ?? product.name}
