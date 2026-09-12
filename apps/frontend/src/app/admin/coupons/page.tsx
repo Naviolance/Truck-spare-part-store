@@ -145,7 +145,11 @@ export default function AdminCouponsPage() {
                   </button>
                 </td>
                 <td className="p-3 text-right">
-                  <button onClick={() => remove(c.id)} disabled={pendingId === c.id} className="text-red-600 underline disabled:opacity-50">
+                  <button
+                    onClick={() => remove(c.id)}
+                    disabled={pendingId === c.id}
+                    className="border border-red-200 bg-red-50 text-red-600 rounded-lg px-3 py-1.5 text-xs transition-colors duration-200 hover:bg-red-100 disabled:opacity-50"
+                  >
                     {pendingId === c.id ? "Deleting…" : "Delete"}
                   </button>
                 </td>

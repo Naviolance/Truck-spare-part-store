@@ -95,7 +95,11 @@ export default function AdminVehiclesPage() {
               {v.engine && ` · ${v.engine}`}
               <span className="text-steel"> — {v._count.compatibilities} products</span>
             </span>
-            <button onClick={() => handleDelete(v.id)} disabled={deletingId === v.id} className="text-red-600 underline disabled:opacity-50">
+            <button
+              onClick={() => handleDelete(v.id)}
+              disabled={deletingId === v.id}
+              className="shrink-0 border border-red-200 bg-red-50 text-red-600 rounded-lg px-3 py-1.5 text-xs transition-colors duration-200 hover:bg-red-100 disabled:opacity-50"
+            >
               {deletingId === v.id ? "Deleting…" : "Delete"}
             </button>
           </li>

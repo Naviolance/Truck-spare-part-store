@@ -89,6 +89,11 @@ export default function AdminOrdersPage() {
 
   if (loading) return <p className="text-steel">Loading…</p>;
 
+  const rows = orders.map((o) => ({
+    ...o,
+    pendingCash: o.status === "PAYMENT_PENDING" && o.payments.some((p) => p.provider === "cash" && p.status === "PENDING"),
+  }));
+
   return (
     <div>
       <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">Orders</h1>
@@ -96,7 +101,61 @@ export default function AdminOrdersPage() {
       {orders.length === 0 ? (
         <p className="text-steel">No orders yet.</p>
       ) : (
-        <div className="overflow-x-auto">
+        <>
+        <div className="sm:hidden space-y-3">
+          {rows.map((o) => (
+            <div key={o.id} className="bg-white border border-steel-light rounded-lg p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium text-ink">#{o.orderNumber}</p>
+                  <p className="text-xs text-steel truncate">{o.user.firstName} {o.user.lastName}</p>
+                  <p className="text-xs text-steel truncate">{o.user.email}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="font-semibold text-ink">{formatMoney(o.total)}</p>
+                  <p className="text-xs text-steel">{new Date(o.createdAt).toLocaleDateString()}</p>
+                </div>
+              </div>
+              <div className="mt-3 flex items-center gap-2">
+                <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[o.status] || "bg-steel-light"}`}>
+                  {o.status}
+                </span>
+                {o.pendingCash && <span className="text-xs text-amber-dark">Cash — awaiting pickup</span>}
+              </div>
+              <div className="mt-3 flex flex-col gap-2">
+                <select
+                  value={o.status}
+                  disabled={updatingId === o.id || TERMINAL_STATUSES.includes(o.status)}
+                  onChange={(e) => handleStatusChange(o.id, e.target.value)}
+                  className="w-full border border-steel-light rounded-lg px-3 py-2.5 text-sm"
+                >
+                  {STATUS_OPTIONS.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+                {o.pendingCash && (
+                  <button
+                    onClick={() => handleConfirmCash(o)}
+                    disabled={updatingId === o.id}
+                    className="w-full text-sm font-medium text-emerald-700 border border-emerald-200 bg-emerald-50 rounded-lg py-2.5 transition-colors duration-200 hover:bg-emerald-100 disabled:opacity-50 disabled:hover:bg-emerald-50"
+                  >
+                    {updatingId === o.id ? "…" : "Mark paid (cash)"}
+                  </button>
+                )}
+                {!TERMINAL_STATUSES.includes(o.status) && (
+                  <button
+                    onClick={() => handleCancel(o)}
+                    disabled={updatingId === o.id}
+                    className="w-full text-sm font-medium text-red-600 border border-red-200 bg-red-50 rounded-lg py-2.5 transition-colors duration-200 hover:bg-red-100 disabled:opacity-50 disabled:hover:bg-red-50"
+                  >
+                    {updatingId === o.id ? "…" : "Cancel & refund"}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="hidden sm:block overflow-x-auto">
         <table className="w-full text-sm bg-white border border-steel-light rounded-lg overflow-hidden">
           <thead className="bg-paper text-left">
             <tr>
@@ -109,9 +168,7 @@ export default function AdminOrdersPage() {
             </tr>
           </thead>
           <tbody>
-            {orders.map((o) => {
-              const pendingCash = o.status === "PAYMENT_PENDING" && o.payments.some((p) => p.provider === "cash" && p.status === "PENDING");
-              return (
+            {rows.map((o) => (
               <tr key={o.id} className="border-t border-steel-light">
                 <td className="p-3 font-medium">#{o.orderNumber}</td>
                 <td className="p-3">
@@ -124,7 +181,7 @@ export default function AdminOrdersPage() {
                   <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[o.status] || "bg-steel-light"}`}>
                     {o.status}
                   </span>
-                  {pendingCash && (
+                  {o.pendingCash && (
                     <span className="block text-xs text-amber-dark mt-1">Cash — awaiting pickup</span>
                   )}
                 </td>
@@ -140,7 +197,7 @@ export default function AdminOrdersPage() {
                         <option key={s} value={s}>{s}</option>
                       ))}
                     </select>
-                    {pendingCash && (
+                    {o.pendingCash && (
                       <button
                         onClick={() => handleConfirmCash(o)}
                         disabled={updatingId === o.id}
@@ -161,11 +218,11 @@ export default function AdminOrdersPage() {
                   </div>
                 </td>
               </tr>
-              );
-            })}
+            ))}
           </tbody>
         </table>
         </div>
+        </>
       )}
     </div>
   );

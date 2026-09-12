@@ -54,7 +54,11 @@ export default function AdminCategoriesPage() {
         {categories.map((c) => (
           <li key={c.id} className="flex items-center justify-between p-3 text-sm">
             <span>{c.name} <span className="text-steel">({c._count.products} products)</span></span>
-            <button onClick={() => handleDelete(c.id)} disabled={deletingId === c.id} className="text-red-600 underline disabled:opacity-50">
+            <button
+              onClick={() => handleDelete(c.id)}
+              disabled={deletingId === c.id}
+              className="border border-red-200 bg-red-50 text-red-600 rounded-lg px-3 py-1.5 text-xs transition-colors duration-200 hover:bg-red-100 disabled:opacity-50"
+            >
               {deletingId === c.id ? "Deleting…" : "Delete"}
             </button>
           </li>

@@ -64,7 +64,11 @@ export default function AdminReviewsPage() {
                 <td className="p-3 max-w-xs truncate">{r.comment}</td>
                 <td className="p-3 text-steel">{new Date(r.createdAt).toLocaleDateString()}</td>
                 <td className="p-3 text-right">
-                  <button onClick={() => handleDelete(r.id)} disabled={deletingId === r.id} className="text-red-600 underline disabled:opacity-50">
+                  <button
+                    onClick={() => handleDelete(r.id)}
+                    disabled={deletingId === r.id}
+                    className="border border-red-200 bg-red-50 text-red-600 rounded-lg px-3 py-1.5 text-xs transition-colors duration-200 hover:bg-red-100 disabled:opacity-50"
+                  >
                     {deletingId === r.id ? "Deleting…" : "Delete"}
                   </button>
                 </td>
