@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, Big_Shoulders_Display, IBM_Plex_Mono } from "next/font/google";
 import { Suspense } from "react";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
@@ -48,27 +50,32 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="en">
+    <html lang={locale}>
       <body
         className={`${inter.variable} ${bigShoulders.variable} ${plexMono.variable} font-sans min-h-screen bg-paper text-ink flex flex-col`}
       >
-        {/* Suspense boundary isolated here (not around the whole app) so
-            useSearchParams() inside only de-opts this one component to
-            client rendering, not every static page in the tree. */}
-        <Suspense fallback={null}>
-          <NavigationProgress />
-        </Suspense>
-        <AuthProvider>
-          <CartProvider>
-            <Navbar />
-            <div className="flex-1">
-              <PageTransition>{children}</PageTransition>
-            </div>
-            <Footer />
-          </CartProvider>
-        </AuthProvider>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          {/* Suspense boundary isolated here (not around the whole app) so
+              useSearchParams() inside only de-opts this one component to
+              client rendering, not every static page in the tree. */}
+          <Suspense fallback={null}>
+            <NavigationProgress />
+          </Suspense>
+          <AuthProvider>
+            <CartProvider>
+              <Navbar />
+              <div className="flex-1">
+                <PageTransition>{children}</PageTransition>
+              </div>
+              <Footer />
+            </CartProvider>
+          </AuthProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

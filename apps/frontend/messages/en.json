@@ -1,0 +1,59 @@
+{
+  "Navbar": {
+    "findMyPart": "Find My Part",
+    "allParts": "All Parts",
+    "about": "About",
+    "orders": "Orders",
+    "login": "Log in",
+    "logout": "Log out",
+    "dashboard": "Dashboard",
+    "hiUser": "Hi, {name}",
+    "cart": "Cart",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "adminDashboard": "Admin dashboard",
+    "account": "Account"
+  },
+  "Hero": {
+    "title": "Truck parts that fit, without the guesswork.",
+    "subtitle": "We grade every part new, used, or reconditioned before it's listed, and you inspect it in person before you buy — search by vehicle or browse the full catalogue below.",
+    "findMyPart": "Find My Part",
+    "browseAll": "Browse all parts"
+  },
+  "ValueProps": {
+    "conditionTitle": "Condition you can trust",
+    "conditionBody": "Every part is graded new, used, or reconditioned, with notes when it matters.",
+    "fitTitle": "Built for your truck",
+    "fitBody": "Use Find My Part to filter by manufacturer, model, and engine.",
+    "seeTitle": "See it before you buy",
+    "seeBody": "View parts in person and pick up locally — no shipping guesswork."
+  },
+  "Home": {
+    "latestParts": "Latest parts",
+    "mostPurchased": "Most purchased",
+    "mostSearched": "Most searched",
+    "viewAll": "View all parts",
+    "noProductsTitle": "No products loaded yet.",
+    "noProductsBody": "Make sure the backend is running and the database has been seeded."
+  },
+  "Footer": {
+    "tagline": "Quality new and used truck spare parts, with vehicle compatibility lookup.",
+    "shop": "Shop",
+    "allParts": "All Parts",
+    "findMyPart": "Find My Part",
+    "cart": "Cart",
+    "about": "About",
+    "account": "Account",
+    "login": "Log in",
+    "createAccount": "Create account",
+    "orderHistory": "Order history",
+    "visitUs": "Visit us",
+    "visitUsBody": "Parts are viewed and picked up in person. Contact details are shared at checkout so you can confirm availability before you come by.",
+    "rights": "© {year} TruckParts. All rights reserved.",
+    "pricesNote": "Prices shown in XAF."
+  },
+  "LanguageSwitcher": {
+    "english": "English",
+    "french": "Français"
+  }
+}

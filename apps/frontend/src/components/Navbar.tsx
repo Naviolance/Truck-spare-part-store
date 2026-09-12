@@ -2,9 +2,11 @@
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { AuthModal } from "@/components/AuthModal";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 function CartIcon() {
   return (
@@ -76,6 +78,7 @@ export function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const closeMenu = () => setMenuOpen(false);
+  const t = useTranslations("Navbar");
 
   return (
     <nav className="sticky top-0 z-40 bg-ink border-b-2 border-amber">
@@ -87,9 +90,9 @@ export function Navbar() {
 
           {/* Desktop links */}
           <div className="hidden md:flex items-center gap-6">
-            <NavLink href="/find-my-part">Find My Part</NavLink>
-            <NavLink href="/products">All Parts</NavLink>
-            <NavLink href="/about">About</NavLink>
+            <NavLink href="/find-my-part">{t("findMyPart")}</NavLink>
+            <NavLink href="/products">{t("allParts")}</NavLink>
+            <NavLink href="/about">{t("about")}</NavLink>
           </div>
 
           <div className="flex items-center gap-4">
@@ -99,7 +102,7 @@ export function Navbar() {
                 <>
                   {user.role !== "ADMIN" && (
                     <>
-                      <Link href="/cart" className="relative text-paper/70 transition-colors duration-200 hover:text-paper" aria-label="Cart">
+                      <Link href="/cart" className="relative text-paper/70 transition-colors duration-200 hover:text-paper" aria-label={t("cart")}>
                         <CartIcon />
                         {itemCount > 0 && (
                           <span className="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center bg-amber px-1 text-[10px] font-mono font-semibold text-ink">
@@ -107,37 +110,38 @@ export function Navbar() {
                           </span>
                         )}
                       </Link>
-                      <NavLink href="/orders">Orders</NavLink>
+                      <NavLink href="/orders">{t("orders")}</NavLink>
                     </>
                   )}
                   <Link
                     href={user.role === "ADMIN" ? "/admin" : "/account"}
                     className="text-paper/70 transition-colors duration-200 hover:text-paper"
-                    aria-label={user.role === "ADMIN" ? "Admin dashboard" : "Account"}
-                    title={user.role === "ADMIN" ? `Hi, ${user.firstName} — dashboard` : `Hi, ${user.firstName}`}
+                    aria-label={user.role === "ADMIN" ? t("adminDashboard") : t("account")}
+                    title={user.role === "ADMIN" ? `${t("hiUser", { name: user.firstName })} — ${t("dashboard")}` : t("hiUser", { name: user.firstName })}
                   >
                     <ProfileIcon />
                   </Link>
                   <button
                     onClick={logout}
                     className="text-paper/70 transition-colors duration-200 hover:text-rust"
-                    aria-label="Log out"
-                    title="Log out"
+                    aria-label={t("logout")}
+                    title={t("logout")}
                   >
                     <LogoutIcon />
                   </button>
                 </>
               ) : (
                 <button onClick={() => setAuthOpen(true)} className="btn-primary">
-                  Log in
+                  {t("login")}
                 </button>
               )}
+              <LanguageSwitcher />
             </div>
 
             {/* Mobile: cart icon (customers only) + hamburger */}
             <div className="flex md:hidden items-center gap-4">
               {!loading && user && user.role !== "ADMIN" && (
-                <Link href="/cart" className="relative text-paper/70" aria-label="Cart">
+                <Link href="/cart" className="relative text-paper/70" aria-label={t("cart")}>
                   <CartIcon />
                   {itemCount > 0 && (
                     <span className="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center bg-amber px-1 text-[10px] font-mono font-semibold text-ink">
@@ -149,7 +153,7 @@ export function Navbar() {
               <button
                 onClick={() => setMenuOpen((o) => !o)}
                 className="text-paper"
-                aria-label={menuOpen ? "Close menu" : "Open menu"}
+                aria-label={menuOpen ? t("closeMenu") : t("openMenu")}
                 aria-expanded={menuOpen}
               >
                 <MenuIcon open={menuOpen} />
@@ -166,15 +170,15 @@ export function Navbar() {
         }`}
       >
         <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col gap-4 text-sm">
-          <NavLink href="/find-my-part" onClick={closeMenu}>Find My Part</NavLink>
-          <NavLink href="/products" onClick={closeMenu}>All Parts</NavLink>
-          <NavLink href="/about" onClick={closeMenu}>About</NavLink>
+          <NavLink href="/find-my-part" onClick={closeMenu}>{t("findMyPart")}</NavLink>
+          <NavLink href="/products" onClick={closeMenu}>{t("allParts")}</NavLink>
+          <NavLink href="/about" onClick={closeMenu}>{t("about")}</NavLink>
 
           {loading ? null : user ? (
             <>
-              {user.role !== "ADMIN" && <NavLink href="/orders" onClick={closeMenu}>Orders</NavLink>}
+              {user.role !== "ADMIN" && <NavLink href="/orders" onClick={closeMenu}>{t("orders")}</NavLink>}
               <NavLink href={user.role === "ADMIN" ? "/admin" : "/account"} onClick={closeMenu}>
-                {user.role === "ADMIN" ? "Dashboard" : `Hi, ${user.firstName}`}
+                {user.role === "ADMIN" ? t("dashboard") : t("hiUser", { name: user.firstName })}
               </NavLink>
               <button
                 onClick={() => {
@@ -183,7 +187,7 @@ export function Navbar() {
                 }}
                 className="text-left text-paper/70 transition-colors duration-200 hover:text-rust"
               >
-                Log out
+                {t("logout")}
               </button>
             </>
           ) : (
@@ -194,9 +198,11 @@ export function Navbar() {
               }}
               className="btn-primary w-fit"
             >
-              Log in
+              {t("login")}
             </button>
           )}
+
+          <LanguageSwitcher className="pt-2 border-t border-paper/10" />
         </div>
       </div>
 

@@ -1,0 +1,59 @@
+{
+  "Navbar": {
+    "findMyPart": "Trouver ma pièce",
+    "allParts": "Toutes les pièces",
+    "about": "À propos",
+    "orders": "Commandes",
+    "login": "Connexion",
+    "logout": "Déconnexion",
+    "dashboard": "Tableau de bord",
+    "hiUser": "Bonjour, {name}",
+    "cart": "Panier",
+    "openMenu": "Ouvrir le menu",
+    "closeMenu": "Fermer le menu",
+    "adminDashboard": "Tableau de bord admin",
+    "account": "Compte"
+  },
+  "Hero": {
+    "title": "Des pièces de camion qui conviennent, sans se tromper.",
+    "subtitle": "Chaque pièce est évaluée neuve, d'occasion ou reconditionnée avant sa mise en ligne, et vous l'inspectez en personne avant d'acheter — recherchez par véhicule ou parcourez le catalogue complet ci-dessous.",
+    "findMyPart": "Trouver ma pièce",
+    "browseAll": "Voir toutes les pièces"
+  },
+  "ValueProps": {
+    "conditionTitle": "Un état de confiance",
+    "conditionBody": "Chaque pièce est évaluée neuve, d'occasion ou reconditionnée, avec des notes quand c'est important.",
+    "fitTitle": "Adapté à votre camion",
+    "fitBody": "Utilisez Trouver ma pièce pour filtrer par fabricant, modèle et moteur.",
+    "seeTitle": "Voyez avant d'acheter",
+    "seeBody": "Consultez les pièces en personne et récupérez-les localement — sans mauvaise surprise à la livraison."
+  },
+  "Home": {
+    "latestParts": "Dernières pièces",
+    "mostPurchased": "Les plus achetées",
+    "mostSearched": "Les plus recherchées",
+    "viewAll": "Voir toutes les pièces",
+    "noProductsTitle": "Aucun produit chargé pour le moment.",
+    "noProductsBody": "Assurez-vous que le serveur backend fonctionne et que la base de données a été initialisée."
+  },
+  "Footer": {
+    "tagline": "Pièces de camion neuves et d'occasion de qualité, avec recherche de compatibilité véhicule.",
+    "shop": "Boutique",
+    "allParts": "Toutes les pièces",
+    "findMyPart": "Trouver ma pièce",
+    "cart": "Panier",
+    "about": "À propos",
+    "account": "Compte",
+    "login": "Connexion",
+    "createAccount": "Créer un compte",
+    "orderHistory": "Historique des commandes",
+    "visitUs": "Nous rendre visite",
+    "visitUsBody": "Les pièces sont consultées et récupérées en personne. Les coordonnées sont communiquées lors du paiement afin de confirmer la disponibilité avant votre venue.",
+    "rights": "© {year} TruckParts. Tous droits réservés.",
+    "pricesNote": "Prix affichés en XAF."
+  },
+  "LanguageSwitcher": {
+    "english": "English",
+    "french": "Français"
+  }
+}

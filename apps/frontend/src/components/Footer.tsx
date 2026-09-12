@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 // Placeholder targets ("#") until the client shares real account URLs -
 // swap these once available, nothing else needs to change.
@@ -39,17 +40,16 @@ function FooterHeading({ children }: { children: React.ReactNode }) {
   return <p className="font-display font-bold text-sm text-amber mb-3 pb-2 border-b border-paper/15">{children}</p>;
 }
 
-export function Footer() {
+export async function Footer() {
   const year = new Date().getFullYear();
+  const t = await getTranslations("Footer");
 
   return (
     <footer className="bg-ink mt-auto">
       <div className="max-w-6xl mx-auto px-4 py-12 grid grid-cols-1 sm:grid-cols-4 gap-10">
         <div>
           <p className="font-display font-black text-2xl text-paper tracking-tight">TruckParts</p>
-          <p className="text-sm text-paper/60 mt-2">
-            Quality new and used truck spare parts, with vehicle compatibility lookup.
-          </p>
+          <p className="text-sm text-paper/60 mt-2">{t("tagline")}</p>
           <div className="flex items-center gap-4 mt-5">
             {SOCIAL_LINKS.map((social) => (
               <a
@@ -65,37 +65,34 @@ export function Footer() {
         </div>
 
         <div>
-          <FooterHeading>Shop</FooterHeading>
+          <FooterHeading>{t("shop")}</FooterHeading>
           <ul className="space-y-2 text-sm text-paper/70">
-            <li><Link href="/products" className="transition-colors duration-200 hover:text-paper">All Parts</Link></li>
-            <li><Link href="/find-my-part" className="transition-colors duration-200 hover:text-paper">Find My Part</Link></li>
-            <li><Link href="/cart" className="transition-colors duration-200 hover:text-paper">Cart</Link></li>
-            <li><Link href="/about" className="transition-colors duration-200 hover:text-paper">About</Link></li>
+            <li><Link href="/products" className="transition-colors duration-200 hover:text-paper">{t("allParts")}</Link></li>
+            <li><Link href="/find-my-part" className="transition-colors duration-200 hover:text-paper">{t("findMyPart")}</Link></li>
+            <li><Link href="/cart" className="transition-colors duration-200 hover:text-paper">{t("cart")}</Link></li>
+            <li><Link href="/about" className="transition-colors duration-200 hover:text-paper">{t("about")}</Link></li>
           </ul>
         </div>
 
         <div>
-          <FooterHeading>Account</FooterHeading>
+          <FooterHeading>{t("account")}</FooterHeading>
           <ul className="space-y-2 text-sm text-paper/70">
-            <li><Link href="/login" className="transition-colors duration-200 hover:text-paper">Log in</Link></li>
-            <li><Link href="/register" className="transition-colors duration-200 hover:text-paper">Create account</Link></li>
-            <li><Link href="/orders" className="transition-colors duration-200 hover:text-paper">Order history</Link></li>
+            <li><Link href="/login" className="transition-colors duration-200 hover:text-paper">{t("login")}</Link></li>
+            <li><Link href="/register" className="transition-colors duration-200 hover:text-paper">{t("createAccount")}</Link></li>
+            <li><Link href="/orders" className="transition-colors duration-200 hover:text-paper">{t("orderHistory")}</Link></li>
           </ul>
         </div>
 
         <div>
-          <FooterHeading>Visit us</FooterHeading>
-          <p className="text-sm text-paper/70">
-            Parts are viewed and picked up in person. Contact details are shared at checkout so you can
-            confirm availability before you come by.
-          </p>
+          <FooterHeading>{t("visitUs")}</FooterHeading>
+          <p className="text-sm text-paper/70">{t("visitUsBody")}</p>
         </div>
       </div>
 
       <div className="border-t border-paper/10">
         <div className="max-w-6xl mx-auto px-4 py-4 text-xs font-mono text-paper/40 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p>© {year} TruckParts. All rights reserved.</p>
-          <p>Prices shown in XAF.</p>
+          <p>{t("rights", { year })}</p>
+          <p>{t("pricesNote")}</p>
         </div>
       </div>
     </footer>
