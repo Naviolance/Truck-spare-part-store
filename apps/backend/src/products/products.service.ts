@@ -198,13 +198,13 @@ export class ProductsService {
       slug = `${baseSlug}-${suffix++}`;
     }
 
-    const { imageUrls, vehicleIds, ...rest } = dto;
+    const { imageUrls, vehicleIds, status, ...rest } = dto;
 
     return this.prisma.product.create({
       data: {
         ...rest,
         slug,
-        status: ProductStatus.PUBLISHED,
+        status: status ?? ProductStatus.PUBLISHED,
         images: imageUrls?.length
           ? { create: imageUrls.map((url, position) => ({ url, position })) }
           : undefined,

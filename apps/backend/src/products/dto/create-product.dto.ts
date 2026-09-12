@@ -1,5 +1,5 @@
 import { IsString, IsEnum, IsNumber, IsOptional, Min, MinLength, MaxLength, IsArray } from "class-validator";
-import { ProductCondition } from "@truckparts/prisma";
+import { ProductCondition, ProductStatus } from "@truckparts/prisma";
 
 export class CreateProductDto {
   @IsString()
@@ -53,4 +53,11 @@ export class CreateProductDto {
   @IsArray()
   @IsString({ each: true })
   vehicleIds?: string[];
+
+  // Lets the post-style creation flow save as a draft instead of publishing
+  // immediately - defaults to PUBLISHED in the service so the older
+  // /admin/products/new form keeps its existing behavior untouched.
+  @IsOptional()
+  @IsEnum(ProductStatus)
+  status?: ProductStatus;
 }

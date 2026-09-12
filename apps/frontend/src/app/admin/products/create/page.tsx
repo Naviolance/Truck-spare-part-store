@@ -74,6 +74,8 @@ export default function CreateProductPage() {
   const [brands, setBrands] = useState<Option[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [previewIndex, setPreviewIndex] = useState(0);
+  const [saving, setSaving] = useState<"DRAFT" | "PUBLISHED" | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -112,6 +114,61 @@ export default function CreateProductPage() {
 
   const canAdvance = step === 1 ? images.length > 0 : step === 2 ? detailsValid : true;
 
+  // Images are still local File objects at this point - nothing has been
+  // uploaded yet, on purpose, so backing out of the flow before this never
+  // orphans files on the server. One request per image, in picked order, so
+  // imageUrls[0] stays the cover image.
+  async function uploadImages(): Promise<string[]> {
+    const urls: string[] = [];
+    for (const img of images) {
+      const formData = new FormData();
+      formData.append("file", img.file);
+      const res = await apiFetch("/uploads/image", { method: "POST", body: formData, headers: {} });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Image upload failed");
+      }
+      const data = await res.json();
+      urls.push(data.url);
+    }
+    return urls;
+  }
+
+  async function handleSave(status: "DRAFT" | "PUBLISHED") {
+    setSaving(status);
+    setSaveError(null);
+    try {
+      const imageUrls = await uploadImages();
+      const res = await apiFetch("/products", {
+        method: "POST",
+        body: JSON.stringify({
+          name: details.name,
+          description: details.description,
+          descriptionFr: details.descriptionFr || undefined,
+          price: Number(details.price),
+          quantity: Number(details.quantity),
+          condition: details.condition,
+          conditionNotes: details.conditionNotes || undefined,
+          categoryId: details.categoryId,
+          brandId: details.brandId || undefined,
+          partNumber: details.partNumber || undefined,
+          imageUrls,
+          vehicleIds,
+          status,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to save product");
+      }
+      images.forEach((img) => URL.revokeObjectURL(img.url));
+      router.push("/admin/products");
+    } catch (err: any) {
+      setSaveError(err.message || "Something went wrong");
+      setSaving(null);
+    }
+  }
+
   function handleBack() {
     if (step > 1) {
       setStep((s) => s - 1);
@@ -125,7 +182,7 @@ export default function CreateProductPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <header className="flex items-center justify-between px-4 py-3 border-b border-steel-light">
-        <button onClick={handleBack} aria-label="Back" className="text-ink">
+        <button onClick={handleBack} disabled={!!saving} aria-label="Back" className="text-ink disabled:opacity-40">
           <BackIcon />
         </button>
         <p className="text-sm font-medium text-steel">Step {step} of 4</p>
@@ -332,21 +389,51 @@ export default function CreateProductPage() {
         </div>
       )}
 
-      {step > 3 && (
-        <div className="flex-1 p-4 flex items-center justify-center text-steel text-sm">
-          Step {step} isn't built yet — coming in the next pass.
+      {step === 4 && (
+        <div className="flex-1 p-4">
+          <h1 className="text-lg font-display font-bold text-ink mb-1">Ready to go</h1>
+          <p className="text-sm text-steel mb-4">
+            Save it as a draft to finish later, or post it now so customers can see it right away.
+          </p>
+          {saveError && <p className="text-sm text-red-600 mb-4">{saveError}</p>}
+          {saving && (
+            <p className="text-sm text-steel mb-4">
+              {saving === "DRAFT" ? "Saving draft…" : "Posting…"} uploading {images.length} photo{images.length !== 1 ? "s" : ""}, please don't close this page.
+            </p>
+          )}
         </div>
       )}
 
       <div className="sticky bottom-0 bg-paper p-4 border-t border-steel-light">
-        <button
-          type="button"
-          disabled={!canAdvance}
-          onClick={() => setStep((s) => s + 1)}
-          className="w-full bg-ink text-white rounded-lg py-3 text-sm font-medium disabled:opacity-40"
-        >
-          Next
-        </button>
+        {step < 4 ? (
+          <button
+            type="button"
+            disabled={!canAdvance}
+            onClick={() => setStep((s) => s + 1)}
+            className="w-full bg-ink text-white rounded-lg py-3 text-sm font-medium disabled:opacity-40"
+          >
+            Next
+          </button>
+        ) : (
+          <div className="flex gap-3">
+            <button
+              type="button"
+              disabled={!!saving}
+              onClick={() => handleSave("DRAFT")}
+              className="flex-1 border border-steel-light rounded-lg py-3 text-sm font-medium disabled:opacity-40"
+            >
+              {saving === "DRAFT" ? "Saving…" : "Save draft"}
+            </button>
+            <button
+              type="button"
+              disabled={!!saving}
+              onClick={() => handleSave("PUBLISHED")}
+              className="flex-1 bg-ink text-white rounded-lg py-3 text-sm font-medium disabled:opacity-40"
+            >
+              {saving === "PUBLISHED" ? "Posting…" : "Post"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
