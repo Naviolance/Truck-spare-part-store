@@ -75,7 +75,7 @@ export class AuthController {
     // clearCookie must be called with the SAME path the cookie was set
     // with, or the browser treats it as a different cookie entirely and
     // the real one is left behind.
-    res.clearCookie(SESSION_COOKIE_NAME, { path: "/auth" });
+    res.clearCookie(SESSION_COOKIE_NAME, { path: "/" });
     res.clearCookie(CSRF_COOKIE_NAME, { path: "/" });
     return { success: true };
   }
@@ -111,11 +111,18 @@ export class AuthController {
       ? ({ secure: true, sameSite: "none" as const })
       : ({ secure: false, sameSite: "lax" as const });
 
+    // path was "/auth" originally, to narrow which requests carry this
+    // httpOnly cookie over the wire. That broke once the frontend started
+    // proxying calls through Next.js (next.config.js's rewrites()): the
+    // browser's visible URL becomes /api/backend/auth/refresh, which
+    // doesn't start with "/auth", so the cookie silently stopped being
+    // sent. httpOnly already blocks JS access, which is the real defense
+    // here - narrowing Path further wasn't buying much, so "/" it is.
     res.cookie(SESSION_COOKIE_NAME, token, {
       httpOnly: true,
       ...crossSiteCookieOptions,
       maxAge: SESSION_ABSOLUTE_MS,
-      path: "/auth",
+      path: "/",
     });
 
     // Deliberately NOT httpOnly — the frontend JS needs to read this value
@@ -123,11 +130,6 @@ export class AuthController {
     // cross-site attacker can trigger a request with our cookies attached,
     // but their JS can never read a cookie that belongs to our origin, so
     // they can't produce a header that matches.
-    //
-    // path MUST be "/" here, unlike the session cookie — document.cookie
-    // visibility is checked against the CURRENT PAGE's path, and the
-    // frontend has no pages under /auth/*, so path: "/auth" would make this
-    // cookie permanently invisible to the frontend and break every refresh.
     res.cookie(CSRF_COOKIE_NAME, crypto.randomBytes(24).toString("hex"), {
       httpOnly: false,
       ...crossSiteCookieOptions,
