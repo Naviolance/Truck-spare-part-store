@@ -1,10 +1,41 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api";
+import { VehicleCompatibilityPicker } from "@/components/VehicleCompatibilityPicker";
 
 type PickedImage = { file: File; url: string };
+type Option = { id: string; name: string };
+
+type Details = {
+  name: string;
+  description: string;
+  descriptionFr: string;
+  price: string;
+  quantity: string;
+  condition: "NEW" | "USED" | "RECONDITIONED";
+  conditionNotes: string;
+  categoryId: string;
+  brandId: string;
+  partNumber: string;
+};
+
+const EMPTY_DETAILS: Details = {
+  name: "",
+  description: "",
+  descriptionFr: "",
+  price: "",
+  quantity: "",
+  condition: "NEW",
+  conditionNotes: "",
+  categoryId: "",
+  brandId: "",
+  partNumber: "",
+};
 
 const ACCEPTED_TYPES = "image/jpeg,image/png,image/webp";
+
+const fieldClass = "w-full border border-steel-light rounded-lg px-3 py-2.5 text-sm";
 
 function BackIcon() {
   return (
@@ -22,16 +53,28 @@ function PlusIcon() {
   );
 }
 
-// Step 1 of the post-style creation flow: pick one or more images before
-// anything else, same as opening a social app's composer starts with media,
-// not a form. Later steps (details, preview, draft/post) build on this -
-// kept as one page with internal step state since File objects picked here
-// can't survive a route change, only in-memory component state.
+// Step 1 picks photos, step 2 collects details, step 3 (preview) and step 4
+// (draft/post) come next. Kept as one page with internal step state since
+// the File objects picked in step 1 can't survive a route change, only
+// in-memory component state.
 export default function CreateProductPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [images, setImages] = useState<PickedImage[]>([]);
+  const [details, setDetails] = useState<Details>(EMPTY_DETAILS);
+  const [vehicleIds, setVehicleIds] = useState<string[]>([]);
+  const [categories, setCategories] = useState<Option[]>([]);
+  const [brands, setBrands] = useState<Option[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    apiFetch("/categories").then((res) => res.json()).then(setCategories);
+    apiFetch("/brands").then((res) => res.json()).then(setBrands);
+  }, []);
+
+  function updateDetails<K extends keyof Details>(field: K, value: Details[K]) {
+    setDetails((d) => ({ ...d, [field]: value }));
+  }
 
   function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
@@ -48,7 +91,22 @@ export default function CreateProductPage() {
     });
   }
 
+  const detailsValid =
+    details.name.trim().length >= 3 &&
+    details.description.trim().length >= 10 &&
+    Number(details.price) > 0 &&
+    details.quantity !== "" &&
+    Number(details.quantity) >= 0 &&
+    !!details.categoryId &&
+    (details.condition === "NEW" || details.conditionNotes.trim().length > 0);
+
+  const canAdvance = step === 1 ? images.length > 0 : step === 2 ? detailsValid : true;
+
   function handleBack() {
+    if (step > 1) {
+      setStep((s) => s - 1);
+      return;
+    }
     if (images.length > 0 && !confirm("Discard the images you've picked?")) return;
     images.forEach((img) => URL.revokeObjectURL(img.url));
     router.push("/admin/products");
@@ -110,7 +168,90 @@ export default function CreateProductPage() {
         </div>
       )}
 
-      {step > 1 && (
+      {step === 2 && (
+        <div className="flex-1 p-4 space-y-4">
+          <h1 className="text-lg font-display font-bold text-ink mb-1">Details</h1>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Name</label>
+            <input value={details.name} onChange={(e) => updateDetails("name", e.target.value)} className={fieldClass} />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Description</label>
+            <textarea value={details.description} onChange={(e) => updateDetails("description", e.target.value)} rows={3} className={fieldClass} />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Description (French, optional)</label>
+            <textarea
+              value={details.descriptionFr}
+              onChange={(e) => updateDetails("descriptionFr", e.target.value)}
+              placeholder="Include the French product name in here — the name field itself stays untranslated, but this text is searched."
+              rows={3}
+              className={fieldClass}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium mb-1">Price (FCFA)</label>
+              <input type="number" min="1" step="1" value={details.price} onChange={(e) => updateDetails("price", e.target.value)} className={fieldClass} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Quantity</label>
+              <input type="number" min="0" value={details.quantity} onChange={(e) => updateDetails("quantity", e.target.value)} className={fieldClass} />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Condition</label>
+            <select value={details.condition} onChange={(e) => updateDetails("condition", e.target.value as Details["condition"])} className={fieldClass}>
+              <option value="NEW">New</option>
+              <option value="USED">Used</option>
+              <option value="RECONDITIONED">Reconditioned</option>
+            </select>
+          </div>
+
+          {details.condition !== "NEW" && (
+            <div>
+              <label className="block text-sm font-medium mb-1">Condition notes</label>
+              <textarea
+                value={details.conditionNotes}
+                onChange={(e) => updateDetails("conditionNotes", e.target.value)}
+                placeholder="Describe wear, testing, functionality, etc."
+                rows={2}
+                className={fieldClass}
+              />
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Category</label>
+            <select value={details.categoryId} onChange={(e) => updateDetails("categoryId", e.target.value)} className={fieldClass}>
+              <option value="">Select a category</option>
+              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Brand (optional)</label>
+            <select value={details.brandId} onChange={(e) => updateDetails("brandId", e.target.value)} className={fieldClass}>
+              <option value="">No brand</option>
+              {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Part number (optional)</label>
+            <input value={details.partNumber} onChange={(e) => updateDetails("partNumber", e.target.value)} className={fieldClass} />
+          </div>
+
+          <VehicleCompatibilityPicker selectedIds={vehicleIds} onChange={setVehicleIds} />
+        </div>
+      )}
+
+      {step > 2 && (
         <div className="flex-1 p-4 flex items-center justify-center text-steel text-sm">
           Step {step} isn't built yet — coming in the next pass.
         </div>
@@ -119,7 +260,7 @@ export default function CreateProductPage() {
       <div className="p-4 border-t border-steel-light">
         <button
           type="button"
-          disabled={images.length === 0}
+          disabled={!canAdvance}
           onClick={() => setStep((s) => s + 1)}
           className="w-full bg-ink text-white rounded-lg py-3 text-sm font-medium disabled:opacity-40"
         >
