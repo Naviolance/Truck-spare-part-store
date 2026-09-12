@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { getLocale } from "next-intl/server";
 import { AddToCartButton } from "./AddToCartButton";
 import { ReviewsSection } from "./ReviewsSection";
 import { ProductGallery } from "./ProductGallery";
@@ -12,6 +13,7 @@ type Product = {
   name: string;
   slug: string;
   description: string;
+  descriptionFr: string | null;
   price: string;
   quantity: number;
   condition: string;
@@ -40,7 +42,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const product = await getProduct(params.slug);
   if (!product) return { title: "Product not found" };
 
-  const description = product.description.slice(0, 160);
+  const locale = await getLocale();
+  const description = (locale === "fr" && product.descriptionFr ? product.descriptionFr : product.description).slice(0, 160);
   const image = product.images[0]?.url;
 
   return {
@@ -54,6 +57,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 export default async function ProductPage({ params }: { params: { slug: string } }) {
   const product = await getProduct(params.slug);
   if (!product) notFound();
+
+  const locale = await getLocale();
+  const displayDescription = locale === "fr" && product.descriptionFr ? product.descriptionFr : product.description;
 
   const avgRating =
     product.reviews.length > 0
@@ -96,7 +102,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
             </div>
           )}
 
-          <p className="text-steel mt-4 whitespace-pre-line leading-relaxed">{product.description}</p>
+          <p className="text-steel mt-4 whitespace-pre-line leading-relaxed">{displayDescription}</p>
 
           {(product.partNumber || product.crossReference.length > 0) && (
             <div className="mt-4 text-sm text-steel space-y-1">

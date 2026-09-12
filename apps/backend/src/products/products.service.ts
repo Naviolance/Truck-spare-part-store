@@ -15,10 +15,14 @@ export class ProductsService {
     const where: Prisma.ProductWhereInput = { status: ProductStatus.PUBLISHED, quantity: { gt: 0 } };
 
     if (query.search) {
-      // Case-insensitive match across name and description.
+      // Case-insensitive match across name and both description languages -
+      // a French search term (which may be the only place a product's
+      // French name appears, per the admin-authored descriptionFr) still
+      // has to find the product.
       where.OR = [
         { name: { contains: query.search, mode: "insensitive" } },
         { description: { contains: query.search, mode: "insensitive" } },
+        { descriptionFr: { contains: query.search, mode: "insensitive" } },
         { partNumber: { contains: query.search, mode: "insensitive" } },
       ];
     }

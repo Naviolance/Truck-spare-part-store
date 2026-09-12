@@ -18,9 +18,9 @@ export default function EditProductPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
-    name: "", description: "", price: "", quantity: "", condition: "NEW",
+    name: "", description: "", descriptionFr: "", price: "", quantity: "", condition: "NEW",
     categoryId: "", brandId: "", partNumber: "", conditionNotes: "",
-  }); 
+  });
 
 const [imageUrls, setImageUrls] = useState<string[]>([]);
 const [vehicleIds, setVehicleIds] = useState<string[]>([]);
@@ -31,7 +31,7 @@ const [vehicleIds, setVehicleIds] = useState<string[]>([]);
     apiFetch(`/products/admin/${id}`).then(async (res) => {
       const p = await res.json();
     setForm({
-      name: p.name, description: p.description, price: String(p.price), quantity: String(p.quantity),
+      name: p.name, description: p.description, descriptionFr: p.descriptionFr || "", price: String(p.price), quantity: String(p.quantity),
       condition: p.condition, categoryId: p.categoryId, brandId: p.brandId || "", partNumber: p.partNumber || "",
       conditionNotes: p.conditionNotes || "",
     });
@@ -53,6 +53,7 @@ const [vehicleIds, setVehicleIds] = useState<string[]>([]);
       method: "PATCH",
       body: JSON.stringify({
         ...form,
+        descriptionFr: form.descriptionFr || undefined,
         price: Number(form.price),
         quantity: Number(form.quantity),
         brandId: form.brandId || undefined,
@@ -82,6 +83,16 @@ const [vehicleIds, setVehicleIds] = useState<string[]>([]);
         <div>
           <label className="block text-sm font-medium mb-1">Description</label>
           <textarea required value={form.description} onChange={(e) => update("description", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2" rows={3} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Description (French, optional)</label>
+          <textarea
+            value={form.descriptionFr}
+            onChange={(e) => update("descriptionFr", e.target.value)}
+            placeholder="Include the French product name in here — the name field itself stays untranslated, but this text is searched."
+            className="w-full border border-steel-light rounded-lg px-3 py-2"
+            rows={3}
+          />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
