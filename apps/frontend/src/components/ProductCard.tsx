@@ -34,10 +34,6 @@ export function ProductCard({ product }: { product: ProductCardData }) {
       href={`/products/${product.slug}`}
       className="group relative bg-white border border-steel-light overflow-hidden transition-colors duration-200 hover:border-ink"
     >
-      {/* Corner tab: the hang-tag most yards actually staple to a part. */}
-      <div className="absolute top-0 right-0 z-10">
-        <ConditionTag condition={product.condition} />
-      </div>
       {product.images[0] && (
         <div className="relative w-full h-40 overflow-hidden bg-steel-light">
           <Image
@@ -55,7 +51,10 @@ export function ProductCard({ product }: { product: ProductCardData }) {
           {product.brand?.name ?? "Unbranded"} / {product.category.name}
         </p>
         <h2 className="font-sans font-bold mt-1 text-ink leading-snug">{product.name}</h2>
-        <p className="font-mono font-semibold text-lg text-ink mt-2">{formatMoney(product.price)}</p>
+        <div className="flex items-center justify-between flex-wrap gap-x-2 gap-y-1 mt-2">
+          <p className="font-mono font-semibold text-lg text-ink">{formatMoney(product.price)}</p>
+          <ConditionTag condition={product.condition} />
+        </div>
       </div>
     </Link>
   );
