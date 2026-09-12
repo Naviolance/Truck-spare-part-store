@@ -27,10 +27,10 @@ export function VehicleCompatibilityPicker({ selectedIds, onChange }: Props) {
   return (
     <div>
       <label className="block text-sm font-medium mb-1">Compatible vehicles</label>
-      <div className="border border-zinc-300 rounded max-h-40 overflow-y-auto p-2 space-y-1">
-        {vehicles.length === 0 && <p className="text-xs text-zinc-400 p-1">No vehicles added yet — add some in Admin → Vehicles.</p>}
+      <div className="border border-steel-light rounded max-h-40 overflow-y-auto p-2 space-y-1">
+        {vehicles.length === 0 && <p className="text-xs text-steel p-1">No vehicles added yet — add some in Admin → Vehicles.</p>}
         {vehicles.map((v) => (
-          <label key={v.id} className="flex items-center gap-2 text-sm p-1 hover:bg-zinc-50 rounded cursor-pointer">
+          <label key={v.id} className="flex items-center gap-2 text-sm p-1 hover:bg-paper rounded cursor-pointer">
             <input
               type="checkbox"
               checked={selectedIds.includes(v.id)}

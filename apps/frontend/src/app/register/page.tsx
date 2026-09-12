@@ -6,7 +6,7 @@ import { PasswordInput } from "@/components/PasswordInput";
 import { IconInput, MailIcon, UserIcon } from "@/components/IconInput";
 import { AuthLayout } from "@/components/AuthLayout";
 
-const inputClass = "w-full border border-zinc-300 rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:border-zinc-500";
+const inputClass = "w-full border border-steel-light rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:border-steel";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -35,11 +35,11 @@ export default function RegisterPage() {
 
   return (
     <AuthLayout mode="register">
-      <h1 className="text-2xl font-bold mb-6 text-zinc-900">Create an account</h1>
+      <h1 className="text-2xl font-display font-bold mb-6 text-ink">Create an account</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium mb-1 text-zinc-700">First name</label>
+            <label className="block text-sm font-medium mb-1 text-steel">First name</label>
             <IconInput
               icon={<UserIcon />}
               required
@@ -49,7 +49,7 @@ export default function RegisterPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1 text-zinc-700">Last name</label>
+            <label className="block text-sm font-medium mb-1 text-steel">Last name</label>
             <IconInput
               icon={<UserIcon />}
               required
@@ -60,7 +60,7 @@ export default function RegisterPage() {
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1 text-zinc-700">Email</label>
+          <label className="block text-sm font-medium mb-1 text-steel">Email</label>
           <IconInput
             icon={<MailIcon />}
             type="email"
@@ -71,14 +71,14 @@ export default function RegisterPage() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1 text-zinc-700">Password</label>
+          <label className="block text-sm font-medium mb-1 text-steel">Password</label>
           <PasswordInput
             required
             value={form.password}
             onChange={(e) => update("password", e.target.value)}
             className={inputClass}
           />
-          <p className="text-xs text-zinc-500 mt-1">
+          <p className="text-xs text-steel mt-1">
             At least 10 characters, with uppercase, lowercase, a number, and a symbol.
           </p>
         </div>
@@ -86,7 +86,7 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 text-white py-2 font-medium shadow-sm transition-all duration-200 hover:from-zinc-600 hover:to-zinc-800 hover:shadow-md disabled:opacity-50"
+          className="w-full bg-amber text-ink py-2 font-medium transition-colors duration-150 hover:bg-amber-dark disabled:opacity-50"
         >
           {submitting ? "Creating account..." : "Sign up"}
         </button>

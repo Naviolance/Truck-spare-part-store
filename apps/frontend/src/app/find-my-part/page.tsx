@@ -53,16 +53,16 @@ export default function FindMyPartPage() {
 
   return (
     <main className="max-w-4xl mx-auto px-4 py-10">
-      <h1 className="text-2xl font-bold text-zinc-900 tracking-tight mb-1">Find My Part</h1>
-      <p className="text-zinc-500 mb-8">Select your truck to see parts that fit.</p>
+      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-1">Find My Part</h1>
+      <p className="text-steel mb-8">Select your truck to see parts that fit.</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
         <div>
-          <label className="block text-sm font-medium mb-1 text-zinc-700">Manufacturer</label>
+          <label className="block text-sm font-medium mb-1 text-steel">Manufacturer</label>
           <select
             value={manufacturer}
             onChange={(e) => setManufacturer(e.target.value)}
-            className="w-full border border-zinc-300 rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:border-zinc-500"
+            className="w-full border border-steel-light rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:border-steel"
           >
             <option value="">Select…</option>
             {manufacturers.map((m) => <option key={m} value={m}>{m}</option>)}
@@ -70,12 +70,12 @@ export default function FindMyPartPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1 text-zinc-700">Model</label>
+          <label className="block text-sm font-medium mb-1 text-steel">Model</label>
           <select
             value={model}
             onChange={(e) => setModel(e.target.value)}
             disabled={!manufacturer}
-            className="w-full border border-zinc-300 rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:border-zinc-500 disabled:bg-zinc-50"
+            className="w-full border border-steel-light rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:border-steel disabled:bg-paper"
           >
             <option value="">Select…</option>
             {models.map((m) => <option key={m} value={m}>{m}</option>)}
@@ -83,12 +83,12 @@ export default function FindMyPartPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1 text-zinc-700">Year / Engine</label>
+          <label className="block text-sm font-medium mb-1 text-steel">Year / Engine</label>
           <select
             value={vehicleId}
             onChange={(e) => setVehicleId(e.target.value)}
             disabled={!model}
-            className="w-full border border-zinc-300 rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:border-zinc-500 disabled:bg-zinc-50"
+            className="w-full border border-steel-light rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:border-steel disabled:bg-paper"
           >
             <option value="">Select…</option>
             {configs.map((c) => (
@@ -102,7 +102,7 @@ export default function FindMyPartPage() {
 
       {products !== null && (
         <div>
-          <h2 className="font-semibold text-zinc-900 mb-4">
+          <h2 className="font-display font-semibold text-ink mb-4">
             {products.length > 0
               ? `${products.length} part${products.length !== 1 ? "s" : ""} found`
               : "No parts found yet"}

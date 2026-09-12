@@ -23,7 +23,7 @@ export function AuthLayout({ mode, children }: Props) {
             apps/frontend/public/engine.jpg exists; until then (or if it
             fails to load) this gradient alone is the background, so
             nothing looks broken either way. */}
-        <div className="relative sm:w-2/5 min-h-[220px] sm:min-h-0 bg-gradient-to-br from-zinc-800 to-zinc-950 flex flex-col justify-between p-8 text-white overflow-hidden">
+        <div className="relative sm:w-2/5 min-h-[220px] sm:min-h-0 bg-ink flex flex-col justify-between p-8 text-paper overflow-hidden">
           {/* Same source photo on both pages, but treated differently so
               they don't read as an identical copy-paste: register is the
               first-impression, new-visitor moment, so it gets the bolder,
@@ -41,22 +41,19 @@ export function AuthLayout({ mode, children }: Props) {
           )}
 
           <div className="relative">
-            <p className="font-bold text-lg tracking-tight">TruckParts</p>
+            <p className="font-display font-black text-xl tracking-tight">TruckParts</p>
           </div>
 
           <div className="relative">
-            <h2 className="text-2xl font-bold mb-2">
+            <h2 className="text-2xl font-display font-bold mb-2">
               {isLogin ? "Welcome back" : "Join TruckParts"}
             </h2>
-            <p className="text-zinc-300 text-sm mb-6">
+            <p className="text-steel-light text-sm mb-6">
               {isLogin
                 ? "Log in to pick up where you left off."
                 : "Create an account to start browsing parts."}
             </p>
-            <Link
-              href={isLogin ? "/register" : "/login"}
-              className="inline-block rounded-lg bg-white text-zinc-900 px-5 py-2.5 text-sm font-semibold shadow-md transition-all duration-200 hover:bg-zinc-100 hover:shadow-lg"
-            >
+            <Link href={isLogin ? "/register" : "/login"} className="btn-primary">
               {isLogin ? "Create an account" : "Log in instead"}
             </Link>
           </div>

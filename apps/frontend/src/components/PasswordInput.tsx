@@ -18,7 +18,7 @@ export function PasswordInput({ className, ...props }: InputHTMLAttributes<HTMLI
 
   return (
     <div className="relative">
-      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none">
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-steel pointer-events-none">
         <LockIcon />
       </span>
       <input
@@ -29,7 +29,7 @@ export function PasswordInput({ className, ...props }: InputHTMLAttributes<HTMLI
       <button
         type="button"
         onClick={() => setVisible((v) => !v)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500 hover:text-zinc-700 transition-colors duration-200"
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-steel hover:text-steel transition-colors duration-200"
         tabIndex={-1}
       >
         {visible ? "Hide" : "Show"}

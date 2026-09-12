@@ -6,22 +6,22 @@
 export default function ProductLoading() {
   return (
     <main className="max-w-6xl mx-auto px-4 py-10 animate-pulse">
-      <div className="h-4 w-28 bg-zinc-200 rounded" />
+      <div className="h-4 w-28 bg-steel-light rounded" />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mt-6">
-        <div className="aspect-square bg-zinc-200 rounded-lg" />
+        <div className="aspect-square bg-steel-light rounded-lg" />
 
         <div>
-          <div className="h-3 w-32 bg-zinc-200 rounded" />
-          <div className="h-7 w-3/4 bg-zinc-200 rounded mt-3" />
-          <div className="h-8 w-24 bg-zinc-200 rounded mt-4" />
-          <div className="h-4 w-20 bg-zinc-200 rounded mt-4" />
+          <div className="h-3 w-32 bg-steel-light rounded" />
+          <div className="h-7 w-3/4 bg-steel-light rounded mt-3" />
+          <div className="h-8 w-24 bg-steel-light rounded mt-4" />
+          <div className="h-4 w-20 bg-steel-light rounded mt-4" />
           <div className="space-y-2 mt-5">
-            <div className="h-4 w-full bg-zinc-200 rounded" />
-            <div className="h-4 w-full bg-zinc-200 rounded" />
-            <div className="h-4 w-2/3 bg-zinc-200 rounded" />
+            <div className="h-4 w-full bg-steel-light rounded" />
+            <div className="h-4 w-full bg-steel-light rounded" />
+            <div className="h-4 w-2/3 bg-steel-light rounded" />
           </div>
-          <div className="h-12 w-full bg-zinc-200 rounded-lg mt-6" />
+          <div className="h-12 w-full bg-steel-light rounded-lg mt-6" />
         </div>
       </div>
     </main>

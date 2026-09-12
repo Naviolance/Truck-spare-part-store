@@ -32,17 +32,17 @@ export default function AdminReviewsPage() {
     setDeletingId(null);
   }
 
-  if (loading) return <p className="text-zinc-500">Loading…</p>;
+  if (loading) return <p className="text-steel">Loading…</p>;
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-zinc-900 tracking-tight mb-6">Reviews</h1>
+      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">Reviews</h1>
       {reviews.length === 0 ? (
-        <p className="text-zinc-500">No reviews yet.</p>
+        <p className="text-steel">No reviews yet.</p>
       ) : (
         <div className="overflow-x-auto">
-        <table className="w-full text-sm bg-white border border-zinc-200 rounded-lg overflow-hidden">
-          <thead className="bg-zinc-50 text-left">
+        <table className="w-full text-sm bg-white border border-steel-light rounded-lg overflow-hidden">
+          <thead className="bg-paper text-left">
             <tr>
               <th className="p-3">Product</th>
               <th className="p-3">Customer</th>
@@ -54,15 +54,15 @@ export default function AdminReviewsPage() {
           </thead>
           <tbody>
             {reviews.map((r) => (
-              <tr key={r.id} className="border-t border-zinc-100">
+              <tr key={r.id} className="border-t border-steel-light">
                 <td className="p-3">{r.product.name}</td>
                 <td className="p-3">
                   {r.user.firstName} {r.user.lastName}
-                  <div className="text-xs text-zinc-400">{r.user.email}</div>
+                  <div className="text-xs text-steel">{r.user.email}</div>
                 </td>
                 <td className="p-3">★ {r.rating}/5</td>
                 <td className="p-3 max-w-xs truncate">{r.comment}</td>
-                <td className="p-3 text-zinc-500">{new Date(r.createdAt).toLocaleDateString()}</td>
+                <td className="p-3 text-steel">{new Date(r.createdAt).toLocaleDateString()}</td>
                 <td className="p-3 text-right">
                   <button onClick={() => handleDelete(r.id)} disabled={deletingId === r.id} className="text-red-600 underline disabled:opacity-50">
                     {deletingId === r.id ? "Deleting…" : "Delete"}

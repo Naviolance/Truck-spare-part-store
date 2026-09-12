@@ -73,7 +73,7 @@ export function NavigationProgress() {
       style={{ left: pos.x, top: pos.y, transform: "translate(-50%, -50%)" }}
       aria-hidden="true"
     >
-      <span className="block w-6 h-6 border-[3px] border-zinc-300 border-t-zinc-900 rounded-full animate-spin" />
+      <span className="block w-6 h-6 border-[3px] border-steel-light border-t-ink rounded-full animate-spin" />
     </div>
   );
 }

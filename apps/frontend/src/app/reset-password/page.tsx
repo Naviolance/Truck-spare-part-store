@@ -41,10 +41,10 @@ function ResetPasswordInner() {
   if (!token) {
     return (
       <main className="max-w-sm mx-auto px-4 py-16">
-        <h1 className="text-2xl font-bold text-zinc-900 tracking-tight mb-4">Invalid link</h1>
-        <p className="text-zinc-600 text-sm">
+        <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-4">Invalid link</h1>
+        <p className="text-steel text-sm">
           This reset link is missing its token. Request a new one from{" "}
-          <Link href="/forgot-password" className="underline transition-colors duration-200 hover:text-zinc-900">here</Link>.
+          <Link href="/forgot-password" className="underline transition-colors duration-200 hover:text-ink">here</Link>.
         </p>
       </main>
     );
@@ -53,25 +53,25 @@ function ResetPasswordInner() {
   if (success) {
     return (
       <main className="max-w-sm mx-auto px-4 py-16">
-        <h1 className="text-2xl font-bold text-zinc-900 tracking-tight mb-4">Password updated</h1>
-        <p className="text-zinc-600 text-sm">Redirecting you to log in…</p>
+        <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-4">Password updated</h1>
+        <p className="text-steel text-sm">Redirecting you to log in…</p>
       </main>
     );
   }
 
   return (
     <main className="max-w-sm mx-auto px-4 py-16">
-      <h1 className="text-2xl font-bold text-zinc-900 tracking-tight mb-6">Set a new password</h1>
+      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">Set a new password</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1 text-zinc-700">New password</label>
+          <label className="block text-sm font-medium mb-1 text-steel">New password</label>
           <PasswordInput
             required
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            className="w-full border border-zinc-300 rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:border-zinc-500"
+            className="w-full border border-steel-light rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:border-steel"
           />
-          <p className="text-xs text-zinc-500 mt-1">
+          <p className="text-xs text-steel mt-1">
             At least 10 characters, with uppercase, lowercase, a number, and a symbol.
           </p>
         </div>
@@ -79,7 +79,7 @@ function ResetPasswordInner() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 text-white py-2 font-medium shadow-sm transition-all duration-200 hover:from-zinc-600 hover:to-zinc-800 hover:shadow-md disabled:opacity-50"
+          className="w-full bg-amber text-ink py-2 font-medium transition-colors duration-150 hover:bg-amber-dark disabled:opacity-50"
         >
           {submitting ? "Updating…" : "Update password"}
         </button>
@@ -90,7 +90,7 @@ function ResetPasswordInner() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<main className="max-w-sm mx-auto px-4 py-16 text-zinc-500">Loading…</main>}>
+    <Suspense fallback={<main className="max-w-sm mx-auto px-4 py-16 text-steel">Loading…</main>}>
       <ResetPasswordInner />
     </Suspense>
   );

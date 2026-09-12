@@ -36,12 +36,12 @@ const STATUS_COLORS: Record<string, string> = {
   PROCESSING: "bg-yellow-100 text-yellow-700",
   SHIPPED: "bg-purple-100 text-purple-700",
   DELIVERED: "bg-green-100 text-green-700",
-  CANCELLED: "bg-zinc-100 text-zinc-500",
+  CANCELLED: "bg-steel-light text-steel",
   PAYMENT_FAILED: "bg-red-100 text-red-700",
   REFUNDED: "bg-red-100 text-red-700",
   PARTIALLY_REFUNDED: "bg-orange-100 text-orange-700",
   DISPUTED: "bg-red-100 text-red-700",
-  PAYMENT_PENDING: "bg-zinc-100 text-zinc-600",
+  PAYMENT_PENDING: "bg-steel-light text-steel",
 };
 
 export default function AdminOrdersPage() {
@@ -87,18 +87,18 @@ export default function AdminOrdersPage() {
     setUpdatingId(null);
   }
 
-  if (loading) return <p className="text-zinc-500">Loading…</p>;
+  if (loading) return <p className="text-steel">Loading…</p>;
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-zinc-900 tracking-tight mb-6">Orders</h1>
+      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">Orders</h1>
 
       {orders.length === 0 ? (
-        <p className="text-zinc-500">No orders yet.</p>
+        <p className="text-steel">No orders yet.</p>
       ) : (
         <div className="overflow-x-auto">
-        <table className="w-full text-sm bg-white border border-zinc-200 rounded-lg overflow-hidden">
-          <thead className="bg-zinc-50 text-left">
+        <table className="w-full text-sm bg-white border border-steel-light rounded-lg overflow-hidden">
+          <thead className="bg-paper text-left">
             <tr>
               <th className="p-3">Order</th>
               <th className="p-3">Customer</th>
@@ -112,20 +112,20 @@ export default function AdminOrdersPage() {
             {orders.map((o) => {
               const pendingCash = o.status === "PAYMENT_PENDING" && o.payments.some((p) => p.provider === "cash" && p.status === "PENDING");
               return (
-              <tr key={o.id} className="border-t border-zinc-100">
+              <tr key={o.id} className="border-t border-steel-light">
                 <td className="p-3 font-medium">#{o.orderNumber}</td>
                 <td className="p-3">
                   {o.user.firstName} {o.user.lastName}
-                  <div className="text-xs text-zinc-400">{o.user.email}</div>
+                  <div className="text-xs text-steel">{o.user.email}</div>
                 </td>
-                <td className="p-3 text-zinc-500">{new Date(o.createdAt).toLocaleDateString()}</td>
+                <td className="p-3 text-steel">{new Date(o.createdAt).toLocaleDateString()}</td>
                 <td className="p-3 font-medium">{formatMoney(o.total)}</td>
                 <td className="p-3">
-                  <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[o.status] || "bg-zinc-100"}`}>
+                  <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[o.status] || "bg-steel-light"}`}>
                     {o.status}
                   </span>
                   {pendingCash && (
-                    <span className="block text-xs text-amber-600 mt-1">Cash — awaiting pickup</span>
+                    <span className="block text-xs text-amber-dark mt-1">Cash — awaiting pickup</span>
                   )}
                 </td>
                 <td className="p-3">
@@ -134,7 +134,7 @@ export default function AdminOrdersPage() {
                       value={o.status}
                       disabled={updatingId === o.id || TERMINAL_STATUSES.includes(o.status)}
                       onChange={(e) => handleStatusChange(o.id, e.target.value)}
-                      className="border border-zinc-300 rounded-lg px-2 py-1 text-xs"
+                      className="border border-steel-light rounded-lg px-2 py-1 text-xs"
                     >
                       {STATUS_OPTIONS.map((s) => (
                         <option key={s} value={s}>{s}</option>

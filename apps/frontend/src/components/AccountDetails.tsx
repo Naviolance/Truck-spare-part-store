@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
-const inputClass = "w-full border border-zinc-300 rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:border-zinc-500";
-const labelClass = "block text-sm font-medium mb-1 text-zinc-700";
+const inputClass = "w-full border border-steel-light rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:border-steel";
+const labelClass = "block text-sm font-medium mb-1 text-steel";
 
 type ProfileForm = {
   firstName: string;
@@ -78,7 +78,7 @@ export function AccountDetails({ variant }: { variant: "customer" | "admin" }) {
   const addressLabel = isAdmin ? "Address" : "Contact address";
   const secondaryPhoneLabel = isAdmin ? "Secondary phone" : "Contact phone (for orders)";
 
-  if (loading) return <p className="text-zinc-500">Loading…</p>;
+  if (loading) return <p className="text-steel">Loading…</p>;
 
   if (!editing) {
     const rows = [
@@ -93,17 +93,17 @@ export function AccountDetails({ variant }: { variant: "customer" | "admin" }) {
     return (
       <div>
         {saved && <p className="text-emerald-600 text-sm mb-4">Saved.</p>}
-        <div className="bg-white border border-zinc-200 rounded-lg divide-y divide-zinc-100">
+        <div className="bg-white border border-steel-light rounded-lg divide-y divide-steel-light">
           {rows.map((r) => (
             <div key={r.label} className="flex items-center justify-between p-3 text-sm">
-              <span className="text-zinc-500">{r.label}</span>
-              <span className="text-zinc-900 font-medium">{r.value}</span>
+              <span className="text-steel">{r.label}</span>
+              <span className="text-ink font-medium">{r.value}</span>
             </div>
           ))}
         </div>
         <button
           onClick={startEdit}
-          className="mt-4 rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 text-white px-4 py-2 text-sm font-medium shadow-sm transition-all duration-200 hover:from-zinc-600 hover:to-zinc-800 hover:shadow-md"
+          className="mt-4 bg-amber text-ink px-4 py-2 text-sm font-medium transition-colors duration-150 hover:bg-amber-dark"
         >
           Edit details
         </button>
@@ -145,14 +145,14 @@ export function AccountDetails({ variant }: { variant: "customer" | "admin" }) {
         <button
           type="submit"
           disabled={saving}
-          className="flex-1 rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 text-white py-2 font-medium shadow-sm transition-all duration-200 hover:from-zinc-600 hover:to-zinc-800 hover:shadow-md disabled:opacity-50"
+          className="flex-1 bg-amber text-ink py-2 font-medium transition-colors duration-150 hover:bg-amber-dark disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save changes"}
         </button>
         <button
           type="button"
           onClick={() => setEditing(false)}
-          className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-600 transition-colors duration-200 hover:bg-zinc-50"
+          className="rounded-lg border border-steel-light px-4 py-2 text-sm font-medium text-steel transition-colors duration-200 hover:bg-paper"
         >
           Cancel
         </button>

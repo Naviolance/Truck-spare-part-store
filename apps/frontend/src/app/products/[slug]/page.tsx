@@ -5,6 +5,7 @@ import { AddToCartButton } from "./AddToCartButton";
 import { ReviewsSection } from "./ReviewsSection";
 import { ProductGallery } from "./ProductGallery";
 import { formatMoney } from "@/lib/money";
+import { ConditionTag } from "@/components/ProductCard";
 
 type Product = {
   id: string;
@@ -61,7 +62,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
 
   return (
     <main className="max-w-6xl mx-auto px-4 py-10">
-      <Link href="/products" className="text-sm text-zinc-500 transition-colors duration-200 hover:text-zinc-900">
+      <Link href="/products" className="text-sm text-steel transition-colors duration-200 hover:text-ink">
         &larr; Back to all parts
       </Link>
 
@@ -71,16 +72,16 @@ export default async function ProductPage({ params }: { params: { slug: string }
 
         {/* Details */}
         <div>
-          <p className="text-xs uppercase tracking-wide text-zinc-400">
-            {product.brand?.name ?? "Unbranded"} · {product.category.name}
+          <p className="text-sm text-steel">
+            {product.brand?.name ?? "Unbranded"} / {product.category.name}
           </p>
-          <h1 className="text-2xl font-bold mt-1 text-zinc-900 tracking-tight">{product.name}</h1>
+          <h1 className="text-2xl font-display font-bold mt-1 text-ink tracking-tight">{product.name}</h1>
 
           <div className="flex items-center gap-3 mt-3 flex-wrap">
-            <span className="text-2xl font-bold text-zinc-900">{formatMoney(product.price)}</span>
-            <span className="text-xs rounded-full bg-zinc-100 text-zinc-600 px-2 py-0.5">{product.condition}</span>
+            <span className="text-2xl font-mono font-semibold text-ink">{formatMoney(product.price)}</span>
+            <ConditionTag condition={product.condition} />
             {avgRating && (
-              <span className="text-sm text-zinc-500">★ {avgRating} ({product.reviews.length} review{product.reviews.length !== 1 ? "s" : ""})</span>
+              <span className="text-sm text-steel">★ {avgRating} ({product.reviews.length} review{product.reviews.length !== 1 ? "s" : ""})</span>
             )}
           </div>
 
@@ -89,16 +90,16 @@ export default async function ProductPage({ params }: { params: { slug: string }
           </p>
 
           {product.conditionNotes && (
-            <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-900">
+            <div className="mt-4 bg-amber/10 border-l-4 border-amber p-3 text-sm text-ink">
               <span className="font-medium">Condition notes: </span>
               {product.conditionNotes}
             </div>
           )}
 
-          <p className="text-zinc-700 mt-4 whitespace-pre-line leading-relaxed">{product.description}</p>
+          <p className="text-steel mt-4 whitespace-pre-line leading-relaxed">{product.description}</p>
 
           {(product.partNumber || product.crossReference.length > 0) && (
-            <div className="mt-4 text-sm text-zinc-600 space-y-1">
+            <div className="mt-4 text-sm text-steel space-y-1">
               {product.partNumber && <p>Part number: <span className="font-mono">{product.partNumber}</span></p>}
               {product.crossReference.length > 0 && (
                 <p>Cross-reference: <span className="font-mono">{product.crossReference.join(", ")}</span></p>
@@ -108,13 +109,13 @@ export default async function ProductPage({ params }: { params: { slug: string }
 
           {product.compatibility.length > 0 && (
             <div className="mt-6">
-              <h2 className="font-semibold mb-2 text-zinc-900">Fits these vehicles</h2>
-              <ul className="text-sm text-zinc-700 space-y-1">
+              <h2 className="font-display font-semibold mb-2 text-ink">Fits these vehicles</h2>
+              <ul className="text-sm text-steel space-y-1">
                 {product.compatibility.map((c, i) => (
-                  <li key={i} className="border-b border-zinc-100 pb-1">
+                  <li key={i} className="border-b border-steel-light pb-1">
                     {c.vehicle.manufacturer} {c.vehicle.model} ({c.vehicle.yearStart}
                     {c.vehicle.yearEnd ? `–${c.vehicle.yearEnd}` : "+"})
-                    {c.vehicle.engine && ` · ${c.vehicle.engine}`}
+                    {c.vehicle.engine && ` / ${c.vehicle.engine}`}
                   </li>
                 ))}
               </ul>

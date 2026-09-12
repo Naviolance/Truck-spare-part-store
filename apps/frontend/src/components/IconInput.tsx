@@ -29,7 +29,7 @@ type Props = InputHTMLAttributes<HTMLInputElement> & { icon: ReactNode };
 export function IconInput({ icon, className, ...props }: Props) {
   return (
     <div className="relative">
-      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none">
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-steel pointer-events-none">
         {icon}
       </span>
       <input {...props} className={`${className ?? ""} pl-10`} />

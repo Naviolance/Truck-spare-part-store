@@ -14,14 +14,32 @@ export type ProductCardData = {
   brand: { name: string } | null;
 };
 
+// Color coding is functional here, not decorative - it's the same
+// distinction a yard makes tagging a physical part, surfaced consistently
+// everywhere a condition shows up (cards, product page, admin tables).
+const CONDITION_TAG: Record<string, { label: string; className: string }> = {
+  NEW: { label: "New", className: "tag-new" },
+  USED: { label: "Used", className: "tag-used" },
+  RECONDITIONED: { label: "Reconditioned", className: "tag-reconditioned" },
+};
+
+export function ConditionTag({ condition }: { condition: string }) {
+  const tag = CONDITION_TAG[condition] ?? { label: condition, className: "tag-condition bg-steel/15 text-steel" };
+  return <span className={tag.className}>{tag.label}</span>;
+}
+
 export function ProductCard({ product }: { product: ProductCardData }) {
   return (
     <Link
       href={`/products/${product.slug}`}
-      className="group rounded-lg border border-zinc-200 bg-white overflow-hidden shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 hover:border-zinc-300"
+      className="group relative bg-white border border-steel-light overflow-hidden transition-colors duration-200 hover:border-ink"
     >
+      {/* Corner tab: the hang-tag most yards actually staple to a part. */}
+      <div className="absolute top-0 right-0 z-10">
+        <ConditionTag condition={product.condition} />
+      </div>
       {product.images[0] && (
-        <div className="relative w-full h-40 overflow-hidden">
+        <div className="relative w-full h-40 overflow-hidden bg-steel-light">
           <Image
             src={product.images[0].url}
             alt={product.images[0].altText ?? product.name}
@@ -33,14 +51,11 @@ export function ProductCard({ product }: { product: ProductCardData }) {
         </div>
       )}
       <div className="p-4">
-        <p className="text-xs uppercase tracking-wide text-zinc-400">
-          {product.brand?.name ?? "Unbranded"} · {product.category.name}
+        <p className="text-xs text-steel">
+          {product.brand?.name ?? "Unbranded"} / {product.category.name}
         </p>
-        <h2 className="font-semibold mt-1 text-zinc-900">{product.name}</h2>
-        <div className="flex items-center justify-between mt-2">
-          <span className="font-bold text-zinc-900">{formatMoney(product.price)}</span>
-          <span className="text-xs rounded-full bg-zinc-100 text-zinc-600 px-2 py-0.5">{product.condition}</span>
-        </div>
+        <h2 className="font-display font-bold mt-1 text-ink leading-snug">{product.name}</h2>
+        <p className="font-mono font-semibold text-lg text-ink mt-2">{formatMoney(product.price)}</p>
       </div>
     </Link>
   );

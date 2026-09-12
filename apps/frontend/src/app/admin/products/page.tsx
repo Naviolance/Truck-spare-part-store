@@ -38,40 +38,40 @@ export default function AdminProductsPage() {
     setPendingId(null);
   }
 
-  if (loading) return <p className="text-zinc-500">Loading…</p>;
+  if (loading) return <p className="text-steel">Loading…</p>;
 
   const outOfStock = products.filter((p) => p.quantity === 0);
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Products</h1>
-        <Link href="/admin/products/new" className="bg-zinc-900 text-white text-sm px-4 py-2 rounded-lg">+ New product</Link>
+        <h1 className="text-2xl font-display font-bold">Products</h1>
+        <Link href="/admin/products/new" className="bg-ink text-white text-sm px-4 py-2 rounded-lg">+ New product</Link>
       </div>
       {outOfStock.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-sm text-amber-900">
+        <div className="bg-amber/10 border-l-4 border-amber p-3 mb-4 text-sm text-ink">
           <span className="font-medium">{outOfStock.length} product{outOfStock.length !== 1 ? "s" : ""} out of stock</span>
           {" "}— hidden from the storefront until restocked: {outOfStock.map((p) => p.name).join(", ")}
         </div>
       )}
       <div className="overflow-x-auto">
-      <table className="w-full text-sm bg-white border border-zinc-200 rounded-lg overflow-hidden">
-        <thead className="bg-zinc-50 text-left">
+      <table className="w-full text-sm bg-white border border-steel-light rounded-lg overflow-hidden">
+        <thead className="bg-paper text-left">
           <tr><th className="p-3">Name</th><th className="p-3">Category</th><th className="p-3">Price</th><th className="p-3">Stock</th><th className="p-3">Added</th><th className="p-3">Status</th><th className="p-3"></th></tr>
         </thead>
         <tbody>
           {products.map((p) => (
-            <tr key={p.id} className={`border-t border-zinc-100 ${p.quantity === 0 ? "bg-red-50" : ""}`}>
+            <tr key={p.id} className={`border-t border-steel-light ${p.quantity === 0 ? "bg-red-50" : ""}`}>
               <td className="p-3">{p.name}</td>
               <td className="p-3">{p.category.name}</td>
               <td className="p-3">{formatMoney(p.price)}</td>
               <td className={`p-3 ${p.quantity === 0 ? "text-red-600 font-medium" : ""}`}>{p.quantity}</td>
-              <td className="p-3 text-zinc-500" title={new Date(p.createdAt).toLocaleString()}>
+              <td className="p-3 text-steel" title={new Date(p.createdAt).toLocaleString()}>
                 {new Date(p.createdAt).toLocaleDateString()}
               </td>
               <td className="p-3">
                 <button onClick={() => togglePublish(p)} disabled={pendingId === p.id}
-                  className={`text-xs px-2 py-1 rounded-full disabled:opacity-50 ${p.status === "PUBLISHED" ? "bg-green-100 text-green-700" : "bg-zinc-100 text-zinc-600"}`}>
+                  className={`text-xs px-2 py-1 rounded-full disabled:opacity-50 ${p.status === "PUBLISHED" ? "bg-green-100 text-green-700" : "bg-steel-light text-steel"}`}>
                   {pendingId === p.id ? "…" : p.status}
                 </button>
               </td>

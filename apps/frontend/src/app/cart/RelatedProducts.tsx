@@ -56,14 +56,14 @@ export function RelatedProducts({ categoryIds, excludeProductIds }: { categoryId
   if (products.length === 0) return null;
 
   return (
-    <section className="mt-10 pt-8 border-t border-zinc-200">
-      <h2 className="text-lg font-bold text-zinc-900 tracking-tight mb-4">You might also need</h2>
+    <section className="mt-10 pt-8 border-t border-steel-light">
+      <h2 className="text-lg font-display font-bold text-ink tracking-tight mb-4">You might also need</h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {products.map((product) => (
           <Link
             key={product.id}
             href={`/products/${product.slug}`}
-            className="group rounded-lg border border-zinc-200 bg-white overflow-hidden shadow-sm transition-all duration-200 hover:shadow-md hover:border-zinc-300"
+            className="group rounded-lg border border-steel-light bg-white overflow-hidden transition-colors duration-150 hover:shadow-md hover:border-steel-light"
           >
             {product.images[0] && (
               <div className="relative w-full h-32 overflow-hidden">
@@ -78,8 +78,8 @@ export function RelatedProducts({ categoryIds, excludeProductIds }: { categoryId
               </div>
             )}
             <div className="p-3">
-              <p className="text-sm font-medium text-zinc-900 line-clamp-2">{product.name}</p>
-              <p className="text-sm font-semibold text-zinc-600 mt-1">{formatMoney(product.price)}</p>
+              <p className="text-sm font-medium text-ink line-clamp-2">{product.name}</p>
+              <p className="text-sm font-semibold text-steel mt-1">{formatMoney(product.price)}</p>
             </div>
           </Link>
         ))}

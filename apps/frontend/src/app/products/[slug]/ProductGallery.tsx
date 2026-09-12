@@ -22,7 +22,7 @@ export function ProductGallery({ images, productName }: { images: ProductImage[]
 
   if (images.length === 0) {
     return (
-      <div className="w-full aspect-square bg-zinc-100 rounded-lg flex items-center justify-center text-zinc-400">
+      <div className="w-full aspect-square bg-steel-light rounded-lg flex items-center justify-center text-steel">
         No image
       </div>
     );
@@ -40,7 +40,7 @@ export function ProductGallery({ images, productName }: { images: ProductImage[]
 
   return (
     <div>
-      <div className="relative w-full aspect-square rounded-lg border border-zinc-200 overflow-hidden bg-zinc-50 group">
+      <div className="relative w-full aspect-square rounded-lg border border-steel-light overflow-hidden bg-paper group">
         <Image
           key={active.url}
           src={active.url}
@@ -57,7 +57,7 @@ export function ProductGallery({ images, productName }: { images: ProductImage[]
               type="button"
               onClick={prev}
               aria-label="Previous image"
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 text-zinc-700 shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-white"
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 text-steel shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-white"
             >
               <ChevronIcon direction="left" />
             </button>
@@ -65,7 +65,7 @@ export function ProductGallery({ images, productName }: { images: ProductImage[]
               type="button"
               onClick={next}
               aria-label="Next image"
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 text-zinc-700 shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-white"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 text-steel shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-white"
             >
               <ChevronIcon direction="right" />
             </button>
@@ -85,7 +85,7 @@ export function ProductGallery({ images, productName }: { images: ProductImage[]
               onClick={() => setIndex(i)}
               aria-label={`View image ${i + 1}`}
               className={`relative w-16 h-16 shrink-0 rounded-lg overflow-hidden border-2 transition-colors duration-200 ${
-                i === index ? "border-zinc-900" : "border-transparent hover:border-zinc-300"
+                i === index ? "border-ink" : "border-transparent hover:border-steel-light"
               }`}
             >
               <Image

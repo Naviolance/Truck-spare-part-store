@@ -44,16 +44,16 @@ export default function AdminBrandsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-zinc-900 tracking-tight mb-6">Brands</h1>
+      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">Brands</h1>
       <form onSubmit={handleAdd} className="flex gap-2 mb-6">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="New brand name" className="border border-zinc-300 rounded-lg px-3 py-2 flex-1" required />
-        <button disabled={submitting} className="bg-zinc-900 text-white rounded-lg px-4 py-2 disabled:opacity-50">{submitting ? "Adding…" : "Add"}</button>
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="New brand name" className="border border-steel-light rounded-lg px-3 py-2 flex-1" required />
+        <button disabled={submitting} className="bg-ink text-white rounded-lg px-4 py-2 disabled:opacity-50">{submitting ? "Adding…" : "Add"}</button>
       </form>
       {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
-      <ul className="bg-white border border-zinc-200 rounded-lg divide-y divide-zinc-100">
+      <ul className="bg-white border border-steel-light rounded-lg divide-y divide-steel-light">
         {brands.map((b) => (
           <li key={b.id} className="flex items-center justify-between p-3 text-sm">
-            <span>{b.name} <span className="text-zinc-400">({b._count.products} products)</span></span>
+            <span>{b.name} <span className="text-steel">({b._count.products} products)</span></span>
             <button onClick={() => handleDelete(b.id)} disabled={deletingId === b.id} className="text-red-600 underline disabled:opacity-50">
               {deletingId === b.id ? "Deleting…" : "Delete"}
             </button>

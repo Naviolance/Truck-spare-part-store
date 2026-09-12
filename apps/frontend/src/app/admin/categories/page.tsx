@@ -44,16 +44,16 @@ export default function AdminCategoriesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-zinc-900 tracking-tight mb-6">Categories</h1>
+      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">Categories</h1>
       <form onSubmit={handleAdd} className="flex gap-2 mb-6">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="New category name" className="border border-zinc-300 rounded-lg px-3 py-2 flex-1" required />
-        <button disabled={submitting} className="bg-zinc-900 text-white rounded-lg px-4 py-2 disabled:opacity-50">{submitting ? "Adding…" : "Add"}</button>
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="New category name" className="border border-steel-light rounded-lg px-3 py-2 flex-1" required />
+        <button disabled={submitting} className="bg-ink text-white rounded-lg px-4 py-2 disabled:opacity-50">{submitting ? "Adding…" : "Add"}</button>
       </form>
       {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
-      <ul className="bg-white border border-zinc-200 rounded-lg divide-y divide-zinc-100">
+      <ul className="bg-white border border-steel-light rounded-lg divide-y divide-steel-light">
         {categories.map((c) => (
           <li key={c.id} className="flex items-center justify-between p-3 text-sm">
-            <span>{c.name} <span className="text-zinc-400">({c._count.products} products)</span></span>
+            <span>{c.name} <span className="text-steel">({c._count.products} products)</span></span>
             <button onClick={() => handleDelete(c.id)} disabled={deletingId === c.id} className="text-red-600 underline disabled:opacity-50">
               {deletingId === c.id ? "Deleting…" : "Delete"}
             </button>

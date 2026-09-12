@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Big_Shoulders_Display, IBM_Plex_Mono } from "next/font/google";
 import { Suspense } from "react";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
@@ -9,7 +9,23 @@ import { Footer } from "@/components/Footer";
 import { PageTransition } from "@/components/PageTransition";
 import { NavigationProgress } from "@/components/NavigationProgress";
 
-const inter = Inter({ subsets: ["latin"], display: "swap" });
+const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-body" });
+// Condensed, steel-beam letterforms for headlines - deliberately not the
+// same neutral grotesk as the body copy (see Footer/Navbar/hero usage).
+const bigShoulders = Big_Shoulders_Display({
+  subsets: ["latin"],
+  weight: ["700", "900"],
+  display: "swap",
+  variable: "--font-display",
+});
+// Used narrowly for part numbers/SKUs/spec rows - real parts-catalog
+// convention (unambiguous characters, tabular alignment), not decoration.
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["500", "600"],
+  display: "swap",
+  variable: "--font-mono",
+});
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 const SITE_NAME = "TruckParts";
@@ -35,7 +51,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} min-h-screen bg-zinc-50 text-zinc-900 flex flex-col`}>
+      <body
+        className={`${inter.variable} ${bigShoulders.variable} ${plexMono.variable} font-sans min-h-screen bg-paper text-ink flex flex-col`}
+      >
         {/* Suspense boundary isolated here (not around the whole app) so
             useSearchParams() inside only de-opts this one component to
             client rendering, not every static page in the tree. */}

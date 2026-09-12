@@ -3,7 +3,7 @@ import { useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
-const inputClass = "w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:border-zinc-500";
+const inputClass = "w-full border border-steel-light rounded-lg px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:border-steel";
 
 // Dropped into any "no results" state (search, filters, Find My Part) so a
 // customer who can't find a part isn't stuck — this is a lead for the admin
@@ -20,7 +20,7 @@ export function RequestProductForm({ prefillDescription = "" }: { prefillDescrip
 
   if (!user) {
     return (
-      <p className="text-sm text-zinc-500">
+      <p className="text-sm text-steel">
         Can&apos;t find what you&apos;re looking for? <a href="/login" className="underline">Log in</a> to request it.
       </p>
     );
@@ -32,7 +32,7 @@ export function RequestProductForm({ prefillDescription = "" }: { prefillDescrip
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="text-sm text-zinc-700 underline transition-colors duration-200 hover:text-zinc-900">
+      <button onClick={() => setOpen(true)} className="text-sm text-steel underline transition-colors duration-200 hover:text-ink">
         Can&apos;t find what you&apos;re looking for? Request it.
       </button>
     );
@@ -60,8 +60,8 @@ export function RequestProductForm({ prefillDescription = "" }: { prefillDescrip
   }
 
   return (
-    <form onSubmit={handleSubmit} className="text-left max-w-md mx-auto space-y-3 mt-4 bg-zinc-50 border border-zinc-200 rounded-lg p-4">
-      <p className="text-sm font-medium text-zinc-900">Request a part</p>
+    <form onSubmit={handleSubmit} className="text-left max-w-md mx-auto space-y-3 mt-4 bg-paper border border-steel-light rounded-lg p-4">
+      <p className="text-sm font-medium text-ink">Request a part</p>
       <div>
         <textarea
           required
@@ -80,11 +80,11 @@ export function RequestProductForm({ prefillDescription = "" }: { prefillDescrip
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 text-white px-4 py-2 text-sm font-medium shadow-sm transition-all duration-200 hover:from-zinc-600 hover:to-zinc-800 hover:shadow-md disabled:opacity-50"
+          className="bg-amber text-ink px-4 py-2 text-sm font-medium transition-colors duration-150 hover:bg-amber-dark disabled:opacity-50"
         >
           {submitting ? "Sending…" : "Send request"}
         </button>
-        <button type="button" onClick={() => setOpen(false)} className="text-sm text-zinc-500 underline">Cancel</button>
+        <button type="button" onClick={() => setOpen(false)} className="text-sm text-steel underline">Cancel</button>
       </div>
     </form>
   );

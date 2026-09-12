@@ -1,3 +1,45 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid #E8A33D;
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: #E8A33D;
+    color: #1B1917;
+  }
+}
+
+@layer components {
+  /* Sharp corners, no soft drop-shadow kit - see design plan. */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold transition-colors duration-150 disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply btn bg-amber text-ink hover:bg-amber-dark;
+  }
+  .btn-secondary {
+    @apply btn bg-ink text-paper hover:bg-ink/90;
+  }
+  .btn-outline {
+    @apply btn border border-ink text-ink hover:bg-ink hover:text-paper;
+  }
+
+  /* Condition hang-tags: color is functional (grading), not decorative -
+     amber/rust/steel map to New/Used/Reconditioned everywhere. */
+  .tag-condition {
+    @apply inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-semibold font-mono tracking-tight;
+  }
+  .tag-new {
+    @apply tag-condition bg-amber/15 text-amber-dark;
+  }
+  .tag-used {
+    @apply tag-condition bg-rust/15 text-rust-dark;
+  }
+  .tag-reconditioned {
+    @apply tag-condition bg-steel/15 text-steel;
+  }
+}

@@ -61,7 +61,9 @@ function NavLink({ href, children, onClick }: { href: string; children: React.Re
     <Link
       href={href}
       onClick={onClick}
-      className={`text-sm transition-colors duration-200 ${active ? "text-zinc-900 font-medium" : "text-zinc-600 hover:text-zinc-900"}`}
+      className={`text-sm border-b-2 pb-0.5 transition-colors duration-200 ${
+        active ? "text-paper border-amber font-medium" : "text-paper/70 border-transparent hover:text-paper"
+      }`}
     >
       {children}
     </Link>
@@ -76,10 +78,10 @@ export function Navbar() {
   const closeMenu = () => setMenuOpen(false);
 
   return (
-    <nav className="sticky top-0 z-40 border-b border-zinc-200 bg-white/95 backdrop-blur">
+    <nav className="sticky top-0 z-40 bg-ink border-b-2 border-amber">
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex items-center justify-between py-3">
-          <Link href="/" className="font-bold text-lg text-zinc-900 tracking-tight transition-colors hover:text-zinc-600">
+          <Link href="/" className="font-display font-black text-2xl text-paper tracking-tight transition-colors hover:text-amber">
             TruckParts
           </Link>
 
@@ -97,10 +99,10 @@ export function Navbar() {
                 <>
                   {user.role !== "ADMIN" && (
                     <>
-                      <Link href="/cart" className="relative text-zinc-600 transition-colors duration-200 hover:text-zinc-900" aria-label="Cart">
+                      <Link href="/cart" className="relative text-paper/70 transition-colors duration-200 hover:text-paper" aria-label="Cart">
                         <CartIcon />
                         {itemCount > 0 && (
-                          <span className="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-zinc-900 px-1 text-[10px] font-medium text-white">
+                          <span className="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center bg-amber px-1 text-[10px] font-mono font-semibold text-ink">
                             {itemCount}
                           </span>
                         )}
@@ -110,7 +112,7 @@ export function Navbar() {
                   )}
                   <Link
                     href={user.role === "ADMIN" ? "/admin" : "/account"}
-                    className="text-zinc-600 transition-colors duration-200 hover:text-zinc-900"
+                    className="text-paper/70 transition-colors duration-200 hover:text-paper"
                     aria-label={user.role === "ADMIN" ? "Admin dashboard" : "Account"}
                     title={user.role === "ADMIN" ? `Hi, ${user.firstName} — dashboard` : `Hi, ${user.firstName}`}
                   >
@@ -118,7 +120,7 @@ export function Navbar() {
                   </Link>
                   <button
                     onClick={logout}
-                    className="text-zinc-600 transition-colors duration-200 hover:text-red-600"
+                    className="text-paper/70 transition-colors duration-200 hover:text-rust"
                     aria-label="Log out"
                     title="Log out"
                   >
@@ -126,10 +128,7 @@ export function Navbar() {
                   </button>
                 </>
               ) : (
-                <button
-                  onClick={() => setAuthOpen(true)}
-                  className="rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 px-4 py-2 text-white shadow-sm transition-all duration-200 hover:from-zinc-600 hover:to-zinc-800 hover:shadow-md"
-                >
+                <button onClick={() => setAuthOpen(true)} className="btn-primary">
                   Log in
                 </button>
               )}
@@ -138,10 +137,10 @@ export function Navbar() {
             {/* Mobile: cart icon (customers only) + hamburger */}
             <div className="flex md:hidden items-center gap-4">
               {!loading && user && user.role !== "ADMIN" && (
-                <Link href="/cart" className="relative text-zinc-600" aria-label="Cart">
+                <Link href="/cart" className="relative text-paper/70" aria-label="Cart">
                   <CartIcon />
                   {itemCount > 0 && (
-                    <span className="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-zinc-900 px-1 text-[10px] font-medium text-white">
+                    <span className="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center bg-amber px-1 text-[10px] font-mono font-semibold text-ink">
                       {itemCount}
                     </span>
                   )}
@@ -149,7 +148,7 @@ export function Navbar() {
               )}
               <button
                 onClick={() => setMenuOpen((o) => !o)}
-                className="text-zinc-700"
+                className="text-paper"
                 aria-label={menuOpen ? "Close menu" : "Open menu"}
                 aria-expanded={menuOpen}
               >
@@ -162,7 +161,7 @@ export function Navbar() {
 
       {/* Mobile menu panel */}
       <div
-        className={`md:hidden overflow-hidden transition-[max-height] duration-300 ease-in-out border-t border-zinc-100 ${
+        className={`md:hidden overflow-hidden transition-[max-height] duration-300 ease-in-out border-t border-paper/10 ${
           menuOpen ? "max-h-96" : "max-h-0 border-t-0"
         }`}
       >
@@ -182,7 +181,7 @@ export function Navbar() {
                   closeMenu();
                   logout();
                 }}
-                className="text-left text-zinc-600 transition-colors duration-200 hover:text-red-600"
+                className="text-left text-paper/70 transition-colors duration-200 hover:text-rust"
               >
                 Log out
               </button>
@@ -193,7 +192,7 @@ export function Navbar() {
                 closeMenu();
                 setAuthOpen(true);
               }}
-              className="inline-block w-fit rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 px-4 py-2 text-white shadow-sm transition-all duration-200 hover:from-zinc-600 hover:to-zinc-800"
+              className="btn-primary w-fit"
             >
               Log in
             </button>

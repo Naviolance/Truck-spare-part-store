@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { PasswordInput } from "@/components/PasswordInput";
 import { IconInput, MailIcon, UserIcon } from "@/components/IconInput";
 
-const inputClass = "w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:border-zinc-500";
+const inputClass = "w-full border border-steel-light rounded-lg px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:border-steel";
 
 function CloseIcon() {
   return (
@@ -75,7 +75,7 @@ export function AuthModal({ open, onClose, onAuthenticated, message }: Props) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/40 backdrop-blur-sm px-4 animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm px-4 animate-fadeIn"
       onClick={onClose}
     >
       <div
@@ -85,15 +85,15 @@ export function AuthModal({ open, onClose, onAuthenticated, message }: Props) {
         <button
           onClick={onClose}
           aria-label="Close"
-          className="absolute top-4 right-4 text-zinc-400 transition-colors duration-200 hover:text-zinc-700"
+          className="absolute top-4 right-4 text-steel transition-colors duration-200 hover:text-steel"
         >
           <CloseIcon />
         </button>
 
-        <h2 className="text-xl font-bold text-zinc-900 tracking-tight mb-1">
+        <h2 className="text-xl font-display font-bold text-ink tracking-tight mb-1">
           {mode === "login" ? "Log in" : "Create an account"}
         </h2>
-        <p className="text-sm text-zinc-500 mb-5">
+        <p className="text-sm text-steel mb-5">
           {message || (mode === "login" ? "Log in to continue." : "Sign up to continue.")}
         </p>
 
@@ -136,7 +136,7 @@ export function AuthModal({ open, onClose, onAuthenticated, message }: Props) {
               className={inputClass}
             />
             {mode === "register" && (
-              <p className="text-xs text-zinc-500 mt-1">
+              <p className="text-xs text-steel mt-1">
                 At least 10 characters, with uppercase, lowercase, a number, and a symbol.
               </p>
             )}
@@ -147,18 +147,18 @@ export function AuthModal({ open, onClose, onAuthenticated, message }: Props) {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 text-white py-2.5 text-sm font-medium shadow-sm transition-all duration-200 hover:from-zinc-600 hover:to-zinc-800 hover:shadow-md disabled:opacity-50"
+            className="w-full bg-amber text-ink py-2.5 text-sm font-medium transition-colors duration-150 hover:bg-amber-dark disabled:opacity-50"
           >
             {submitting ? "Please wait…" : mode === "login" ? "Log in" : "Sign up"}
           </button>
         </form>
 
-        <p className="text-sm text-zinc-500 mt-4 text-center">
+        <p className="text-sm text-steel mt-4 text-center">
           {mode === "login" ? "New here?" : "Already have an account?"}{" "}
           <button
             type="button"
             onClick={() => setMode(mode === "login" ? "register" : "login")}
-            className="text-zinc-900 font-medium underline transition-colors duration-200 hover:text-zinc-600"
+            className="text-ink font-medium underline transition-colors duration-200 hover:text-steel"
           >
             {mode === "login" ? "Create an account" : "Log in"}
           </button>
