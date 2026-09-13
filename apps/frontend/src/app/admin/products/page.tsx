@@ -47,8 +47,7 @@ export default function AdminProductsPage() {
       <div className="flex items-center justify-between mb-6 gap-2 flex-wrap">
         <h1 className="text-2xl font-display font-bold">Products</h1>
         <div className="flex gap-2">
-          <Link href="/admin/products/create" className="border border-ink text-ink text-sm px-4 py-2 rounded-lg">Create post (new)</Link>
-          <Link href="/admin/products/new" className="bg-ink text-white text-sm px-4 py-2 rounded-lg">+ New product</Link>
+          <Link href="/admin/products/create" className="bg-ink text-white text-sm px-4 py-2 rounded-lg">+ New product</Link>
         </div>
       </div>
       {outOfStock.length > 0 && (
