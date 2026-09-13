@@ -40,20 +40,20 @@ export function ProductCard({ product, eager = false }: { product: ProductCardDa
             src={product.images[0].url}
             alt={product.images[0].altText ?? product.name}
             fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             loading={eager ? "eager" : "lazy"}
             unoptimized={isUnoptimizableImage(product.images[0].url)}
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
         </div>
       )}
-      <div className="p-4">
+      <div className="p-3">
         <p className="text-xs text-steel">
           {product.brand?.name ?? "Unbranded"} / {product.category.name}
         </p>
-        <h2 className="font-sans font-bold mt-1 text-ink leading-snug">{product.name}</h2>
+        <h2 className="font-sans font-bold mt-1 text-sm text-ink leading-snug">{product.name}</h2>
         <div className="flex items-center justify-between flex-wrap gap-x-2 gap-y-1 mt-2">
-          <p className="font-mono font-semibold text-lg text-ink">{formatMoney(product.price)}</p>
+          <p className="font-mono font-semibold text-ink">{formatMoney(product.price)}</p>
           <ConditionTag condition={product.condition} />
         </div>
       </div>
