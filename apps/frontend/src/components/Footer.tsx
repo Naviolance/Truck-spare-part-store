@@ -90,7 +90,7 @@ export async function Footer() {
       </div>
 
       <div className="border-t border-paper/10">
-        <div className="max-w-6xl mx-auto px-4 py-4 text-xs font-mono text-paper/40 flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div className="max-w-6xl mx-auto px-4 py-4 text-xs font-mono text-paper/50 flex flex-col sm:flex-row items-center justify-between gap-2">
           <p>{t("rights", { year })}</p>
           <p>{t("pricesNote")}</p>
         </div>

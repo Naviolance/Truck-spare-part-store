@@ -11,7 +11,7 @@ const config: Config = {
         // than decorating.
         ink: "#1B1917",
         paper: "#F3EFE7",
-        amber: { DEFAULT: "#E8A33D", dark: "#C6822A" },
+        amber: { DEFAULT: "#E8A33D", dark: "#8B5A1F" },
         rust: { DEFAULT: "#A8462F", dark: "#8A3821" },
         steel: { DEFAULT: "#4A5560", light: "#E4E7E9" },
       },
