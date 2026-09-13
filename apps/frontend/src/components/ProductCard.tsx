@@ -32,7 +32,7 @@ export function ProductCard({ product, eager = false }: { product: ProductCardDa
   return (
     <Link
       href={`/products/${product.slug}`}
-      className="group relative bg-white border border-steel-light overflow-hidden transition-colors duration-200 hover:border-ink"
+      className="relative block bg-white border border-steel-light transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:scale-[1.03] hover:z-10 hover:border-ink hover:shadow-lg"
     >
       {product.images[0] && (
         <div className="relative w-full aspect-square overflow-hidden bg-steel-light">
@@ -43,7 +43,7 @@ export function ProductCard({ product, eager = false }: { product: ProductCardDa
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             loading={eager ? "eager" : "lazy"}
             unoptimized={isUnoptimizableImage(product.images[0].url)}
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            className="object-cover"
           />
         </div>
       )}
