@@ -4,22 +4,14 @@ import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 import { apiFetch } from "@/lib/api";
 import { isUnoptimizableImage } from "@/lib/image";
+import { ConditionTag } from "@/components/ProductCard";
 import { VehicleCompatibilityPicker } from "@/components/VehicleCompatibilityPicker";
 
 type Option = { id: string; name: string };
 
-const CONDITION_SELECT_CLASS: Record<string, string> = {
-  NEW: "tag-new",
-  USED: "tag-used",
-  RECONDITIONED: "tag-reconditioned",
-};
-
-// Borderless by default, a line appears on hover/focus - the goal is that
-// this reads as the live listing (same as the create flow's preview step),
-// not as a form, while still making every field obviously editable.
-const inlineInput =
-  "bg-transparent border-b border-transparent hover:border-steel-light focus:border-ink focus:outline-none transition-colors";
-const inlineTextarea = `${inlineInput} w-full resize-none leading-relaxed`;
+const fieldClass = "w-full border border-steel-light rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:border-ink transition-colors";
+const labelClass = "block text-xs font-medium text-steel mb-1";
+const sectionClass = "mt-6 pt-6 border-t border-steel-light";
 
 function PlusIcon() {
   return (
@@ -139,6 +131,7 @@ export default function EditProductPage() {
       </div>
 
       <div>
+        <label className={labelClass}>Photos</label>
         <div className="relative aspect-square rounded-lg overflow-hidden border border-steel-light bg-steel-light">
           {imageUrls[0] ? (
             <Image
@@ -188,99 +181,118 @@ export default function EditProductPage() {
         </div>
         {photoError && <p className="text-xs text-red-600 mt-1">{photoError}</p>}
 
-        <div className="flex items-center gap-1 text-sm mt-4">
-          <select value={form.brandId} onChange={(e) => update("brandId", e.target.value)} className={`${inlineInput} text-steel`}>
-            <option value="">Unbranded</option>
-            {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-          </select>
-          <span className="text-steel">/</span>
-          <select value={form.categoryId} onChange={(e) => update("categoryId", e.target.value)} className={`${inlineInput} text-steel`}>
-            <option value="">Select a category</option>
-            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </div>
-
-        <input
-          value={form.name}
-          onChange={(e) => update("name", e.target.value)}
-          placeholder="Product name"
-          className={`${inlineInput} font-sans font-bold text-lg mt-1 text-ink leading-snug w-full`}
-        />
-
-        <div className="flex items-center justify-between flex-wrap gap-x-2 gap-y-1 mt-2">
-          <div className="flex items-center gap-1">
+        <div className={sectionClass}>
+          <div>
+            <label className={labelClass}>Name</label>
             <input
-              type="number"
-              min="1"
-              step="1"
-              value={form.price}
-              onChange={(e) => update("price", e.target.value)}
-              className={`${inlineInput} font-mono font-semibold text-lg text-ink w-28`}
-            />
-            <span className="text-steel text-sm">FCFA</span>
-          </div>
-          <select
-            value={form.condition}
-            onChange={(e) => update("condition", e.target.value)}
-            className={`${CONDITION_SELECT_CLASS[form.condition]} border-0 rounded-full cursor-pointer focus:outline-none focus:ring-1 focus:ring-ink`}
-          >
-            <option value="NEW">New</option>
-            <option value="USED">Used</option>
-            <option value="RECONDITIONED">Reconditioned</option>
-          </select>
-        </div>
-
-        <div className="flex items-center gap-1.5 text-sm text-ink/60 mt-1">
-          <input
-            type="number"
-            min="0"
-            value={form.quantity}
-            onChange={(e) => update("quantity", e.target.value)}
-            className={`${inlineInput} w-16`}
-          />
-          <span>in stock</span>
-        </div>
-
-        {form.condition !== "NEW" && (
-          <div className="mt-4 bg-amber/10 border-l-4 border-amber p-3 text-sm text-ink">
-            <span className="font-medium block mb-1">Condition notes</span>
-            <textarea
-              value={form.conditionNotes}
-              onChange={(e) => update("conditionNotes", e.target.value)}
-              placeholder="Describe wear, testing, functionality, etc."
-              rows={2}
-              className={inlineTextarea}
+              value={form.name}
+              onChange={(e) => update("name", e.target.value)}
+              placeholder="Product name"
+              className={fieldClass}
             />
           </div>
-        )}
 
-        <textarea
-          value={form.description}
-          onChange={(e) => update("description", e.target.value)}
-          rows={4}
-          className={`${inlineTextarea} text-steel mt-4 text-sm`}
-        />
+          <div className="grid grid-cols-2 gap-3 mt-4">
+            <div>
+              <label className={labelClass}>Brand</label>
+              <select value={form.brandId} onChange={(e) => update("brandId", e.target.value)} className={fieldClass}>
+                <option value="">Unbranded</option>
+                {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={labelClass}>Category</label>
+              <select value={form.categoryId} onChange={(e) => update("categoryId", e.target.value)} className={fieldClass}>
+                <option value="">Select a category</option>
+                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+          </div>
 
-        <div className="mt-3">
-          <p className="text-xs font-medium text-steel mb-1">French description (optional)</p>
+          <div className="grid grid-cols-3 gap-3 mt-4">
+            <div>
+              <label className={labelClass}>Price (FCFA)</label>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={form.price}
+                onChange={(e) => update("price", e.target.value)}
+                className={`${fieldClass} font-mono`}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Quantity</label>
+              <input
+                type="number"
+                min="0"
+                value={form.quantity}
+                onChange={(e) => update("quantity", e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Condition</label>
+              <select
+                value={form.condition}
+                onChange={(e) => update("condition", e.target.value)}
+                className={fieldClass}
+              >
+                <option value="NEW">New</option>
+                <option value="USED">Used</option>
+                <option value="RECONDITIONED">Reconditioned</option>
+              </select>
+            </div>
+          </div>
+          <div className="mt-1">
+            <ConditionTag condition={form.condition} />
+          </div>
+
+          {form.condition !== "NEW" && (
+            <div className="mt-4">
+              <label className={labelClass}>Condition notes</label>
+              <textarea
+                value={form.conditionNotes}
+                onChange={(e) => update("conditionNotes", e.target.value)}
+                placeholder="Describe wear, testing, functionality, etc."
+                rows={2}
+                className={`${fieldClass} resize-none`}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className={sectionClass}>
+          <label className={labelClass}>Description</label>
           <textarea
-            value={form.descriptionFr}
-            onChange={(e) => update("descriptionFr", e.target.value)}
-            rows={3}
-            className={`${inlineTextarea} text-steel text-sm`}
+            value={form.description}
+            onChange={(e) => update("description", e.target.value)}
+            rows={4}
+            className={`${fieldClass} resize-none`}
           />
+
+          <div className="mt-4">
+            <label className={labelClass}>French description (optional)</label>
+            <textarea
+              value={form.descriptionFr}
+              onChange={(e) => update("descriptionFr", e.target.value)}
+              placeholder="Include the French product name in here — the name field itself stays untranslated, but this text is searched."
+              rows={3}
+              className={`${fieldClass} resize-none`}
+            />
+          </div>
+
+          <div className="mt-4">
+            <label className={labelClass}>Part number (optional)</label>
+            <input
+              value={form.partNumber}
+              onChange={(e) => update("partNumber", e.target.value)}
+              className={`${fieldClass} font-mono`}
+            />
+          </div>
         </div>
 
-        <div className="mt-4 text-sm text-steel">
-          <label className="block text-xs font-medium mb-1">Part number</label>
-          <input
-            value={form.partNumber}
-            onChange={(e) => update("partNumber", e.target.value)}
-            className={`${inlineInput} font-mono w-full`}
-          />
-        </div>
-
-        <div className="mt-4">
+        <div className={sectionClass}>
           <VehicleCompatibilityPicker selectedIds={vehicleIds} onChange={setVehicleIds} />
         </div>
 
