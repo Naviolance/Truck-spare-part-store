@@ -120,24 +120,24 @@ function ProductsPageInner() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium mb-1 text-steel">Category</label>
-            <select value={categoryId} onChange={(e) => updateFilter(setCategoryId, e.target.value)} className={selectClass}>
+            <label htmlFor="filter-category" className="block text-xs font-medium mb-1 text-steel">Category</label>
+            <select id="filter-category" value={categoryId} onChange={(e) => updateFilter(setCategoryId, e.target.value)} className={selectClass}>
               <option value="">All categories</option>
               {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-medium mb-1 text-steel">Brand</label>
-            <select value={brandId} onChange={(e) => updateFilter(setBrandId, e.target.value)} className={selectClass}>
+            <label htmlFor="filter-brand" className="block text-xs font-medium mb-1 text-steel">Brand</label>
+            <select id="filter-brand" value={brandId} onChange={(e) => updateFilter(setBrandId, e.target.value)} className={selectClass}>
               <option value="">All brands</option>
               {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-medium mb-1 text-steel">Condition</label>
-            <select value={condition} onChange={(e) => updateFilter(setCondition, e.target.value)} className={selectClass}>
+            <label htmlFor="filter-condition" className="block text-xs font-medium mb-1 text-steel">Condition</label>
+            <select id="filter-condition" value={condition} onChange={(e) => updateFilter(setCondition, e.target.value)} className={selectClass}>
               <option value="">Any condition</option>
               <option value="NEW">New</option>
               <option value="USED">Used</option>

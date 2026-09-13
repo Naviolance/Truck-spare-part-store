@@ -111,7 +111,7 @@ export default function AdminProductsPage() {
       <div className="hidden sm:block overflow-x-auto">
       <table className="w-full text-sm bg-white border border-steel-light rounded-lg overflow-hidden">
         <thead className="bg-paper text-left">
-          <tr><th className="p-3">Name</th><th className="p-3">Category</th><th className="p-3">Price</th><th className="p-3">Stock</th><th className="p-3">Added</th><th className="p-3">Status</th><th className="p-3"></th></tr>
+          <tr><th className="p-3">Name</th><th className="p-3">Category</th><th className="p-3">Price</th><th className="p-3">Stock</th><th className="p-3">Added</th><th className="p-3">Status</th><th className="p-3"><span className="sr-only">Actions</span></th></tr>
         </thead>
         <tbody>
           {products.map((p) => (

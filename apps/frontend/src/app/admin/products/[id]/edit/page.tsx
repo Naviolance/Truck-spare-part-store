@@ -131,7 +131,7 @@ export default function EditProductPage() {
       </div>
 
       <div>
-        <label className={labelClass}>Photos</label>
+        <p className={labelClass}>Photos</p>
         <div className="relative aspect-square rounded-lg overflow-hidden border border-steel-light bg-steel-light">
           {imageUrls[0] ? (
             <Image
@@ -183,8 +183,9 @@ export default function EditProductPage() {
 
         <div className={sectionClass}>
           <div>
-            <label className={labelClass}>Name</label>
+            <label htmlFor="edit-name" className={labelClass}>Name</label>
             <input
+              id="edit-name"
               value={form.name}
               onChange={(e) => update("name", e.target.value)}
               placeholder="Product name"
@@ -194,15 +195,15 @@ export default function EditProductPage() {
 
           <div className="grid grid-cols-2 gap-3 mt-4">
             <div>
-              <label className={labelClass}>Brand</label>
-              <select value={form.brandId} onChange={(e) => update("brandId", e.target.value)} className={fieldClass}>
+              <label htmlFor="edit-brand" className={labelClass}>Brand</label>
+              <select id="edit-brand" value={form.brandId} onChange={(e) => update("brandId", e.target.value)} className={fieldClass}>
                 <option value="">Unbranded</option>
                 {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
             </div>
             <div>
-              <label className={labelClass}>Category</label>
-              <select value={form.categoryId} onChange={(e) => update("categoryId", e.target.value)} className={fieldClass}>
+              <label htmlFor="edit-category" className={labelClass}>Category</label>
+              <select id="edit-category" value={form.categoryId} onChange={(e) => update("categoryId", e.target.value)} className={fieldClass}>
                 <option value="">Select a category</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
@@ -211,8 +212,9 @@ export default function EditProductPage() {
 
           <div className="grid grid-cols-3 gap-3 mt-4">
             <div>
-              <label className={labelClass}>Price (FCFA)</label>
+              <label htmlFor="edit-price" className={labelClass}>Price (FCFA)</label>
               <input
+                id="edit-price"
                 type="number"
                 min="1"
                 step="1"
@@ -222,8 +224,9 @@ export default function EditProductPage() {
               />
             </div>
             <div>
-              <label className={labelClass}>Quantity</label>
+              <label htmlFor="edit-quantity" className={labelClass}>Quantity</label>
               <input
+                id="edit-quantity"
                 type="number"
                 min="0"
                 value={form.quantity}
@@ -232,8 +235,9 @@ export default function EditProductPage() {
               />
             </div>
             <div>
-              <label className={labelClass}>Condition</label>
+              <label htmlFor="edit-condition" className={labelClass}>Condition</label>
               <select
+                id="edit-condition"
                 value={form.condition}
                 onChange={(e) => update("condition", e.target.value)}
                 className={fieldClass}
@@ -250,8 +254,9 @@ export default function EditProductPage() {
 
           {form.condition !== "NEW" && (
             <div className="mt-4">
-              <label className={labelClass}>Condition notes</label>
+              <label htmlFor="edit-condition-notes" className={labelClass}>Condition notes</label>
               <textarea
+                id="edit-condition-notes"
                 value={form.conditionNotes}
                 onChange={(e) => update("conditionNotes", e.target.value)}
                 placeholder="Describe wear, testing, functionality, etc."
@@ -263,8 +268,9 @@ export default function EditProductPage() {
         </div>
 
         <div className={sectionClass}>
-          <label className={labelClass}>Description</label>
+          <label htmlFor="edit-description" className={labelClass}>Description</label>
           <textarea
+            id="edit-description"
             value={form.description}
             onChange={(e) => update("description", e.target.value)}
             rows={4}
@@ -272,8 +278,9 @@ export default function EditProductPage() {
           />
 
           <div className="mt-4">
-            <label className={labelClass}>French description (optional)</label>
+            <label htmlFor="edit-description-fr" className={labelClass}>French description (optional)</label>
             <textarea
+              id="edit-description-fr"
               value={form.descriptionFr}
               onChange={(e) => update("descriptionFr", e.target.value)}
               placeholder="Include the French product name in here — the name field itself stays untranslated, but this text is searched."
@@ -283,8 +290,9 @@ export default function EditProductPage() {
           </div>
 
           <div className="mt-4">
-            <label className={labelClass}>Part number (optional)</label>
+            <label htmlFor="edit-part-number" className={labelClass}>Part number (optional)</label>
             <input
+              id="edit-part-number"
               value={form.partNumber}
               onChange={(e) => update("partNumber", e.target.value)}
               className={`${fieldClass} font-mono`}
