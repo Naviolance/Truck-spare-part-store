@@ -9,6 +9,29 @@ type Product = {
   category: { name: string }; brand: { name: string } | null;
 };
 
+function StatusToggle({ status, pending, onSet }: { status: string; pending: boolean; onSet: (status: "DRAFT" | "PUBLISHED") => void }) {
+  return (
+    <div className="inline-flex rounded-full border border-steel-light overflow-hidden text-xs">
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() => onSet("DRAFT")}
+        className={`px-2 py-1 disabled:opacity-50 ${status === "DRAFT" ? "bg-steel-light text-ink font-medium" : "text-steel"}`}
+      >
+        Draft
+      </button>
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() => onSet("PUBLISHED")}
+        className={`px-2 py-1 disabled:opacity-50 ${status === "PUBLISHED" ? "bg-green-100 text-green-700 font-medium" : "text-steel"}`}
+      >
+        Published
+      </button>
+    </div>
+  );
+}
+
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,10 +45,10 @@ export default function AdminProductsPage() {
 
   useEffect(() => { load(); }, []);
 
-  async function togglePublish(product: Product) {
+  async function setStatus(product: Product, status: "DRAFT" | "PUBLISHED") {
+    if (status === product.status) return;
     setPendingId(product.id);
-    const nextStatus = product.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED";
-    await apiFetch(`/products/${product.id}`, { method: "PATCH", body: JSON.stringify({ status: nextStatus }) });
+    await apiFetch(`/products/${product.id}`, { method: "PATCH", body: JSON.stringify({ status }) });
     await load();
     setPendingId(null);
   }
@@ -64,10 +87,7 @@ export default function AdminProductsPage() {
                 <p className="font-medium text-ink truncate">{p.name}</p>
                 <p className="text-xs text-steel">{p.category.name}</p>
               </div>
-              <button onClick={() => togglePublish(p)} disabled={pendingId === p.id}
-                className={`shrink-0 text-xs px-2 py-1 rounded-full disabled:opacity-50 ${p.status === "PUBLISHED" ? "bg-green-100 text-green-700" : "bg-steel-light text-steel"}`}>
-                {pendingId === p.id ? "…" : p.status}
-              </button>
+              <StatusToggle status={p.status} pending={pendingId === p.id} onSet={(status) => setStatus(p, status)} />
             </div>
             <div className="mt-3 flex items-center justify-between text-sm">
               <span className="font-semibold text-ink">{formatMoney(p.price)}</span>
@@ -104,10 +124,7 @@ export default function AdminProductsPage() {
                 {new Date(p.createdAt).toLocaleDateString()}
               </td>
               <td className="p-3">
-                <button onClick={() => togglePublish(p)} disabled={pendingId === p.id}
-                  className={`text-xs px-2 py-1 rounded-full disabled:opacity-50 ${p.status === "PUBLISHED" ? "bg-green-100 text-green-700" : "bg-steel-light text-steel"}`}>
-                  {pendingId === p.id ? "…" : p.status}
-                </button>
+                <StatusToggle status={p.status} pending={pendingId === p.id} onSet={(status) => setStatus(p, status)} />
               </td>
               <td className="p-3 text-right">
                 <div className="inline-flex gap-2">
