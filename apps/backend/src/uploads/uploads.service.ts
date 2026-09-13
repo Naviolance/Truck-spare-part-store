@@ -1,6 +1,7 @@
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { S3Client, PutObjectCommand, GetObjectCommand, CreateBucketCommand, HeadBucketCommand } from "@aws-sdk/client-s3";
 import { randomUUID } from "crypto";
+import * as sharp from "sharp";
 
 @Injectable()
 export class UploadsService implements OnModuleInit {
@@ -39,15 +40,24 @@ export class UploadsService implements OnModuleInit {
   }
 
   async uploadImage(file: Express.Multer.File): Promise<string> {
-    const extension = file.originalname.split(".").pop();
-    const key = `products/${randomUUID()}.${extension}`;
+    const key = `products/${randomUUID()}.webp`;
+
+    // Re-encode every upload to WebP and cap dimensions at 2000px - phone
+    // photos routinely arrive as multi-MB JPEGs far larger than anything the
+    // storefront ever displays, and both changes are visually lossless at
+    // normal viewing sizes while cutting typical file size by 80%+.
+    const optimized = await sharp(file.buffer)
+      .rotate() // bake in EXIF orientation before the metadata is stripped
+      .resize({ width: 2000, height: 2000, fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 88 })
+      .toBuffer();
 
     await this.s3.send(
       new PutObjectCommand({
         Bucket: this.bucket,
         Key: key,
-        Body: file.buffer,
-        ContentType: file.mimetype,
+        Body: optimized,
+        ContentType: "image/webp",
       }),
     );
 

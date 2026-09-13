@@ -10,4 +10,5 @@ allowBuilds:
   bcrypt: true
   esbuild: true
   prisma: true
+  sharp: true
   unrs-resolver: false
