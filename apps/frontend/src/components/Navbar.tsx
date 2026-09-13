@@ -81,7 +81,7 @@ export function Navbar() {
   const t = useTranslations("Navbar");
 
   return (
-    <nav className="sticky top-0 z-40 bg-ink border-b-2 border-amber">
+    <nav aria-label="Main" className="sticky top-0 z-40 bg-ink border-b-2 border-amber">
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex items-center justify-between py-3">
           <Link href="/" className="font-display font-black text-2xl text-paper tracking-tight transition-colors hover:text-amber">

@@ -36,7 +36,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [pathname]);
 
   if (loading || !user || user.role !== "ADMIN") {
-    return <div className="max-w-6xl mx-auto px-4 py-16 text-steel">Checking access…</div>;
+    return <main className="max-w-6xl mx-auto px-4 py-16 text-steel">Checking access…</main>;
   }
 
   // The post-style product composer is a focused, full-screen flow - the
@@ -45,13 +45,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // above, just without the surrounding chrome.
   const isFocusMode = pathname.startsWith("/admin/products/create");
   if (isFocusMode) {
-    return <div className="max-w-lg mx-auto min-h-screen">{children}</div>;
+    return <main className="max-w-lg mx-auto min-h-screen">{children}</main>;
   }
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col sm:flex-row gap-6 sm:gap-8">
       <aside className="sm:w-48 shrink-0">
-        <nav className="flex sm:flex-col gap-1 overflow-x-auto sm:overflow-visible -mx-1 px-1 sm:mx-0 sm:px-0 bg-steel-light sm:bg-transparent rounded-lg sm:rounded-none p-1 sm:p-0">
+        <nav aria-label="Admin sections" className="flex sm:flex-col gap-1 overflow-x-auto sm:overflow-visible -mx-1 px-1 sm:mx-0 sm:px-0 bg-steel-light sm:bg-transparent rounded-lg sm:rounded-none p-1 sm:p-0">
           {links.map((link) => (
             <Link
               key={link.href}
@@ -68,7 +68,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           ))}
         </nav>
       </aside>
-      <div className="flex-1 min-w-0">{children}</div>
+      <main className="flex-1 min-w-0">{children}</main>
     </div>
   );
 }
