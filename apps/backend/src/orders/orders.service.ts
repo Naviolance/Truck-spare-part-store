@@ -222,7 +222,10 @@ export class OrdersService {
       this.prisma.payment.update({ where: { id: cashPayment.id }, data: { status: PaymentStatus.SUCCEEDED } }),
     ]);
 
-    await this.notifyStatusChange(order.id, OrderStatus.PAID);
+    // Fire-and-forget: a slow or failing mail provider must never block the
+    // caller — this can now run from a customer's browser polling
+    // GET /orders/:id, not just the webhook or an admin action.
+    void this.notifyStatusChange(order.id, OrderStatus.PAID);
   }
 
   // Called by the webhook handler once Notch Pay confirms payment success.
@@ -244,7 +247,10 @@ export class OrdersService {
       }),
     ]);
 
-    await this.notifyStatusChange(order.id, OrderStatus.PAID);
+    // Fire-and-forget: a slow or failing mail provider must never block the
+    // caller — this can now run from a customer's browser polling
+    // GET /orders/:id, not just the webhook or an admin action.
+    void this.notifyStatusChange(order.id, OrderStatus.PAID);
   }
 
   async failPayment(orderNumber: string) {
@@ -265,7 +271,7 @@ export class OrdersService {
       ),
     ]);
 
-    await this.notifyStatusChange(order.id, OrderStatus.PAYMENT_FAILED);
+    void this.notifyStatusChange(order.id, OrderStatus.PAYMENT_FAILED);
   }
 
   // Admin-triggered cancel/refund. Picks CANCELLED vs REFUNDED automatically
@@ -306,7 +312,7 @@ export class OrdersService {
       ),
     ]);
 
-    await this.notifyStatusChange(order.id, newStatus);
+    void this.notifyStatusChange(order.id, newStatus);
 
     return this.prisma.order.findUnique({ where: { id: order.id }, include: { items: true } });
   }
@@ -369,7 +375,7 @@ export class OrdersService {
     if (!order) throw new NotFoundException("Order not found");
 
     const updated = await this.prisma.order.update({ where: { id: orderId }, data: { status } });
-    await this.notifyStatusChange(orderId, status);
+    void this.notifyStatusChange(orderId, status);
     return updated;
   }
 }
