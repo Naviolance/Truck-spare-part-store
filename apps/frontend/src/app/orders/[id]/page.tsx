@@ -23,6 +23,7 @@ export default function OrderDetailPage() {
   const { id } = useParams();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pollTimedOut, setPollTimedOut] = useState(false);
 
   useEffect(() => {
     apiFetch(`/orders/${id}`).then(async (res) => {
@@ -31,6 +32,28 @@ export default function OrderDetailPage() {
     });
   }, [id]);
 
+  const isOnlinePayment = order?.payments.some((p) => p.provider === "notchpay") ?? false;
+  const awaitingConfirmation = order?.status === "PAYMENT_PENDING" && isOnlinePayment;
+
+  // Notch Pay confirms payment via an async webhook that can land a few
+  // seconds after the browser is redirected back here — so a customer who
+  // just paid may briefly still see PAYMENT_PENDING. Poll until the webhook
+  // catches up (or give up after a minute rather than polling forever).
+  useEffect(() => {
+    if (!awaitingConfirmation || pollTimedOut) return;
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      attempts += 1;
+      const res = await apiFetch(`/orders/${id}`);
+      if (res.ok) setOrder(await res.json());
+      if (attempts >= 20) {
+        clearInterval(interval);
+        setPollTimedOut(true);
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [awaitingConfirmation, pollTimedOut, id]);
+
   if (loading) return <main className="max-w-2xl mx-auto px-4 py-16 text-steel">Loading…</main>;
   if (!order) return <main className="max-w-2xl mx-auto px-4 py-16 text-steel">Order not found.</main>;
 
@@ -38,10 +61,37 @@ export default function OrderDetailPage() {
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-10">
-      <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-6">
-        <p className="font-semibold text-emerald-800">Order placed successfully!</p>
-        <p className="text-sm text-emerald-700">Order #{order.orderNumber}</p>
-      </div>
+      {(pendingCash || order.status === "PAID") && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-6">
+          <p className="font-semibold text-emerald-800">{order.status === "PAID" ? "Payment confirmed!" : "Order placed successfully!"}</p>
+          <p className="text-sm text-emerald-700">Order #{order.orderNumber}</p>
+        </div>
+      )}
+
+      {awaitingConfirmation && (
+        <div className="bg-paper border border-steel-light rounded-lg p-4 mb-6 flex items-center gap-3">
+          {!pollTimedOut && <div className="w-5 h-5 border-2 border-steel-light border-t-ink rounded-full animate-spin shrink-0" />}
+          <div>
+            <p className="font-semibold text-ink">{pollTimedOut ? "Still confirming your payment" : "Confirming your payment…"}</p>
+            <p className="text-sm text-steel">
+              Order #{order.orderNumber} —{" "}
+              {pollTimedOut
+                ? "this is taking longer than usual. If you completed payment, it will confirm shortly — check My Orders later."
+                : "this usually takes a few seconds."}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {order.status === "PAYMENT_FAILED" && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <p className="font-semibold text-red-800">Payment failed</p>
+          <p className="text-sm text-red-700">
+            Order #{order.orderNumber} — your items were released back to stock.{" "}
+            <Link href="/cart" className="underline">Return to your cart</Link> to try again.
+          </p>
+        </div>
+      )}
 
       <h1 className="text-xl font-display font-bold text-ink tracking-tight mb-4">Order details</h1>
 
