@@ -3,6 +3,11 @@ import axios from "axios";
 import * as crypto from "crypto";
 
 const NOTCHPAY_API_URL = "https://api.notchpay.co";
+// GET /orders/:id calls verifyPayment() synchronously on every poll while an
+// order is pending — without a timeout, a slow Notch Pay response blocks
+// that request (and the order page's initial load) for however long it
+// takes, which is what made the page look stuck until a manual refresh.
+const NOTCHPAY_TIMEOUT_MS = 5000;
 
 @Injectable()
 export class PaymentsService {
@@ -28,7 +33,7 @@ export class PaymentsService {
           customer: { email: params.email, name: params.name },
           callback: params.callbackUrl,
         },
-        { headers: { Authorization: this.publicKey, "Content-Type": "application/json" } },
+        { headers: { Authorization: this.publicKey, "Content-Type": "application/json" }, timeout: NOTCHPAY_TIMEOUT_MS },
       );
 
       return response.data;
@@ -42,6 +47,7 @@ export class PaymentsService {
   async verifyPayment(reference: string) {
     const response = await axios.get(`${NOTCHPAY_API_URL}/payments/${reference}`, {
       headers: { Authorization: this.publicKey },
+      timeout: NOTCHPAY_TIMEOUT_MS,
     });
     return response.data;
   }

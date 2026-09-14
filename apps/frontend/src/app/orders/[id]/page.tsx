@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
@@ -23,14 +23,29 @@ export default function OrderDetailPage() {
   const { id } = useParams();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [pollTimedOut, setPollTimedOut] = useState(false);
 
-  useEffect(() => {
-    apiFetch(`/orders/${id}`).then(async (res) => {
-      if (res.ok) setOrder(await res.json());
-      setLoading(false);
-    });
+  // The backend's own reconciliation call to Notch Pay (see orders.service.ts)
+  // can occasionally run long enough that a proxy or platform in front of it
+  // cuts the connection — which makes this fetch *reject* rather than just
+  // resolve slowly. Without a .catch(), that left the page stuck on
+  // "Loading…" forever with no way to recover except a manual refresh.
+  const load = useCallback(() => {
+    setLoading(true);
+    setLoadError(false);
+    apiFetch(`/orders/${id}`)
+      .then(async (res) => {
+        if (res.ok) setOrder(await res.json());
+        else setLoadError(true);
+      })
+      .catch(() => setLoadError(true))
+      .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const isOnlinePayment = order?.payments.some((p) => p.provider === "notchpay") ?? false;
   const awaitingConfirmation = order?.status === "PAYMENT_PENDING" && isOnlinePayment;
@@ -44,8 +59,12 @@ export default function OrderDetailPage() {
     let attempts = 0;
     const interval = setInterval(async () => {
       attempts += 1;
-      const res = await apiFetch(`/orders/${id}`);
-      if (res.ok) setOrder(await res.json());
+      try {
+        const res = await apiFetch(`/orders/${id}`);
+        if (res.ok) setOrder(await res.json());
+      } catch {
+        // Network hiccup — just try again on the next tick.
+      }
       if (attempts >= 20) {
         clearInterval(interval);
         setPollTimedOut(true);
@@ -55,6 +74,16 @@ export default function OrderDetailPage() {
   }, [awaitingConfirmation, pollTimedOut, id]);
 
   if (loading) return <main className="max-w-2xl mx-auto px-4 py-16 text-steel">Loading…</main>;
+  if (loadError) {
+    return (
+      <main className="max-w-2xl mx-auto px-4 py-16 text-center">
+        <p className="text-steel mb-4">Couldn't load this order — the request took too long or failed.</p>
+        <button onClick={load} className="border border-steel-light rounded-lg px-4 py-2 text-sm transition-colors duration-200 hover:border-steel hover:bg-paper">
+          Try again
+        </button>
+      </main>
+    );
+  }
   if (!order) return <main className="max-w-2xl mx-auto px-4 py-16 text-steel">Order not found.</main>;
 
   const pendingCash = order.status === "PAYMENT_PENDING" && order.payments.some((p) => p.provider === "cash" && p.status === "PENDING");
