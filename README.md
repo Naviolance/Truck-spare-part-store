@@ -8,14 +8,12 @@ E-commerce website for selling truck spare parts — single-vendor online store.
 Built with Next.js, NestJS, PostgreSQL, and Prisma. Fully local-first: everything runs on your
 machine via Docker, no cloud accounts required for development.
 
-A self-initiated portfolio project, built solo with heavy use of AI pair-programming (Claude Code)
-rather than from scratch — the architecture decisions, data model, and integration choices below
-are mine; a lot of the boilerplate and iteration speed came from that workflow. Covers catalog
-browsing, vehicle-compatibility search ("Find My Part"), cart & checkout, order tracking, reviews,
-coupons, and an admin panel — end to end, not just the storefront. Checkout supports cash-at-pickup
-(live and tested) today; an online-payment path via [Notch Pay](https://notchpay.co) is integrated
-in code but not yet verified end-to-end against the live API, so it's not claimed as working here
-until it actually is.
+Self-initiated project, built with heavy use of Claude Code — I made the calls on the data model,
+the payment flow, what to build first; a lot of the actual typing wasn't mine, and I'm not
+pretending otherwise. Covers catalog browsing, vehicle-compatibility search ("Find My Part"), cart
+& checkout, order tracking, reviews, coupons, and an admin panel — the whole thing, not just the
+storefront. Cash-at-pickup checkout is live and tested. Online payment via
+[Notch Pay](https://notchpay.co) is integrated too — verifying it end-to-end now.
 
 ## Stack
 
