@@ -1,19 +1,55 @@
 # TruckParts
 
-E-commerce website for selling truck spare parts — single-vendor online store.
+A full-stack e-commerce store for truck spare parts — single-vendor, production-shaped, built
+end to end with Next.js, NestJS, PostgreSQL, and a real payment gateway integration.
 
-Built with Next.js, NestJS, PostgreSQL, and Prisma. Fully local-first: everything runs on your
-machine via Docker, no cloud accounts required for development.
+**Live demo:** https://truck-spare-part-store-frontend.vercel.app
+(sandbox payments only — see [Try it out](#try-it-out) below before you check out)
+
+## Highlights
+
+A few things in here that go beyond CRUD scaffolding:
+
+- **Payment integration, not a mock.** Checkout redirects to Notch Pay's hosted page; the backend
+  verifies the return webhook with HMAC-SHA256 over the raw request body using a timing-safe
+  comparison, and — since webhooks aren't guaranteed to arrive promptly — also actively
+  reconciles any still-pending order against Notch Pay's own API rather than trusting the webhook
+  alone.
+- **Correct under concurrency.** Checkout reserves stock with a single conditional
+  `UPDATE ... WHERE quantity >= requested` inside a DB transaction, so two customers racing for
+  the last unit can't both succeed.
+- **Auth that doesn't trust `localStorage`.** Short-lived JWT access tokens live in memory only;
+  session persistence is an httpOnly refresh cookie plus a CSRF double-submit token, with silent
+  refresh-and-retry on an expired access token.
+- **Actually accessible.** Passed an axe-core audit pass — landmark roles, labeled nav elements,
+  WCAG AA color contrast — not just "looks fine to me."
+- **Mobile-first admin panel.** Every admin list view renders as a responsive card list below the
+  `sm` breakpoint instead of a sideways-scrolling table, matched to what each list actually needs
+  on a phone.
+- **i18n done without URL noise.** EN/FR via `next-intl`, cookie-based — no `/en`/`/fr` path
+  prefixes cluttering every route.
+- **Currency handled correctly.** Prices are in XAF (Central African CFA franc), a zero-decimal
+  currency — every amount is rendered and rounded as a whole number, never floating-point cents.
+- **Upload pipeline, not a raw file pass-through.** Product images are auto-converted to WebP and
+  dimension-capped on upload, then served through the backend rather than exposing object storage
+  directly.
+
+## Try it out
+
+The live demo runs against Notch Pay's **sandbox** environment — no real money moves, ever, no
+matter what you enter at checkout. Log in with a seeded account (see [below](#seeded-test-accounts))
+to explore both the storefront and the admin panel without creating one.
 
 ## Stack
 
-- **Frontend:** Next.js + TypeScript + Tailwind
-- **Backend:** NestJS + TypeScript (REST API)
-- **Database:** PostgreSQL
-- **ORM:** Prisma
-- **Object storage (local):** MinIO (S3-compatible)
-- **Mail testing (local):** Mailhog
-- **DB GUI:** Adminer
+| Layer | Choice | Why |
+|---|---|---|
+| Frontend | Next.js + TypeScript + Tailwind | App Router for the storefront and the admin panel in one codebase, server components where they help, no separate SPA build to host |
+| Backend | NestJS + TypeScript | Structured, testable modules per domain (auth, orders, payments, ...) instead of a flat Express app |
+| Database | PostgreSQL + Prisma | Relational integrity for orders/stock/payments, where correctness matters more than schema flexibility |
+| Object storage | MinIO (S3-compatible) | Same API shape as production S3, runs locally with zero cloud accounts needed for development |
+| Auth | JWT + httpOnly refresh cookie | Short-lived access token in memory (XSS can't read it), long-lived session in a cookie JS can't touch |
+| Payments | Notch Pay | Hosted checkout + webhooks, appropriate for mobile money coverage in Central Africa |
 
 ## Prerequisites
 
@@ -60,6 +96,11 @@ machine via Docker, no cloud accounts required for development.
    pnpm dev:frontend
    ```
 
+Online payments in local dev need a Notch Pay sandbox account (free, at business.notchpay.co) —
+drop the three keys it gives you into `NOTCHPAY_PUBLIC_KEY` / `NOTCHPAY_PRIVATE_KEY` /
+`NOTCHPAY_WEBHOOK_HASH` in `.env`. Everything else works without it — cash-at-pickup checkout
+needs no payment gateway at all.
+
 ## Verify everything works
 
 - Backend health check: http://localhost:4000/health
@@ -78,8 +119,8 @@ machine via Docker, no cloud accounts required for development.
 | Admin    | admin@truckparts.local      | admin123       |
 | Customer | customer@truckparts.local   | customer123    |
 
-> Note: seed password hashes are placeholders for local testing only — the real auth module
-> will use bcrypt, not the seed script's simple hash.
+> Note: these are simple, publicly-known passwords for local testing only — never reuse them,
+> and never run the seed script against a shared or production database.
 
 ## Project structure
 
@@ -88,12 +129,13 @@ apps/
   backend/    NestJS API
   frontend/   Next.js storefront
 packages/
-  prisma/          Database schema, migrations, seed script
+  prisma/     Database schema, migrations, seed script
 docker-compose.yml  Local infrastructure (Postgres, MinIO, Mailhog, Adminer)
 ```
 
 ## Scope (V1)
 
-Single-vendor store — no multi-vendor, commission, or subscription logic. See project notes for
-full functional scope (catalog, vehicle compatibility / Find My Part, cart & checkout, orders,
-payments, reviews, admin panel).
+Single-vendor store — no multi-vendor, commission, or subscription logic. Functional scope:
+product catalog, vehicle compatibility search ("Find My Part"), cart & checkout (online via
+Notch Pay or cash-at-pickup), order tracking, coupons, reviews, product requests, and a full
+admin panel for all of the above.
