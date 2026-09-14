@@ -330,6 +330,30 @@ export class OrdersService {
       throw new ForbiddenException("You do not have access to this order");
     }
 
+    // The webhook that normally confirms payment can be delayed — or, if
+    // Notch Pay can't reach this backend at all (e.g. it's running on
+    // localhost), never arrive. So whenever someone checks a still-pending
+    // online order, also ask Notch Pay directly whether it actually went
+    // through, and self-heal instead of relying on the webhook alone.
+    const notchPayment = order.payments.find((p) => p.provider === "notchpay");
+    if (order.status === OrderStatus.PAYMENT_PENDING && notchPayment?.providerTransactionId) {
+      try {
+        const { transaction } = await this.paymentsService.verifyPayment(notchPayment.providerTransactionId);
+        if (transaction?.status === "complete") {
+          await this.confirmPayment(order.orderNumber, transaction.reference);
+        } else if (["failed", "expired", "canceled", "declined"].includes(transaction?.status)) {
+          await this.failPayment(order.orderNumber);
+        }
+      } catch {
+        // Notch Pay lookup failed (network blip, unknown reference) — fall
+        // back to what we already have rather than blocking the page on it.
+      }
+      return this.prisma.order.findUnique({
+        where: { id: orderId },
+        include: { items: true, payments: true, user: { select: { firstName: true, lastName: true, email: true } } },
+      });
+    }
+
     return order;
   }
 
