@@ -62,7 +62,7 @@ export default function AdminVehiclesPage() {
     <div>
       <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">Vehicles</h1>
 
-      <form onSubmit={handleAdd} className="grid grid-cols-2 gap-3 mb-6 bg-white border border-steel-light rounded-lg p-4">
+      <form onSubmit={handleAdd} className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 bg-white border border-steel-light rounded-lg p-4">
         <div>
           <label className="block text-xs font-medium mb-1">Manufacturer</label>
           <input required value={form.manufacturer} onChange={(e) => update("manufacturer", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
@@ -79,12 +79,12 @@ export default function AdminVehiclesPage() {
           <label className="block text-xs font-medium mb-1">Year end (optional)</label>
           <input type="number" value={form.yearEnd} onChange={(e) => update("yearEnd", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
         </div>
-        <div className="col-span-2">
+        <div className="sm:col-span-2">
           <label className="block text-xs font-medium mb-1">Engine (optional)</label>
           <input value={form.engine} onChange={(e) => update("engine", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
         </div>
-        {error && <p className="col-span-2 text-red-600 text-sm">{error}</p>}
-        <button disabled={submitting} className="col-span-2 bg-ink text-white rounded-lg py-2 text-sm disabled:opacity-50">{submitting ? "Adding…" : "Add vehicle"}</button>
+        {error && <p className="sm:col-span-2 text-red-600 text-sm">{error}</p>}
+        <button disabled={submitting} className="sm:col-span-2 bg-ink text-white rounded-lg py-2 text-sm disabled:opacity-50">{submitting ? "Adding…" : "Add vehicle"}</button>
       </form>
 
       <ul className="bg-white border border-steel-light rounded-lg divide-y divide-steel-light">

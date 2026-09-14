@@ -82,7 +82,7 @@ export default function AdminCouponsPage() {
     <div>
       <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">Coupons</h1>
 
-      <form onSubmit={handleCreate} className="grid grid-cols-2 gap-3 mb-6 bg-white border border-steel-light rounded-lg p-4">
+      <form onSubmit={handleCreate} className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 bg-white border border-steel-light rounded-lg p-4">
         <div>
           <label className="block text-xs font-medium mb-1">Code</label>
           <input required value={form.code} onChange={(e) => update("code", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
@@ -110,14 +110,41 @@ export default function AdminCouponsPage() {
           <label className="block text-xs font-medium mb-1">Expires (optional)</label>
           <input type="date" value={form.expiresAt} onChange={(e) => update("expiresAt", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
         </div>
-        {error && <p className="col-span-2 text-red-600 text-sm">{error}</p>}
-        <button disabled={submitting} className="col-span-2 bg-ink text-white rounded-lg py-2 text-sm disabled:opacity-50">{submitting ? "Creating…" : "Create coupon"}</button>
+        {error && <p className="sm:col-span-2 text-red-600 text-sm">{error}</p>}
+        <button disabled={submitting} className="sm:col-span-2 bg-ink text-white rounded-lg py-2 text-sm disabled:opacity-50">{submitting ? "Creating…" : "Create coupon"}</button>
       </form>
 
       {coupons.length === 0 ? (
         <p className="text-steel">No coupons yet.</p>
       ) : (
-        <div className="overflow-x-auto">
+        <>
+        <div className="sm:hidden space-y-3">
+          {coupons.map((c) => (
+            <div key={c.id} className="bg-white border border-steel-light rounded-lg p-4">
+              <div className="flex items-start justify-between gap-3">
+                <p className="font-mono font-medium text-ink">{c.code}</p>
+                <button onClick={() => toggleActive(c)} disabled={pendingId === c.id}
+                  className={`shrink-0 text-xs px-2 py-1 rounded-full disabled:opacity-50 ${c.active ? "bg-green-100 text-green-700" : "bg-steel-light text-steel"}`}>
+                  {pendingId === c.id ? "…" : c.active ? "ACTIVE" : "INACTIVE"}
+                </button>
+              </div>
+              <p className="text-sm text-ink mt-2">{c.type === "PERCENTAGE" ? `${c.value}% off` : `${formatMoney(c.value)} off`}</p>
+              <div className="mt-2 text-xs text-steel space-y-0.5">
+                <p>Min. order: {c.minOrderTotal ? formatMoney(c.minOrderTotal) : "—"}</p>
+                <p>Uses: {c.usedCount}{c.maxUses ? ` / ${c.maxUses}` : ""}</p>
+                <p>Expires: {c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : "—"}</p>
+              </div>
+              <button
+                onClick={() => remove(c.id)}
+                disabled={pendingId === c.id}
+                className="w-full mt-3 border border-red-200 bg-red-50 text-red-600 rounded-lg py-2 text-sm disabled:opacity-50"
+              >
+                {pendingId === c.id ? "Deleting…" : "Delete"}
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="hidden sm:block overflow-x-auto">
         <table className="w-full text-sm bg-white border border-steel-light rounded-lg overflow-hidden">
           <thead className="bg-paper text-left">
             <tr>
@@ -158,6 +185,7 @@ export default function AdminCouponsPage() {
           </tbody>
         </table>
         </div>
+        </>
       )}
     </div>
   );
