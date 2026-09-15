@@ -1,9 +1,10 @@
 import { getTranslations, getLocale } from "next-intl/server";
 
-// Support/contact address — replace with a real, monitored inbox before
-// this page is treated as final. Same goes for the "last updated" date:
-// bump it whenever this page's content actually changes.
-const CONTACT_EMAIL = "privacy@truckparts.example";
+// Using the owner's personal email as a stand-in until a dedicated business
+// address exists — swap this for something like privacy@<realdomain> once
+// one's set up. Same goes for the "last updated" date below: bump it
+// whenever this page's content actually changes.
+const CONTACT_EMAIL = "forsangamjunior@gmail.com";
 const LAST_UPDATED = "2026-09-15";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
