@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { PasswordInput } from "@/components/PasswordInput";
 import { IconInput, MailIcon, UserIcon } from "@/components/IconInput";
 import { AuthLayout } from "@/components/AuthLayout";
+import Link from "next/link";
 
 const inputClass = "w-full border border-steel-light rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:border-steel";
 
@@ -90,6 +91,10 @@ export default function RegisterPage() {
         >
           {submitting ? "Creating account..." : "Sign up"}
         </button>
+        <p className="text-xs text-steel text-center">
+          By creating an account, you agree to our{" "}
+          <Link href="/privacy" className="underline hover:text-ink">Privacy Policy</Link>.
+        </p>
       </form>
     </AuthLayout>
   );
