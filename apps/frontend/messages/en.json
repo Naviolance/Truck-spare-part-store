@@ -50,10 +50,38 @@
     "visitUs": "Visit us",
     "visitUsBody": "Parts are viewed and picked up in person. Contact details are shared at checkout so you can confirm availability before you come by.",
     "rights": "© {year} TruckParts. All rights reserved.",
-    "pricesNote": "Prices shown in XAF."
+    "pricesNote": "Prices shown in XAF.",
+    "privacy": "Privacy & Cookies"
   },
   "LanguageSwitcher": {
     "english": "English",
     "french": "Français"
+  },
+  "CookieBanner": {
+    "text": "We use cookies to keep you signed in and to remember your language. We don't use analytics, advertising, or tracking cookies.",
+    "learnMore": "Learn more",
+    "accept": "Got it"
+  },
+  "PrivacyPage": {
+    "title": "Privacy & Cookies",
+    "updated": "Last updated: {date}",
+    "intro": "TruckParts is a single-vendor store for truck spare parts. This page explains what information we collect, how we use it, and what cookies this site sets.",
+    "dataTitle": "Information we collect",
+    "dataBody": "When you create an account or place an order, we collect your name, email address, phone number, and shipping address. Passwords are never stored in plain text. Browsing and searches (like Find My Part) are not tied to your identity unless you're signed in.",
+    "useTitle": "How we use it",
+    "useBody": "Your information is used to create your account, process and fulfil orders, send order-status emails, and provide customer support. We don't sell your personal data.",
+    "paymentsTitle": "Payments",
+    "paymentsBody": "Online payments are handled entirely by Notch Pay's own hosted checkout page — we never see or store your card or mobile money details ourselves.",
+    "cookiesTitle": "Cookies we use",
+    "cookiesIntro": "We don't use analytics, advertising, or tracking cookies. The only cookies this site sets are:",
+    "cookieSession": "Session cookie — keeps you signed in. Required for the site to work.",
+    "cookieCsrf": "Security cookie (CSRF) — protects your account from cross-site request forgery. Required for the site to work.",
+    "cookieLocale": "Language preference — remembers whether you're viewing the site in English or French.",
+    "sharingTitle": "Sharing your information",
+    "sharingBody": "We share order and contact details with Notch Pay only as needed to process a payment, and with our email provider only to send you transactional emails about your order. We don't share your data for marketing purposes.",
+    "rightsTitle": "Your rights",
+    "rightsBody": "You can ask us to access, correct, or delete your personal data at any time by contacting us below.",
+    "contactTitle": "Contact",
+    "contactBody": "Questions about this page or your data — reach us at {email}."
   }
 }

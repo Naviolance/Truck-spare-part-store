@@ -50,10 +50,38 @@
     "visitUs": "Nous rendre visite",
     "visitUsBody": "Les pièces sont consultées et récupérées en personne. Les coordonnées sont communiquées lors du paiement afin de confirmer la disponibilité avant votre venue.",
     "rights": "© {year} TruckParts. Tous droits réservés.",
-    "pricesNote": "Prix affichés en XAF."
+    "pricesNote": "Prix affichés en XAF.",
+    "privacy": "Confidentialité et cookies"
   },
   "LanguageSwitcher": {
     "english": "English",
     "french": "Français"
+  },
+  "CookieBanner": {
+    "text": "Nous utilisons des cookies pour vous garder connecté et mémoriser votre langue. Nous n'utilisons aucun cookie publicitaire ou de suivi.",
+    "learnMore": "En savoir plus",
+    "accept": "Compris"
+  },
+  "PrivacyPage": {
+    "title": "Confidentialité et cookies",
+    "updated": "Dernière mise à jour : {date}",
+    "intro": "TruckParts est une boutique mono-vendeur de pièces de camion. Cette page explique quelles informations nous collectons, comment nous les utilisons, et quels cookies ce site dépose.",
+    "dataTitle": "Informations que nous collectons",
+    "dataBody": "Lorsque vous créez un compte ou passez une commande, nous collectons votre nom, votre adresse e-mail, votre numéro de téléphone et votre adresse de livraison. Les mots de passe ne sont jamais stockés en clair. La navigation et les recherches (comme Trouver ma pièce) ne sont pas liées à votre identité si vous n'êtes pas connecté.",
+    "useTitle": "Comment nous les utilisons",
+    "useBody": "Vos informations servent à créer votre compte, traiter et exécuter vos commandes, vous envoyer des e-mails de suivi de commande, et assurer le support client. Nous ne vendons pas vos données personnelles.",
+    "paymentsTitle": "Paiements",
+    "paymentsBody": "Les paiements en ligne sont entièrement gérés par la page de paiement hébergée de Notch Pay — nous ne voyons ni ne stockons jamais vos informations de carte ou de mobile money.",
+    "cookiesTitle": "Cookies utilisés",
+    "cookiesIntro": "Nous n'utilisons aucun cookie d'analyse, publicitaire ou de suivi. Les seuls cookies déposés par ce site sont :",
+    "cookieSession": "Cookie de session — vous garde connecté. Nécessaire au fonctionnement du site.",
+    "cookieCsrf": "Cookie de sécurité (CSRF) — protège votre compte contre la falsification de requête intersite. Nécessaire au fonctionnement du site.",
+    "cookieLocale": "Préférence de langue — mémorise si vous consultez le site en anglais ou en français.",
+    "sharingTitle": "Partage de vos informations",
+    "sharingBody": "Nous partageons les informations de commande et de contact avec Notch Pay uniquement pour traiter un paiement, et avec notre prestataire d'e-mail uniquement pour vous envoyer des e-mails transactionnels concernant votre commande. Nous ne partageons pas vos données à des fins marketing.",
+    "rightsTitle": "Vos droits",
+    "rightsBody": "Vous pouvez nous demander d'accéder à vos données personnelles, de les corriger ou de les supprimer à tout moment en nous contactant ci-dessous.",
+    "contactTitle": "Contact",
+    "contactBody": "Des questions sur cette page ou vos données — contactez-nous à {email}."
   }
 }
