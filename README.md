@@ -40,6 +40,35 @@ The live demo runs against Notch Pay's **sandbox** environment — no real money
 matter what you enter at checkout. Log in with a seeded account (see [below](#seeded-test-accounts))
 to explore both the storefront and the admin panel without creating one.
 
+## Screenshots
+
+### Homepage
+[SCREENSHOT: homepage]
+
+### Product listing
+[SCREENSHOT: product listing]
+
+### Product detail page
+[SCREENSHOT: product detail page]
+
+### Find My Part (vehicle compatibility search)
+[SCREENSHOT: find my part]
+
+### Cart
+[SCREENSHOT: cart]
+
+### Checkout (Notch Pay hosted page)
+[SCREENSHOT: checkout]
+
+### Order tracking
+[SCREENSHOT: order tracking]
+
+### Admin — product list (mobile card view)
+[SCREENSHOT: admin product list mobile]
+
+### Admin — order management
+[SCREENSHOT: admin order management]
+
 ## Stack
 
 | Layer | Choice | Why |
@@ -139,3 +168,10 @@ Single-vendor store — no multi-vendor, commission, or subscription logic. Func
 product catalog, vehicle compatibility search ("Find My Part"), cart & checkout (online via
 Notch Pay or cash-at-pickup), order tracking, coupons, reviews, product requests, and a full
 admin panel for all of the above.
+
+## Author
+
+**Forsangam Weyegho Junior Priestly** — Full-Stack Web Developer
+[LinkedIn](https://www.linkedin.com/in/forsangam-weyegho-junior-priestly-965897236) ·
+[GitHub](https://github.com/Naviolance) ·
+forsangamjunior@gmail.com
