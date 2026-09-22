@@ -155,6 +155,20 @@ needs no payment gateway at all.
 > Note: these are simple, publicly-known passwords for local testing only — never reuse them,
 > and never run the seed script against a shared or production database.
 
+### Read-only demo admin
+
+On the live demo, `admin@truckparts.local` is a **read-only demo account**, so visitors can
+explore the whole admin panel without being able to change anything. It keeps its `ADMIN` role,
+but its access token carries a `demo` claim, and a global NestJS interceptor
+(`DemoReadOnlyInterceptor`) rejects every `POST`/`PUT`/`PATCH`/`DELETE` it sends with a 403.
+Its password can't be reset either, so one visitor can't lock everyone else out.
+
+- Which accounts are demo accounts: `DEMO_ACCOUNT_EMAILS` (comma-separated). Unset means
+  `admin@truckparts.local`. Empty (as in `.env.example`) means none, so locally the seeded admin
+  stays fully editable.
+- The login page shows the demo credentials only when `NEXT_PUBLIC_DEMO_EMAIL` and
+  `NEXT_PUBLIC_DEMO_PASSWORD` are set on the frontend.
+
 ## Project structure
 
 ```
@@ -179,3 +193,9 @@ admin panel for all of the above.
 [LinkedIn](https://www.linkedin.com/in/forsangam-weyegho-junior-priestly-965897236) ·
 [GitHub](https://github.com/Naviolance) ·
 forsangamjunior@gmail.com
+
+## License
+
+© 2026 Forsangam Weyegho Junior Priestly (JPFW Web Services). All rights reserved.
+
+This code is public so clients and employers can review my work. It is **not open source**: you may not copy, deploy, modify or sell it without my written permission. See [LICENSE](LICENSE).
