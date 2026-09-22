@@ -39,6 +39,9 @@ diff_err.txt
 .vscode/
 .idea/
 
+# Claude Code: personal/local settings, not shared (settings.json is shared)
+.claude/settings.local.json
+
 # Docker volumes (data lives in named volumes, not here, but just in case)
 docker-data/
 
