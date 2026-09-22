@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import { APP_GUARD } from "@nestjs/core";
+import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { ConfigModule } from "@nestjs/config";
 import { join } from "path";
 import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
@@ -20,6 +20,7 @@ import { ReviewsModule } from "./reviews/reviews.module";
 import { CouponsModule } from "./coupons/coupons.module";
 import { MailModule } from "./mail/mail.module";
 import { ProductRequestsModule } from "./product-requests/product-requests.module";
+import { DemoReadOnlyInterceptor } from "./common/interceptors/demo-read-only.interceptor";
 
 @Module({
   imports: [
@@ -43,6 +44,10 @@ import { ProductRequestsModule } from "./product-requests/product-requests.modul
     ProductRequestsModule,
   ],
   controllers: [AppController],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // Blocks every data-changing request from demo accounts (see the file).
+    { provide: APP_INTERCEPTOR, useClass: DemoReadOnlyInterceptor },
+  ],
 })
 export class AppModule {}

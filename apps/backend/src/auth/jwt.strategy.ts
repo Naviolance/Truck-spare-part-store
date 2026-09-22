@@ -13,7 +13,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: string; role: string }) {
-    return { userId: payload.sub, role: payload.role };
+  // `demo` is only present on demo accounts' tokens (see AuthService's
+  // signAccessToken); DemoReadOnlyInterceptor reads isDemo off request.user.
+  async validate(payload: { sub: string; role: string; demo?: boolean }) {
+    return { userId: payload.sub, role: payload.role, isDemo: payload.demo === true };
   }
 }

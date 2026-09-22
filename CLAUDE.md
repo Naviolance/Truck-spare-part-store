@@ -83,6 +83,15 @@ logged-out state before the refresh call resolves — not a bug). Backend guards
 (applied at controller level) + `RolesGuard`/`@Roles()` for admin-only routes, `@CurrentUser()`
 decorator to pull the authenticated user out of the request.
 
+**Demo mode**: accounts listed in `DEMO_ACCOUNT_EMAILS` (default `admin@truckparts.local`; empty in
+`.env.example` for local dev) get a `demo: true` claim in their JWT (`AuthService.signAccessToken`),
+surfaced as `request.user.isDemo` by `jwt.strategy.ts`. The global `DemoReadOnlyInterceptor`
+(`common/interceptors/`) rejects any non-GET/HEAD/OPTIONS request from them with 403 — it's an
+interceptor, not a global guard, because global guards run before `JwtAuthGuard` sets
+`request.user`. `forgotPassword` silently ignores demo emails. The frontend only uses `isDemo`
+(from `/auth/refresh` and `/users/me`) to show a banner in `app/admin/layout.tsx`. New routes are
+covered automatically; don't add per-controller demo checks.
+
 **Orders → Payments flow**: checkout is two steps, not one. `POST /orders` creates the order as
 `PAYMENT_PENDING` and atomically decrements product stock (reserving it) inside a transaction —
 `orders.service.ts`. `POST /orders/:id/pay` then calls `payments.service.ts`, which talks to **Notch

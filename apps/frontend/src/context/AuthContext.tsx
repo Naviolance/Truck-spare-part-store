@@ -10,6 +10,9 @@ type User = {
   firstName: string;
   lastName: string;
   role: string;
+  // Read-only demo account (credentials published on the login page). The
+  // backend blocks its writes; the frontend only uses this to explain why.
+  isDemo?: boolean;
 };
 
 type AuthContextType = {

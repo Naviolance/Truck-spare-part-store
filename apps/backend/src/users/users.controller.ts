@@ -3,6 +3,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { UsersService } from "./users.service";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
+import { isDemoEmail } from "../auth/demo-accounts";
 @Controller("users")
 export class UsersController {
   constructor(private usersService: UsersService) {}
@@ -14,7 +15,7 @@ export class UsersController {
     if (!fullUser) return null;
 
     const { passwordHash, ...safeUser } = fullUser;
-    return safeUser;
+    return { ...safeUser, isDemo: isDemoEmail(fullUser.email) };
   }
   @UseGuards(JwtAuthGuard)
   @Patch("me")

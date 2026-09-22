@@ -45,7 +45,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // above, just without the surrounding chrome.
   const isFocusMode = pathname.startsWith("/admin/products/create");
   if (isFocusMode) {
-    return <main className="max-w-lg mx-auto min-h-screen">{children}</main>;
+    return (
+      <main className="max-w-lg mx-auto min-h-screen">
+        {user.isDemo && <DemoBanner />}
+        {children}
+      </main>
+    );
   }
 
   return (
@@ -68,7 +73,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           ))}
         </nav>
       </aside>
-      <main className="flex-1 min-w-0">{children}</main>
+      <main className="flex-1 min-w-0">
+        {user.isDemo && <DemoBanner />}
+        {children}
+      </main>
+    </div>
+  );
+}
+
+// Shown to the read-only demo account. The backend is what actually blocks
+// changes (DemoReadOnlyInterceptor); this just tells visitors up front, so
+// a rejected "Save" doesn't look like a bug.
+function DemoBanner() {
+  return (
+    <div role="status" className="mb-6 rounded-lg border border-amber bg-amber/10 px-4 py-3 text-sm text-ink">
+      <p className="font-medium">You&apos;re viewing the admin panel in demo mode.</p>
+      <p className="mt-1 text-steel">
+        Look around as much as you like. Saving, deleting and other changes are turned off for this account.
+      </p>
     </div>
   );
 }

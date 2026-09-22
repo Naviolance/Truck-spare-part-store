@@ -1,4 +1,5 @@
 import { UnauthorizedException } from "@nestjs/common";
+import * as bcrypt from "bcrypt";
 import { AuthService, SESSION_INACTIVITY_MS } from "./auth.service";
 
 function mockPrisma() {
@@ -187,7 +188,7 @@ describe("AuthService", () => {
       expect(result).toEqual({
         accessToken: "fake.jwt.token",
         sessionToken: expect.any(String),
-        user: { id: "user-1", role: "CUSTOMER" },
+        user: { id: "user-1", role: "CUSTOMER", isDemo: false },
       });
     });
 
@@ -221,6 +222,63 @@ describe("AuthService", () => {
         where: { userId: "user-1", revokedAt: null },
         data: { revokedAt: expect.any(Date) },
       });
+    });
+  });
+
+  describe("demo accounts (read-only, credentials published on purpose)", () => {
+    const DEMO_EMAIL = "admin@truckparts.local"; // the default demo account
+
+    async function userWithPassword(email: string, password: string) {
+      return { id: "user-1", email, role: "ADMIN", passwordHash: await bcrypt.hash(password, 4) };
+    }
+
+    it("login puts a demo claim in the signed token for a demo account", async () => {
+      usersService.findByEmail.mockResolvedValue(await userWithPassword(DEMO_EMAIL, "admin123"));
+
+      await service.login({ email: DEMO_EMAIL, password: "admin123" });
+
+      expect(jwtService.sign).toHaveBeenCalledWith({ sub: "user-1", role: "ADMIN", demo: true });
+    });
+
+    it("login leaves the demo claim out entirely for a normal account", async () => {
+      usersService.findByEmail.mockResolvedValue(await userWithPassword("owner@example.com", "s3cret-pass"));
+
+      await service.login({ email: "owner@example.com", password: "s3cret-pass" });
+
+      expect(jwtService.sign).toHaveBeenCalledWith({ sub: "user-1", role: "ADMIN" });
+    });
+
+    it("refresh keeps the demo claim and tells the frontend isDemo: true", async () => {
+      prisma.session.findUnique.mockResolvedValue({
+        id: "s-1",
+        userId: "user-1",
+        lastActiveAt: new Date(),
+        expiresAt: new Date(Date.now() + 1_000_000),
+        revokedAt: null,
+      });
+      usersService.findById.mockResolvedValue({ id: "user-1", email: DEMO_EMAIL, role: "ADMIN", passwordHash: "x" });
+
+      const result = await service.touchSession("token");
+
+      expect(jwtService.sign).toHaveBeenCalledWith({ sub: "user-1", role: "ADMIN", demo: true });
+      expect(result.user).toEqual({ id: "user-1", email: DEMO_EMAIL, role: "ADMIN", isDemo: true });
+    });
+
+    it("forgotPassword does nothing for a demo account, so nobody can lock other visitors out", async () => {
+      usersService.findByEmail.mockResolvedValue({ id: "user-1", email: DEMO_EMAIL });
+
+      await service.forgotPassword(DEMO_EMAIL);
+
+      expect(prisma.passwordResetToken.create).not.toHaveBeenCalled();
+      expect(mailService.sendMail).not.toHaveBeenCalled();
+    });
+
+    it("matches demo emails case-insensitively", async () => {
+      usersService.findByEmail.mockResolvedValue({ id: "user-1", email: "Admin@TruckParts.local" });
+
+      await service.forgotPassword("Admin@TruckParts.local");
+
+      expect(mailService.sendMail).not.toHaveBeenCalled();
     });
   });
 });

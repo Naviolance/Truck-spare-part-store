@@ -11,6 +11,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../mail/mail.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
+import { isDemoEmail } from "./demo-accounts";
 
 const BCRYPT_ROUNDS = 12; // higher = slower to brute-force, 12 is a solid modern default
 const SESSION_TOKEN_BYTES = 64;
@@ -60,7 +61,7 @@ export class AuthService {
       lastName: dto.lastName,
     });
 
-    return this.createSession(user.id, user.role);
+    return this.createSession(user.id, user.role, user.email);
   }
 
   async login(dto: LoginDto) {
@@ -72,14 +73,14 @@ export class AuthService {
     const passwordMatches = await bcrypt.compare(dto.password, user.passwordHash);
     if (!passwordMatches) throw genericError();
 
-    return this.createSession(user.id, user.role);
+    return this.createSession(user.id, user.role, user.email);
   }
 
   // Called once, at login/register — issues the ONE session token that will
   // be reused, unchanged, for the entire session's lifetime (see the Session
   // model comment in schema.prisma for why nothing rotates it).
-  private async createSession(userId: string, role: string) {
-    const accessToken = this.jwtService.sign({ sub: userId, role });
+  private async createSession(userId: string, role: string, email: string) {
+    const accessToken = this.signAccessToken(userId, role, email);
 
     const sessionTokenPlain = crypto.randomBytes(SESSION_TOKEN_BYTES).toString("hex");
     const tokenHash = this.hashToken(sessionTokenPlain);
@@ -95,6 +96,17 @@ export class AuthService {
     });
 
     return { accessToken, sessionToken: sessionTokenPlain };
+  }
+
+  // Demo accounts get a `demo` claim inside the signed token, so every later
+  // request knows it's read-only without a DB lookup, and nobody can strip
+  // the flag without invalidating the signature. Omitted for normal users.
+  private signAccessToken(userId: string, role: string, email: string) {
+    return this.jwtService.sign({
+      sub: userId,
+      role,
+      ...(isDemoEmail(email) && { demo: true }),
+    });
   }
 
   private hashToken(token: string) {
@@ -150,13 +162,17 @@ export class AuthService {
       }),
     ]);
 
-    const accessToken = this.jwtService.sign({ sub: user.id, role: user.role });
+    const accessToken = this.signAccessToken(user.id, user.role, user.email);
     // Callers (the /auth/refresh route) hand this straight to the frontend,
     // which already fetches this exact row via GET /users/me on the same
     // page load — returning it here lets the frontend skip that redundant
     // second round trip. Never send the hash back over the wire.
     const { passwordHash, ...safeUser } = user;
-    return { accessToken, sessionToken: newSessionTokenPlain, user: safeUser };
+    return {
+      accessToken,
+      sessionToken: newSessionTokenPlain,
+      user: { ...safeUser, isDemo: isDemoEmail(user.email) },
+    };
   }
 
   async logout(sessionTokenPlain: string) {
@@ -174,6 +190,11 @@ export class AuthService {
     // principle as login()'s genericError(). A different response here would
     // let anyone probe which emails have accounts on the site.
     if (!user) return;
+
+    // A demo account's password is published on purpose; letting anyone
+    // reset it would let one visitor lock everyone else out. Same silent
+    // response as an unknown email, so this doesn't reveal anything either.
+    if (isDemoEmail(user.email)) return;
 
     const tokenPlain = crypto.randomBytes(RESET_TOKEN_BYTES).toString("hex");
     const tokenHash = this.hashToken(tokenPlain);
