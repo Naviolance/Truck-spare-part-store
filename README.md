@@ -43,31 +43,35 @@ to explore both the storefront and the admin panel without creating one.
 ## Screenshots
 
 ### Homepage
-[SCREENSHOT: homepage]
+![Homepage](screenshots/home.png)
 
 ### Product listing
-[SCREENSHOT: product listing]
+![Product listing](screenshots/listing.png)
 
 ### Product detail page
-[SCREENSHOT: product detail page]
+![Product detail page](screenshots/detail.png)
 
 ### Find My Part (vehicle compatibility search)
-[SCREENSHOT: find my part]
+![Find My Part](screenshots/find-my-part.png)
 
 ### Cart
-[SCREENSHOT: cart]
+![Cart](screenshots/cart.png)
 
-### Checkout (Notch Pay hosted page)
-[SCREENSHOT: checkout]
+### Checkout
+![Checkout](screenshots/checkout.png)
 
 ### Order tracking
-[SCREENSHOT: order tracking]
+![Order tracking](screenshots/order-tracking.png)
 
-### Admin — product list (mobile card view)
-[SCREENSHOT: admin product list mobile]
+### Admin — product list
+![Admin product list](screenshots/admin-products.png)
 
 ### Admin — order management
-[SCREENSHOT: admin order management]
+![Admin order management](screenshots/admin-orders.png)
+
+The admin panel also renders every list view as a responsive card list on
+mobile (see [Highlights](#highlights) above) — the screenshots here are the
+desktop table view.
 
 ## Stack
 

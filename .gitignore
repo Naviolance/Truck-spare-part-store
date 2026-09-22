@@ -41,3 +41,6 @@ diff_err.txt
 
 # Docker volumes (data lives in named volumes, not here, but just in case)
 docker-data/
+
+# Raw, unrenamed screenshots (only the renamed ones are used in the README)
+screenshots/Screenshot (*).png
