@@ -189,7 +189,9 @@ admin panel for all of the above.
 
 ## Author
 
-**Forsangam Weyegho Junior Priestly** — Full-Stack Web Developer
+**Forsangam Weyegho Junior Priestly** — Full-Stack Software Engineer
+[Portfolio](https://jpfw-webservices.vercel.app/en) ·
+[Case study](https://jpfw-webservices.vercel.app/en/projects/truckparts) ·
 [LinkedIn](https://www.linkedin.com/in/forsangam-weyegho-junior-priestly-965897236) ·
 [GitHub](https://github.com/Naviolance) ·
 forsangamjunior@gmail.com
