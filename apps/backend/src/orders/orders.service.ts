@@ -72,6 +72,19 @@ export class OrdersService {
       console.error("Failed to send order status email:", err);
     }
   }
+
+  // Checkout without overselling.
+  //
+  // Problem: two customers check out the last unit of a part at the same
+  // time. A naive "read stock, check it, then write stock - qty" lets both
+  // reads see 1 in stock, so both orders succeed and stock goes to -1.
+  //
+  // Solution: the check and the decrement are one SQL statement
+  // (UPDATE ... SET quantity = quantity - n WHERE id = ? AND quantity >= n).
+  // Postgres locks the row while it updates, so the second request re-checks
+  // the new value and matches 0 rows. count === 0 means "not enough stock",
+  // and throwing inside $transaction rolls back every earlier decrement,
+  // the coupon use and the order. The customer gets all items or nothing.
   async checkout(userId: string, dto: CreateOrderDto) {
     const cart = await this.prisma.cart.findUnique({ where: { userId } });
     if (!cart) throw new BadRequestException("Cart is empty");
