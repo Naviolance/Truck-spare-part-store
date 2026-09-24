@@ -1,4 +1,10 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from "@nestjs/common";
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+  ForbiddenException,
+} from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PaymentsService } from "../payments/payments.service";
 import { CouponsService } from "../coupons/coupons.service";
@@ -72,18 +78,46 @@ export class OrdersService {
       console.error("Failed to send order status email:", err);
     }
   }
+
+  // Checkout without overselling.
+  //
+  // Problem: two customers check out the last unit of a part at the same
+  // time. A naive "read stock, check it, then write stock - qty" lets both
+  // reads see 1 in stock, so both orders succeed and stock goes to -1.
+  //
+  // Solution: the check and the decrement are one SQL statement
+  // (UPDATE ... SET quantity = quantity - n WHERE id = ? AND quantity >= n).
+  // Postgres locks the row while it updates, so the second request re-checks
+  // the new value and matches 0 rows. count === 0 means "not enough stock",
+  // and throwing inside $transaction rolls back every earlier decrement,
+  // the coupon use and the order. The customer gets all items or nothing.
+  //
+  // The same idea stops a double-submitted checkout (double click, retry):
+  // each request first "claims" the cart by deleting its items. Only one
+  // request can delete them; the other deletes fewer rows than it read and
+  // stops before touching stock or coupons.
   async checkout(userId: string, dto: CreateOrderDto) {
     const cart = await this.prisma.cart.findUnique({ where: { userId } });
     if (!cart) throw new BadRequestException("Cart is empty");
 
-    const cartItems = await this.prisma.cartItem.findMany({
-      where: { cartId: cart.id },
-      include: { product: true },
-    });
-
-    if (cartItems.length === 0) throw new BadRequestException("Cart is empty");
-
     return this.prisma.$transaction(async (tx) => {
+      const cartItems = await tx.cartItem.findMany({
+        where: { cartId: cart.id },
+        include: { product: true },
+      });
+
+      if (cartItems.length === 0) throw new BadRequestException("Cart is empty");
+
+      // Claim the cart. A concurrent checkout of the same cart waits on these
+      // row locks, then finds the rows already gone.
+      const claimed = await tx.cartItem.deleteMany({
+        where: { id: { in: cartItems.map((item) => item.id) } },
+      });
+
+      if (claimed.count !== cartItems.length) {
+        throw new ConflictException("This cart is already being checked out");
+      }
+
       let subtotal = 0;
 
       for (const item of cartItems) {
@@ -139,8 +173,6 @@ export class OrdersService {
         },
         include: { items: true },
       });
-
-      await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
 
       return order;
     });

@@ -2,7 +2,8 @@ import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
 import helmet from "helmet";
 import * as cookieParser from "cookie-parser";
-import { json, urlencoded } from "express";
+import { json, urlencoded, type RequestHandler } from "express";
+import type { IncomingMessage } from "http";
 import { AppModule } from "./app.module";
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
 
@@ -15,7 +16,7 @@ async function bootstrap() {
   app.use(
     json({
       limit: "10mb",
-      verify: (req: any, _res, buf) => {
+      verify: (req: IncomingMessage & { rawBody?: string }, _res, buf) => {
         req.rawBody = buf.toString();
       },
     }),
@@ -27,7 +28,7 @@ app.use(
     crossOriginResourcePolicy: { policy: "cross-origin" },
   }),
 );
-  app.use((cookieParser as unknown as () => any)());
+  app.use((cookieParser as unknown as () => RequestHandler)());
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.useGlobalFilters(new AllExceptionsFilter());

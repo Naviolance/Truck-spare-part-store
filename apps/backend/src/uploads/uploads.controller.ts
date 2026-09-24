@@ -11,6 +11,7 @@ import {
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
+import type { Readable } from "stream";
 import { UploadsService } from "./uploads.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
@@ -46,6 +47,6 @@ export class UploadsController {
     async getFile(@Param("key") key: string, @Res() res: Response) {
     const { stream, contentType } = await this.uploadsService.getImage(key);
     res.set("Content-Type", contentType || "application/octet-stream");
-    (stream as any).pipe(res);
+    (stream as Readable).pipe(res);
     }
 }

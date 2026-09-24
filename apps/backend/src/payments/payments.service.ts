@@ -37,9 +37,10 @@ export class PaymentsService {
       );
 
       return response.data;
-    } catch (error: any) {
+    } catch (error) {
       // Surface Notch Pay's actual validation message instead of a blind 422.
-      console.error("Notch Pay error response:", JSON.stringify(error.response?.data, null, 2));
+      const details = axios.isAxiosError(error) ? error.response?.data : error;
+      console.error("Notch Pay error response:", JSON.stringify(details, null, 2));
       throw error;
     }
   }
