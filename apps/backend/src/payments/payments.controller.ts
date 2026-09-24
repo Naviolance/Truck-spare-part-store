@@ -14,7 +14,7 @@ export class PaymentsController {
   @HttpCode(200)
   async handleWebhook(@Req() req: Request, @Res() res: Response) {
     const signature = req.headers["x-notch-signature"] as string;
-    const rawBody = (req as any).rawBody as string; // set up in main.ts below
+    const rawBody = (req as Request & { rawBody: string }).rawBody; // set up in main.ts below
 
     if (!signature || !this.paymentsService.verifyWebhookSignature(rawBody, signature)) {
       return res.status(400).send("Invalid signature");
