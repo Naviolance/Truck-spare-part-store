@@ -281,4 +281,35 @@ describe("AuthService", () => {
       expect(mailService.sendMail).not.toHaveBeenCalled();
     });
   });
+
+  describe("changePassword", () => {
+    const CURRENT = "current password 1";
+    let hash: string;
+
+    beforeAll(async () => {
+      hash = await bcrypt.hash(CURRENT, 4);
+    });
+
+    it("rejects a wrong current password without changing anything", async () => {
+      usersService.findById.mockResolvedValue({ id: "user-1", passwordHash: hash });
+      await expect(service.changePassword("user-1", "wrong", "brand new password")).rejects.toThrow(UnauthorizedException);
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it("refuses a new password equal to the current one", async () => {
+      usersService.findById.mockResolvedValue({ id: "user-1", passwordHash: hash });
+      await expect(service.changePassword("user-1", CURRENT, CURRENT)).rejects.toThrow(/different/);
+    });
+
+    it("updates the hash and revokes every session except the current one", async () => {
+      usersService.findById.mockResolvedValue({ id: "user-1", passwordHash: hash });
+      await service.changePassword("user-1", CURRENT, "brand new password", "current-session-token");
+
+      const newHash = prisma.user.update.mock.calls[0][0].data.passwordHash;
+      expect(await bcrypt.compare("brand new password", newHash)).toBe(true);
+      const revokeWhere = prisma.session.updateMany.mock.calls[0][0].where;
+      expect(revokeWhere.userId).toBe("user-1");
+      expect(revokeWhere.tokenHash.not).toMatch(/^[0-9a-f]{64}$/); // the CURRENT session's hash is kept
+    });
+  });
 });

@@ -370,8 +370,16 @@ enum ProductRequestStatus {
 
 model ProductRequest {
   id          String               @id @default(uuid())
-  userId      String
-  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Null for guest requests. SetNull (not Cascade): a request is a sales
+  // lead for the business, so it outlives the account that made it.
+  userId      String?
+  user        User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  // How to reach the customer — required by the API for new requests;
+  // nullable only because requests made before guests were allowed have none.
+  contactName        String?
+  contactPhone       String?
+  contactEmail       String?
+  contactViaWhatsApp Boolean              @default(true)
   description String
   partNumber  String?
   vehicleInfo String?

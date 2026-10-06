@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Res, Req, UnauthorizedException, ForbiddenException, HttpCode } from "@nestjs/common";
+import { Controller, Post, Body, Res, Req, UnauthorizedException, ForbiddenException, HttpCode, UseGuards } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
 import type { Response, Request } from "express";
 import * as crypto from "crypto";
@@ -7,6 +7,9 @@ import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
+import { ChangePasswordDto } from "./dto/change-password.dto";
+import { JwtAuthGuard } from "./guards/jwt-auth.guard";
+import { CurrentUser } from "./decorators/current-user.decorator";
 
 const SESSION_COOKIE_NAME = "session_token";
 
@@ -94,6 +97,17 @@ export class AuthController {
   async resetPassword(@Body() dto: ResetPasswordDto) {
     await this.authService.resetPassword(dto.token, dto.newPassword);
     return { message: "Password updated successfully" };
+  }
+
+  // Bearer-authenticated like every other account route (so no CSRF token
+  // needed), and throttled like login: it's a password-guessing surface too.
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  @Post("change-password")
+  async changePassword(@CurrentUser() user: { userId: string }, @Body() dto: ChangePasswordDto, @Req() req: Request) {
+    await this.authService.changePassword(user.userId, dto.currentPassword, dto.newPassword, req.cookies?.[SESSION_COOKIE_NAME]);
+    return { message: "Password updated. Other devices have been signed out." };
   }
 
   private setSessionCookies(res: Response, token: string) {

@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException, ForbiddenException, ConflictException } from "@nestjs/common";
+import { OrderStatus } from "@truckparts/prisma";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { CreateReviewDto } from "./dto/create-review.dto";
 import { UpdateReviewDto } from "./dto/update-review.dto";
 
 const EDIT_WINDOW_MS = 10 * 60 * 1000; // customers can edit/delete their own review for 10 minutes after posting
+
+// Orders that count as "bought it": paid, whether or not it was collected yet.
+const PURCHASED: OrderStatus[] = [OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED];
 
 @Injectable()
 export class ReviewsService {
@@ -12,6 +16,15 @@ export class ReviewsService {
   async create(userId: string, dto: CreateReviewDto) {
     const product = await this.prisma.product.findUnique({ where: { id: dto.productId } });
     if (!product) throw new NotFoundException("Product not found");
+
+    // Verified purchases only: otherwise anyone with an account can post
+    // fake ratings, which is exactly what makes shoppers stop trusting them.
+    const bought = await this.prisma.orderItem.count({
+      where: { productId: dto.productId, order: { userId, status: { in: PURCHASED } } },
+    });
+    if (bought === 0) {
+      throw new ForbiddenException("Only customers who bought this part can review it");
+    }
 
     const existing = await this.prisma.review.findUnique({
       where: { productId_userId: { productId: dto.productId, userId } },

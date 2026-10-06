@@ -1,6 +1,8 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
@@ -16,7 +18,7 @@ import { isDemoEmail } from "./demo-accounts";
 const BCRYPT_ROUNDS = 12; // higher = slower to brute-force, 12 is a solid modern default
 const SESSION_TOKEN_BYTES = 64;
 const RESET_TOKEN_BYTES = 32;
-const RESET_TOKEN_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+const RESET_TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hour — what the email tells the user
 
 // Two independent, server-enforced limits on a session — checked on every
 // touchSession() call:
@@ -212,6 +214,33 @@ export class AuthService {
        <p><a href="${resetUrl}">${resetUrl}</a></p>
        <p>If you didn't request this, you can safely ignore this email.</p>`,
     );
+  }
+
+  // Logged-in password change. Requires the current password (an unlocked
+  // laptop alone isn't enough to take over the account), then signs out
+  // every OTHER session — keeping the one making the request — so a thief
+  // holding an old session is kicked out.
+  async changePassword(userId: string, currentPassword: string, newPassword: string, currentSessionToken?: string) {
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new NotFoundException("Account not found");
+
+    if (!(await bcrypt.compare(currentPassword, user.passwordHash))) {
+      throw new UnauthorizedException("Your current password is incorrect");
+    }
+    if (await bcrypt.compare(newPassword, user.passwordHash)) {
+      throw new BadRequestException("The new password must be different from the current one");
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+    const keepTokenHash = currentSessionToken ? this.hashToken(currentSessionToken) : undefined;
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: userId }, data: { passwordHash } }),
+      this.prisma.session.updateMany({
+        where: { userId, revokedAt: null, ...(keepTokenHash && { tokenHash: { not: keepTokenHash } }) },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
   }
 
   async resetPassword(tokenPlain: string, newPassword: string) {
