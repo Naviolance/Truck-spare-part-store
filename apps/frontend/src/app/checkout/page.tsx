@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { apiFetch } from "@/lib/api";
 import { formatMoney } from "@/lib/money";
+import { payOrder, usePaymentOptions } from "@/lib/payment";
 
 const inputClass = "w-full border border-steel-light rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:border-steel";
 const labelClass = "block text-sm font-medium mb-1 text-steel";
@@ -12,7 +13,12 @@ export default function CheckoutPage() {
   const { items, subtotal, refresh } = useCart();
   const router = useRouter();
   const [form, setForm] = useState({ shippingAddress: "", shippingCity: "", shippingPhone: "" });
-  const [paymentMethod, setPaymentMethod] = useState<"online" | "cash">("online");
+  const paymentOptions = usePaymentOptions();
+  const [paymentMethod, setPaymentMethod] = useState<"online" | "cash">("cash");
+  // Prefer online once we know a provider is configured; cash otherwise.
+  useEffect(() => {
+    if (paymentOptions?.online) setPaymentMethod("online");
+  }, [paymentOptions?.online]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   useEffect(() => {
@@ -87,33 +93,11 @@ export default function CheckoutPage() {
     const order = await res.json();
     await refresh(); // cart is now empty on the backend, sync frontend state
 
-    if (paymentMethod === "cash") {
-      // No gateway involved — the order stays PAYMENT_PENDING until an
-      // admin confirms cash was received at pickup.
-      const cashRes = await apiFetch(`/orders/${order.id}/pay-cash`, { method: "POST" });
-      if (!cashRes.ok) {
-        const err = await cashRes.json().catch(() => ({}));
-        setError(err.message || "Could not record order");
-        setSubmitting(false);
-        return;
-      }
-      router.push(`/orders/${order.id}`);
-      return;
-    }
-
-    // Order is created but not yet paid — now start the actual payment and
-    // send the customer to Notch Pay's hosted checkout page.
-    const payRes = await apiFetch(`/orders/${order.id}/pay`, { method: "POST" });
-
-    if (!payRes.ok) {
-      const err = await payRes.json().catch(() => ({}));
-      setError(err.message || "Could not start payment");
-      setSubmitting(false);
-      return;
-    }
-
-    const { checkoutUrl } = await payRes.json();
-    window.location.href = checkoutUrl; // full redirect to Notch Pay
+    // The order now exists with its stock reserved. If starting payment
+    // fails (provider down, network), don't strand the customer on an empty
+    // checkout: their order page lets them retry or switch to cash.
+    const paid = await payOrder(order.id, paymentMethod);
+    if (!paid.ok || paymentMethod === "cash") router.push(`/orders/${order.id}`);
   }
 
   if (items.length === 0) {
@@ -209,7 +193,8 @@ export default function CheckoutPage() {
         </div>
         <div>
           <label className={labelClass}>Payment method</label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className={`grid gap-3 ${paymentOptions?.online ? "grid-cols-2" : "grid-cols-1"}`}>
+            {paymentOptions?.online && (
             <button
               type="button"
               onClick={() => setPaymentMethod("online")}
@@ -220,6 +205,7 @@ export default function CheckoutPage() {
               <span className="block font-medium text-ink">Pay online</span>
               <span className="block text-xs text-steel mt-0.5">Mobile money / card</span>
             </button>
+            )}
             <button
               type="button"
               onClick={() => setPaymentMethod("cash")}

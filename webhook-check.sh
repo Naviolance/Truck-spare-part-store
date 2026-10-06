@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 # Simulates a Notch Pay webhook hitting the local backend, so you can test
-# order confirmation/failure without waiting on a real payment.
+# order confirmation/failure without waiting on a real payment. Only useful
+# with PAYMENT_PROVIDER=notchpay.
 #
-# Usage: ./webhook-check.sh <order-number> [payment.complete|payment.failed]
+# Each payment ATTEMPT has its own reference: <order-number>-<attempt>, e.g.
+# ORD-20261006-1A2B3C4D-1 for the first time the customer pressed "Pay"
+# (see the payments table, column "reference").
+#
+# Usage: ./webhook-check.sh <payment-reference> [payment.complete|payment.failed]
 
 set -euo pipefail
 
-ORDER_NUMBER="${1:?Usage: ./webhook-check.sh <order-number> [payment.complete|payment.failed]}"
+PAYMENT_REFERENCE="${1:?Usage: ./webhook-check.sh <payment-reference> [payment.complete|payment.failed]}"
 EVENT_TYPE="${2:-payment.complete}"
 BACKEND_URL="${BACKEND_URL:-http://localhost:4000}"
 
@@ -18,7 +23,7 @@ if [ -z "$NOTCHPAY_WEBHOOK_HASH" ]; then
 fi
 
 BODY=$(cat <<EOF
-{"type":"$EVENT_TYPE","data":{"reference":"$ORDER_NUMBER","transaction":{"reference":"test_tx_$ORDER_NUMBER"}}}
+{"type":"$EVENT_TYPE","data":{"reference":"$PAYMENT_REFERENCE"}}
 EOF
 )
 

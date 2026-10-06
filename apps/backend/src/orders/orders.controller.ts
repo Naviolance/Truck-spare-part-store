@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Patch, Body, Param, UseGuards } from "@nestjs/common";
 import { OrdersService } from "./orders.service";
+import { OrderPaymentsService } from "./order-payments.service";
 import { CreateOrderDto } from "./dto/create-order.dto";
 import { UpdateOrderStatusDto } from "./dto/update-order-status.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
@@ -11,16 +12,27 @@ import { UserRole } from "@truckparts/prisma";
 @Controller("orders")
 @UseGuards(JwtAuthGuard)
 export class OrdersController {
-  constructor(private ordersService: OrdersService) {}
+  constructor(
+    private ordersService: OrdersService,
+    private orderPayments: OrderPaymentsService,
+  ) {}
+
+  // Which payment methods checkout should offer (online only when a
+  // provider is configured). Declared before ":id" so it isn't swallowed by it.
+  @Get("payment-options")
+  paymentOptions() {
+    return this.orderPayments.options();
+  }
 
   @Post()
   checkout(@CurrentUser() user: { userId: string }, @Body() dto: CreateOrderDto) {
     return this.ordersService.checkout(user.userId, dto);
   }
 
+  // Start or RETRY an online payment for a still-unpaid order.
   @Post(":id/pay")
   initiatePayment(@CurrentUser() user: { userId: string }, @Param("id") id: string) {
-    return this.ordersService.initiatePayment(user.userId, id);
+    return this.orderPayments.startOnlinePayment(user.userId, id);
   }
 
   @Post(":id/pay-cash")
@@ -47,9 +59,14 @@ export class OrdersController {
     return this.ordersService.findAllAdmin();
   }
 
+  // Checks access first, then asks the provider about a still-pending online
+  // payment (webhooks can be late), then returns the up-to-date order.
   @Get(":id")
-  findOne(@CurrentUser() user: { userId: string; role: string }, @Param("id") id: string) {
-    return this.ordersService.findOne(user.userId, id, user.role === "ADMIN");
+  async findOne(@CurrentUser() user: { userId: string; role: string }, @Param("id") id: string) {
+    const isAdmin = user.role === "ADMIN";
+    await this.ordersService.findOne(user.userId, id, isAdmin);
+    await this.orderPayments.reconcilePending(id);
+    return this.ordersService.findOne(user.userId, id, isAdmin);
   }
 
   @Patch(":id/status")

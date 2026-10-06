@@ -12,24 +12,22 @@ type Order = {
   createdAt: string;
   user: { firstName: string; lastName: string; email: string };
   payments: { provider: string; status: string }[];
+  // From the backend's state machine (orders/order-status.ts): the only
+  // statuses this order may move to. The UI never offers anything else.
+  nextStatuses: string[];
 };
 
-// CANCELLED and REFUNDED aren't in this list on purpose — those only happen
-// through the dedicated "Cancel & refund" button, which also restores stock
-// and marks the payment refunded. Setting them from this raw dropdown would
-// skip both of those.
-const STATUS_OPTIONS = [
-  "PAYMENT_PENDING",
-  "PAID",
-  "PROCESSING",
-  "SHIPPED",
-  "DELIVERED",
-  "PAYMENT_FAILED",
-  "PARTIALLY_REFUNDED",
-  "DISPUTED",
-];
+// CANCELLED and REFUNDED go through the "Cancel & refund" button (with a
+// confirmation), not the dropdown.
+const BUTTON_ONLY = ["CANCELLED", "REFUNDED"];
 
-const TERMINAL_STATUSES = ["CANCELLED", "REFUNDED", "PARTIALLY_REFUNDED"];
+function dropdownOptions(o: Order) {
+  return [o.status, ...o.nextStatuses.filter((s) => !BUTTON_ONLY.includes(s))];
+}
+
+function canCancel(o: Order) {
+  return o.nextStatuses.some((s) => BUTTON_ONLY.includes(s));
+}
 
 const STATUS_COLORS: Record<string, string> = {
   PAID: "bg-blue-100 text-blue-700",
@@ -38,6 +36,7 @@ const STATUS_COLORS: Record<string, string> = {
   DELIVERED: "bg-green-100 text-green-700",
   CANCELLED: "bg-steel-light text-steel",
   PAYMENT_FAILED: "bg-red-100 text-red-700",
+  EXPIRED: "bg-steel-light text-steel",
   REFUNDED: "bg-red-100 text-red-700",
   PARTIALLY_REFUNDED: "bg-orange-100 text-orange-700",
   DISPUTED: "bg-red-100 text-red-700",
@@ -61,10 +60,14 @@ export default function AdminOrdersPage() {
 
   async function handleStatusChange(orderId: string, status: string) {
     setUpdatingId(orderId);
-    await apiFetch(`/orders/${orderId}/status`, {
+    const res = await apiFetch(`/orders/${orderId}/status`, {
       method: "PATCH",
       body: JSON.stringify({ status }),
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.message || "Could not update this order");
+    }
     await load();
     setUpdatingId(null);
   }
@@ -78,11 +81,21 @@ export default function AdminOrdersPage() {
   }
 
   async function handleCancel(order: Order) {
-    if (!confirm(`Cancel order #${order.orderNumber}? This restores stock for its items${order.status === "PAID" || order.status === "PROCESSING" || order.status === "SHIPPED" || order.status === "DELIVERED" ? " and marks the payment as refunded (you still need to actually send the refund via Notch Pay)" : ""}.`)) {
-      return;
-    }
+    // Mirrors releasesStock() in the backend's order-status.ts: units come
+    // back automatically only while they're still in the store.
+    const unpaid = order.status === "PAYMENT_PENDING";
+    const stillInStore = ["PAYMENT_PENDING", "PAID", "PROCESSING"].includes(order.status);
+    const message = [
+      `${unpaid ? "Cancel" : "Refund"} order #${order.orderNumber}?`,
+      stillInStore
+        ? "Its items will be put back in stock."
+        : "Its items already left the store, so stock is NOT restored automatically — adjust it by hand if they come back.",
+      unpaid ? "" : "This marks the payment refunded; you still need to send the money back yourself.",
+    ].join(" ");
+    if (!confirm(message)) return;
     setUpdatingId(order.id);
-    await apiFetch(`/orders/${order.id}/cancel`, { method: "POST" });
+    const res = await apiFetch(`/orders/${order.id}/cancel`, { method: "POST" });
+    if (!res.ok) alert((await res.json().catch(() => ({}))).message || "Could not cancel this order");
     await load();
     setUpdatingId(null);
   }
@@ -125,11 +138,11 @@ export default function AdminOrdersPage() {
               <div className="mt-3 flex flex-col gap-2">
                 <select
                   value={o.status}
-                  disabled={updatingId === o.id || TERMINAL_STATUSES.includes(o.status)}
+                  disabled={updatingId === o.id || dropdownOptions(o).length === 1}
                   onChange={(e) => handleStatusChange(o.id, e.target.value)}
                   className="w-full border border-steel-light rounded-lg px-3 py-2.5 text-sm"
                 >
-                  {STATUS_OPTIONS.map((s) => (
+                  {dropdownOptions(o).map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
@@ -142,7 +155,7 @@ export default function AdminOrdersPage() {
                     {updatingId === o.id ? "…" : "Mark paid (cash)"}
                   </button>
                 )}
-                {!TERMINAL_STATUSES.includes(o.status) && (
+                {canCancel(o) && (
                   <button
                     onClick={() => handleCancel(o)}
                     disabled={updatingId === o.id}
@@ -189,11 +202,11 @@ export default function AdminOrdersPage() {
                   <div className="flex items-center gap-2">
                     <select
                       value={o.status}
-                      disabled={updatingId === o.id || TERMINAL_STATUSES.includes(o.status)}
+                      disabled={updatingId === o.id || dropdownOptions(o).length === 1}
                       onChange={(e) => handleStatusChange(o.id, e.target.value)}
                       className="border border-steel-light rounded-lg px-2 py-1 text-xs"
                     >
-                      {STATUS_OPTIONS.map((s) => (
+                      {dropdownOptions(o).map((s) => (
                         <option key={s} value={s}>{s}</option>
                       ))}
                     </select>
@@ -206,7 +219,7 @@ export default function AdminOrdersPage() {
                         {updatingId === o.id ? "…" : "Mark paid (cash)"}
                       </button>
                     )}
-                    {!TERMINAL_STATUSES.includes(o.status) && (
+                    {canCancel(o) && (
                       <button
                         onClick={() => handleCancel(o)}
                         disabled={updatingId === o.id}

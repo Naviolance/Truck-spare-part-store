@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { PayOrderPanel } from "./PayOrderPanel";
 import { apiFetch } from "@/lib/api";
 import { formatMoney } from "@/lib/money";
 
@@ -47,10 +48,12 @@ export default function OrderDetailPage() {
     load();
   }, [load]);
 
-  const isOnlinePayment = order?.payments.some((p) => p.provider === "notchpay") ?? false;
-  const awaitingConfirmation = order?.status === "PAYMENT_PENDING" && isOnlinePayment;
+  // An online attempt (any provider) still waiting for its result.
+  const hasPendingOnline =
+    order?.payments.some((p) => p.provider !== "cash" && p.status === "PENDING") ?? false;
+  const awaitingConfirmation = order?.status === "PAYMENT_PENDING" && hasPendingOnline;
 
-  // Notch Pay confirms payment via an async webhook that can land a few
+  // The payment provider confirms payment via an async webhook that can land a few
   // seconds after the browser is redirected back here — so a customer who
   // just paid may briefly still see PAYMENT_PENDING. Poll until the webhook
   // catches up (or give up after a minute rather than polling forever).
@@ -87,6 +90,9 @@ export default function OrderDetailPage() {
   if (!order) return <main className="max-w-2xl mx-auto px-4 py-16 text-steel">Order not found.</main>;
 
   const pendingCash = order.status === "PAYMENT_PENDING" && order.payments.some((p) => p.provider === "cash" && p.status === "PENDING");
+  // Unpaid with nothing in progress (or confirmation gave up): offer to pay/retry.
+  const needsPayment = order.status === "PAYMENT_PENDING" && !pendingCash && (!hasPendingOnline || pollTimedOut);
+  const lastAttemptFailed = order.payments.length > 0 && order.payments.every((p) => p.status === "FAILED");
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-10">
@@ -97,7 +103,21 @@ export default function OrderDetailPage() {
         </div>
       )}
 
-      {awaitingConfirmation && (
+      {needsPayment && (
+        <PayOrderPanel orderId={order.id} total={order.total} lastAttemptFailed={lastAttemptFailed} onPaid={load} />
+      )}
+
+      {order.status === "EXPIRED" && (
+        <div className="bg-paper border border-steel-light rounded-lg p-4 mb-6">
+          <p className="font-semibold text-ink">This order expired</p>
+          <p className="text-sm text-steel">
+            We didn&apos;t receive payment in time, so the items were released.{" "}
+            <Link href="/products" className="underline">Browse parts</Link> to order again.
+          </p>
+        </div>
+      )}
+
+      {awaitingConfirmation && !needsPayment && (
         <div className="bg-paper border border-steel-light rounded-lg p-4 mb-6 flex items-center gap-3">
           {!pollTimedOut && <div className="w-5 h-5 border-2 border-steel-light border-t-ink rounded-full animate-spin shrink-0" />}
           <div>

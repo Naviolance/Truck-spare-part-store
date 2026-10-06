@@ -40,6 +40,7 @@ enum OrderStatus {
   SHIPPED
   DELIVERED
   PAYMENT_FAILED
+  EXPIRED // never paid within the time limit; reserved stock was released
   CANCELLED
   REFUNDED
   PARTIALLY_REFUNDED
@@ -283,6 +284,7 @@ model Order {
 
   @@index([userId])
   @@index([status])
+  @@index([status, createdAt]) // expiry job: oldest PAYMENT_PENDING orders
   @@map("orders")
 }
 
@@ -331,11 +333,16 @@ model OrderItem {
 // Payments
 // ---------------------------------------------------------------------------
 
+// One row per payment ATTEMPT, not per order: a customer can retry a failed
+// or abandoned online payment, and each attempt gets its own unique
+// `reference` (what we send the provider) so a late result for an old
+// attempt can never be confused with the current one.
 model Payment {
   id                    String        @id @default(uuid())
   orderId               String
   order                 Order         @relation(fields: [orderId], references: [id])
-  provider              String
+  provider              String // "cash" or a payment provider adapter name
+  reference             String?       @unique // our per-attempt reference sent to the provider
   providerTransactionId String?       @unique
   amount                Decimal       @db.Decimal(12, 2)
   status                PaymentStatus @default(PENDING)

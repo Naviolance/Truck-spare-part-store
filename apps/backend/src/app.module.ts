@@ -3,6 +3,7 @@ import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { ConfigModule } from "@nestjs/config";
 import { join } from "path";
 import { ThrottlerModule } from "@nestjs/throttler";
+import { ScheduleModule } from "@nestjs/schedule";
 import { PrismaModule } from "./common/prisma/prisma.module";
 import { ProductsModule } from "./products/products.module";
 import { AuthModule } from "./auth/auth.module";
@@ -27,6 +28,7 @@ import { DemoReadOnlyInterceptor } from "./common/interceptors/demo-read-only.in
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: join(__dirname, "../../../.env") }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
+    ScheduleModule.forRoot(), // runs OrderExpiryService's cron
     PrismaModule,
     ProductsModule,
     AuthModule,
