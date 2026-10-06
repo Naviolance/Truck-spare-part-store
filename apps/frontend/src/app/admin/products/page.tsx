@@ -54,9 +54,14 @@ export default function AdminProductsPage() {
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this product? This cannot be undone.")) return;
+    if (!confirm("Delete this product? If it was ever ordered it will be archived (hidden from the store) instead, so order history stays intact.")) return;
     setPendingId(id);
-    await apiFetch(`/products/${id}`, { method: "DELETE" });
+    const res = await apiFetch(`/products/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      alert((await res.json().catch(() => ({}))).message || "Could not delete this product");
+    } else if ((await res.json().catch(() => ({}))).archived) {
+      alert("This product has past orders, so it was archived instead of deleted. It's hidden from the store; you can republish it from Edit.");
+    }
     await load();
     setPendingId(null);
   }

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { formatMoney } from "@/lib/money";
@@ -12,6 +13,7 @@ type Product = {
 };
 
 export function RelatedProducts({ categoryIds, excludeProductIds }: { categoryIds: string[]; excludeProductIds: string[] }) {
+  const t = useTranslations("Cart");
   const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
@@ -23,7 +25,7 @@ export function RelatedProducts({ categoryIds, excludeProductIds }: { categoryId
 
     Promise.all(
       categoryIds.map((categoryId) =>
-        publicFetch(`/products?categoryId=${categoryId}&limit=4`)
+        publicFetch(`/products?categoryId=${categoryId}&limit=4&inStock=true`)
           .then((r) => (r.ok ? r.json() : { items: [] }))
           .then((data) => data.items as Product[])
           .catch(() => [] as Product[]),
@@ -57,7 +59,7 @@ export function RelatedProducts({ categoryIds, excludeProductIds }: { categoryId
 
   return (
     <section className="mt-10 pt-8 border-t border-steel-light">
-      <h2 className="text-lg font-display font-bold text-ink tracking-tight mb-4">You might also need</h2>
+      <h2 className="text-lg font-display font-bold text-ink tracking-tight mb-4">{t("related")}</h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {products.map((product) => (
           <Link

@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
+import { parseCrossReferences } from "@/lib/part-numbers";
 import { apiFetch } from "@/lib/api";
 import { isUnoptimizableImage } from "@/lib/image";
 import { ConditionTag } from "@/components/ProductCard";
@@ -36,7 +37,7 @@ export default function EditProductPage() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [form, setForm] = useState({
     name: "", description: "", descriptionFr: "", price: "", quantity: "", condition: "NEW",
-    categoryId: "", brandId: "", partNumber: "", conditionNotes: "",
+    categoryId: "", brandId: "", partNumber: "", crossReference: "", conditionNotes: "",
   });
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [vehicleIds, setVehicleIds] = useState<string[]>([]);
@@ -50,6 +51,7 @@ export default function EditProductPage() {
         name: p.name, description: p.description, descriptionFr: p.descriptionFr || "", price: String(p.price), quantity: String(p.quantity),
         condition: p.condition, categoryId: p.categoryId, brandId: p.brandId || "", partNumber: p.partNumber || "",
         conditionNotes: p.conditionNotes || "",
+        crossReference: (p.crossReference ?? []).join(", "),
       });
       setImageUrls(p.images?.map((img: { url: string }) => img.url) ?? []);
       setVehicleIds(p.compatibility?.map((c: { vehicleId: string }) => c.vehicleId) ?? []);
@@ -102,6 +104,7 @@ export default function EditProductPage() {
       method: "PATCH",
       body: JSON.stringify({
         ...form,
+        crossReference: parseCrossReferences(form.crossReference),
         descriptionFr: form.descriptionFr || undefined,
         price: Number(form.price),
         quantity: Number(form.quantity),
@@ -297,6 +300,18 @@ export default function EditProductPage() {
               onChange={(e) => update("partNumber", e.target.value)}
               className={`${fieldClass} font-mono`}
             />
+          </div>
+
+          <div className="mt-4">
+            <label htmlFor="edit-cross-ref" className={labelClass}>Other part numbers (optional)</label>
+            <input
+              id="edit-cross-ref"
+              value={form.crossReference}
+              onChange={(e) => update("crossReference", e.target.value)}
+              placeholder="OEM or equivalent references, separated by commas"
+              className={`${fieldClass} font-mono`}
+            />
+            <p className="text-xs text-steel mt-1">Customers searching any of these numbers will find this part (spaces and dashes don&apos;t matter).</p>
           </div>
         </div>
 

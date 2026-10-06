@@ -94,7 +94,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
       <section className="relative min-h-[480px] sm:min-h-[560px] flex items-center text-paper border-b-4 border-amber overflow-hidden">
         <Image
           src="/hero-bg.jpg"
-          alt="Truck parts on the shop floor"
+          alt={tHero("imageAlt")}
           fill
           priority
           sizes="100vw"

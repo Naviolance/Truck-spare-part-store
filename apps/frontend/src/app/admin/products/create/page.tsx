@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { parseCrossReferences } from "@/lib/part-numbers";
 import { apiFetch } from "@/lib/api";
 import { formatMoney } from "@/lib/money";
 import { ConditionTag } from "@/components/ProductCard";
@@ -21,6 +22,7 @@ type Details = {
   categoryId: string;
   brandId: string;
   partNumber: string;
+  crossReference: string;
 };
 
 const EMPTY_DETAILS: Details = {
@@ -34,6 +36,7 @@ const EMPTY_DETAILS: Details = {
   categoryId: "",
   brandId: "",
   partNumber: "",
+  crossReference: "",
 };
 
 // Generic "image/*" rather than a narrow MIME list - some mobile browsers'
@@ -152,6 +155,7 @@ export default function CreateProductPage() {
           categoryId: details.categoryId,
           brandId: details.brandId || undefined,
           partNumber: details.partNumber || undefined,
+          crossReference: parseCrossReferences(details.crossReference),
           imageUrls,
           vehicleIds,
           status,
@@ -312,6 +316,16 @@ export default function CreateProductPage() {
           <div>
             <label className="block text-sm font-medium mb-1">Part number (optional)</label>
             <input value={details.partNumber} onChange={(e) => updateDetails("partNumber", e.target.value)} className={fieldClass} />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Other part numbers (optional)</label>
+            <input
+              value={details.crossReference}
+              onChange={(e) => updateDetails("crossReference", e.target.value)}
+              placeholder="OEM or equivalent references, separated by commas"
+              className={`${fieldClass} font-mono`}
+            />
           </div>
 
           <VehicleCompatibilityPicker selectedIds={vehicleIds} onChange={setVehicleIds} />

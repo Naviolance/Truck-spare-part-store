@@ -1,56 +1,63 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { apiFetch } from "@/lib/api";
 import { formatMoney } from "@/lib/money";
+import { useRequireAuth } from "@/lib/use-require-auth";
+import { useOrderStatusLabel } from "@/lib/order-status";
 
 type Order = {
-  id: string; orderNumber: string; status: string; total: string; createdAt: string;
+  id: string;
+  orderNumber: string;
+  status: string;
+  total: string;
+  createdAt: string;
   payments: { provider: string; status: string }[];
 };
 
-function statusLabel(order: Order) {
-  const pendingCash = order.status === "PAYMENT_PENDING" && order.payments.some((p) => p.provider === "cash" && p.status === "PENDING");
-  return pendingCash ? "Awaiting pickup & cash payment" : order.status;
-}
-
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const t = useTranslations("Orders");
+  const tc = useTranslations("Common");
+  const locale = useLocale();
+  const statusLabel = useOrderStatusLabel();
+  const { ready } = useRequireAuth();
+  const [orders, setOrders] = useState<Order[] | null>(null);
 
   useEffect(() => {
-    apiFetch("/orders").then(async (res) => {
-      if (res.ok) setOrders(await res.json());
-      setLoading(false);
-    });
-  }, []);
+    if (!ready) return;
+    apiFetch("/orders")
+      .then(async (res) => setOrders(res.ok ? await res.json() : []))
+      .catch(() => setOrders([]));
+  }, [ready]);
 
-  if (loading) return <main className="max-w-2xl mx-auto px-4 py-16 text-steel">Loading…</main>;
+  if (!ready || orders === null) return <main className="max-w-2xl mx-auto px-4 py-16 text-steel">{tc("loading")}</main>;
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-10">
-      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">Your orders</h1>
+      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">{t("title")}</h1>
       {orders.length === 0 ? (
-        <p className="text-steel">No orders yet.</p>
+        <p className="text-steel">{t("empty")}</p>
       ) : (
-        <div className="space-y-3">
+        <ul className="space-y-3">
           {orders.map((o) => (
-            <Link
-              key={o.id}
-              href={`/orders/${o.id}`}
-              className="flex items-center justify-between border border-steel-light rounded-lg p-4 bg-white transition-all duration-200 hover:shadow-sm hover:border-steel-light"
-            >
-              <div>
-                <p className="font-medium text-ink">#{o.orderNumber}</p>
-                <p className="text-xs text-steel">{new Date(o.createdAt).toLocaleDateString()}</p>
-              </div>
-              <div className="text-right">
-                <p className="font-semibold text-ink">{formatMoney(o.total)}</p>
-                <p className="text-xs text-steel">{statusLabel(o)}</p>
-              </div>
-            </Link>
+            <li key={o.id}>
+              <Link
+                href={`/orders/${o.id}`}
+                className="flex items-center justify-between gap-3 border border-steel-light rounded-lg p-4 bg-white transition-all duration-200 hover:shadow-sm"
+              >
+                <div>
+                  <p className="font-medium text-ink">{t("orderNumber", { number: o.orderNumber })}</p>
+                  <p className="text-xs text-steel">{new Date(o.createdAt).toLocaleDateString(locale === "fr" ? "fr-FR" : "en-GB")}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold text-ink">{formatMoney(o.total)}</p>
+                  <p className="text-xs text-steel">{statusLabel(o)}</p>
+                </div>
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </main>
   );

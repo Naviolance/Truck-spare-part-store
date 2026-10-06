@@ -10,8 +10,15 @@ type ProductRequest = {
   status: string;
   adminNote: string | null;
   createdAt: string;
-  user: { firstName: string; lastName: string; email: string };
+  // Null for guest requests — contact details below are what matter.
+  user: { firstName: string; lastName: string; email: string } | null;
+  contactName: string | null;
+  contactPhone: string | null;
+  contactEmail: string | null;
+  contactViaWhatsApp: boolean;
 };
+
+const digits = (phone: string) => phone.replace(/\D/g, "");
 
 const STATUS_OPTIONS = ["OPEN", "IN_PROGRESS", "FULFILLED", "DECLINED"];
 
@@ -58,16 +65,32 @@ export default function AdminRequestsPage() {
         <div className="space-y-3">
           {requests.map((r) => (
             <div key={r.id} className="bg-white border border-steel-light rounded-lg p-4">
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                 <div className="min-w-0">
                   <p className="text-sm text-ink">{r.description}</p>
                   {r.partNumber && <p className="text-xs text-steel mt-1">Part number: {r.partNumber}</p>}
                   {r.vehicleInfo && <p className="text-xs text-steel">Vehicle: {r.vehicleInfo}</p>}
                   <p className="text-xs text-steel mt-1">
-                    {r.user.firstName} {r.user.lastName} ({r.user.email}) · {new Date(r.createdAt).toLocaleDateString()}
+                    {r.contactName ?? (r.user ? `${r.user.firstName} ${r.user.lastName}` : "—")}
+                    {!r.user && " (guest)"}
+                    {(r.contactEmail ?? r.user?.email) && ` · ${r.contactEmail ?? r.user?.email}`} · {new Date(r.createdAt).toLocaleDateString()}
                   </p>
+                  {r.contactPhone && (
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      <span className="text-sm font-mono text-ink">{r.contactPhone}</span>
+                      <a href={`tel:${r.contactPhone}`} className="text-xs border border-steel-light rounded-lg px-2 py-1 hover:border-ink">Call</a>
+                      <a
+                        href={`https://wa.me/${digits(r.contactPhone)}?text=${encodeURIComponent(`Hello ${r.contactName ?? ""}, about your TruckParts part request: ${r.description.slice(0, 80)}`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`text-xs rounded-lg px-2 py-1 ${r.contactViaWhatsApp ? "bg-[#25D366] text-ink font-semibold" : "border border-steel-light hover:border-ink"}`}
+                      >
+                        WhatsApp{r.contactViaWhatsApp ? " (preferred)" : ""}
+                      </a>
+                    </div>
+                  )}
                 </div>
-                <div className="shrink-0 flex flex-col items-end gap-2">
+                <div className="shrink-0 flex sm:flex-col items-center sm:items-end gap-2">
                   <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[r.status] || "bg-steel-light"}`}>
                     {r.status.replace("_", " ")}
                   </span>

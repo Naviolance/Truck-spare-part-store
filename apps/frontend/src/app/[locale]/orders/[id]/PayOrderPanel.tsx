@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { payOrder, usePaymentOptions } from "@/lib/payment";
 import { formatMoney } from "@/lib/money";
 
@@ -18,6 +19,7 @@ export function PayOrderPanel({
   lastAttemptFailed: boolean;
   onPaid: () => void;
 }) {
+  const t = useTranslations("Orders");
   const options = usePaymentOptions();
   const [busy, setBusy] = useState<"online" | "cash" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -40,12 +42,8 @@ export function PayOrderPanel({
 
   return (
     <div className="bg-amber/10 border border-amber rounded-lg p-4 mb-6">
-      <p className="font-semibold text-ink">
-        {lastAttemptFailed ? "Your payment didn't go through" : "Complete your order"}
-      </p>
-      <p className="text-sm text-steel mt-1">
-        Your items are reserved for a limited time. Choose how you&apos;d like to pay {formatMoney(total)}.
-      </p>
+      <p className="font-semibold text-ink">{lastAttemptFailed ? t("payFailedTitle") : t("payTitle")}</p>
+      <p className="text-sm text-steel mt-1">{t("payBody", { total: formatMoney(total) })}</p>
       <div className="flex flex-col sm:flex-row gap-2 mt-3">
         {options?.online && (
           <button
@@ -53,7 +51,7 @@ export function PayOrderPanel({
             disabled={busy !== null}
             className="bg-amber text-ink px-4 py-2 text-sm font-semibold transition-colors duration-150 hover:bg-amber-dark disabled:opacity-50"
           >
-            {busy === "online" ? "Redirecting…" : lastAttemptFailed ? "Try paying again" : "Pay online"}
+            {busy === "online" ? t("redirecting") : lastAttemptFailed ? t("payAgain") : t("payOnline")}
           </button>
         )}
         <button
@@ -61,10 +59,10 @@ export function PayOrderPanel({
           disabled={busy !== null || !options}
           className="border border-steel-light bg-white px-4 py-2 text-sm font-medium transition-colors duration-150 hover:border-steel disabled:opacity-50"
         >
-          {busy === "cash" ? "Saving…" : "Pay cash at pickup"}
+          {busy === "cash" ? t("saving") : t("payCash")}
         </button>
       </div>
-      {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-600 mt-2">{error}</p>}
     </div>
   );
 }

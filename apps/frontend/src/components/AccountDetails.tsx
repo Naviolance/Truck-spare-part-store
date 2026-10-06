@@ -1,6 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { useEffect, useId, useState } from "react";
+import { useTranslations } from "next-intl";
+import { apiFetch, readError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 const inputClass = "w-full border border-steel-light rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:border-steel";
@@ -21,6 +22,9 @@ const emptyForm: ProfileForm = {
 };
 
 export function AccountDetails({ variant }: { variant: "customer" | "admin" }) {
+  const t = useTranslations("Account");
+  const tc = useTranslations("Common");
+  const id = useId();
   const { user } = useAuth();
   const isAdmin = variant === "admin";
 
@@ -65,8 +69,7 @@ export function AccountDetails({ variant }: { variant: "customer" | "admin" }) {
     setSaving(true);
     const res = await apiFetch("/users/me", { method: "PATCH", body: JSON.stringify(form) });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      setError(err.message || "Could not save changes");
+      setError(await readError(res, t("saveError")));
       setSaving(false);
       return;
     }
@@ -75,24 +78,24 @@ export function AccountDetails({ variant }: { variant: "customer" | "admin" }) {
     setEditing(false);
   }
 
-  const addressLabel = isAdmin ? "Address" : "Contact address";
-  const secondaryPhoneLabel = isAdmin ? "Secondary phone" : "Contact phone (for orders)";
+  const addressLabel = isAdmin ? "Address" : t("address");
+  const secondaryPhoneLabel = isAdmin ? "Secondary phone" : t("orderPhone");
 
-  if (loading) return <p className="text-steel">Loading…</p>;
+  if (loading) return <p className="text-steel">{tc("loading")}</p>;
 
   if (!editing) {
     const rows = [
-      { label: "Email", value: user?.email },
-      { label: "Name", value: [form.firstName, form.lastName].filter(Boolean).join(" ") || "—" },
-      { label: "Phone", value: form.phone || "—" },
+      { label: t("email"), value: user?.email },
+      { label: t("name"), value: [form.firstName, form.lastName].filter(Boolean).join(" ") || "—" },
+      { label: t("phone"), value: form.phone || "—" },
       { label: addressLabel, value: form.defaultShippingAddress || "—" },
-      { label: "City", value: form.defaultShippingCity || "—" },
+      { label: t("city"), value: form.defaultShippingCity || "—" },
       { label: secondaryPhoneLabel, value: form.defaultShippingPhone || "—" },
     ];
 
     return (
       <div>
-        {saved && <p className="text-emerald-600 text-sm mb-4">Saved.</p>}
+        {saved && <p role="status" className="text-emerald-700 text-sm mb-4">{tc("saved")}</p>}
         <div className="bg-white border border-steel-light rounded-lg divide-y divide-steel-light">
           {rows.map((r) => (
             <div key={r.label} className="flex items-center justify-between p-3 text-sm">
@@ -105,7 +108,7 @@ export function AccountDetails({ variant }: { variant: "customer" | "admin" }) {
           onClick={startEdit}
           className="mt-4 bg-amber text-ink px-4 py-2 text-sm font-medium transition-colors duration-150 hover:bg-amber-dark"
         >
-          Edit details
+          {t("edit")}
         </button>
       </div>
     );
@@ -113,48 +116,48 @@ export function AccountDetails({ variant }: { variant: "customer" | "admin" }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className={labelClass}>First name</label>
-          <input required value={form.firstName} onChange={(e) => update("firstName", e.target.value)} className={inputClass} />
+          <label htmlFor={`${id}-first`} className={labelClass}>{t("firstName")}</label>
+          <input id={`${id}-first`} autoComplete="given-name" required value={form.firstName} onChange={(e) => update("firstName", e.target.value)} className={inputClass} />
         </div>
         <div>
-          <label className={labelClass}>Last name</label>
-          <input required value={form.lastName} onChange={(e) => update("lastName", e.target.value)} className={inputClass} />
+          <label htmlFor={`${id}-last`} className={labelClass}>{t("lastName")}</label>
+          <input id={`${id}-last`} autoComplete="family-name" required value={form.lastName} onChange={(e) => update("lastName", e.target.value)} className={inputClass} />
         </div>
       </div>
       <div>
-        <label className={labelClass}>Phone</label>
-        <input value={form.phone} onChange={(e) => update("phone", e.target.value)} className={inputClass} />
+        <label htmlFor={`${id}-phone`} className={labelClass}>{t("phone")}</label>
+        <input id={`${id}-phone`} type="tel" autoComplete="tel" value={form.phone} onChange={(e) => update("phone", e.target.value)} className={inputClass} />
       </div>
       <div>
-        <label className={labelClass}>{addressLabel}</label>
-        <input value={form.defaultShippingAddress} onChange={(e) => update("defaultShippingAddress", e.target.value)} className={inputClass} />
+        <label htmlFor={`${id}-address`} className={labelClass}>{addressLabel}</label>
+        <input id={`${id}-address`} autoComplete="street-address" value={form.defaultShippingAddress} onChange={(e) => update("defaultShippingAddress", e.target.value)} className={inputClass} />
       </div>
       <div>
-        <label className={labelClass}>City</label>
-        <input value={form.defaultShippingCity} onChange={(e) => update("defaultShippingCity", e.target.value)} className={inputClass} />
+        <label htmlFor={`${id}-city`} className={labelClass}>{t("city")}</label>
+        <input id={`${id}-city`} autoComplete="address-level2" value={form.defaultShippingCity} onChange={(e) => update("defaultShippingCity", e.target.value)} className={inputClass} />
       </div>
       <div>
-        <label className={labelClass}>{secondaryPhoneLabel}</label>
-        <input value={form.defaultShippingPhone} onChange={(e) => update("defaultShippingPhone", e.target.value)} className={inputClass} />
+        <label htmlFor={`${id}-phone2`} className={labelClass}>{secondaryPhoneLabel}</label>
+        <input id={`${id}-phone2`} type="tel" value={form.defaultShippingPhone} onChange={(e) => update("defaultShippingPhone", e.target.value)} className={inputClass} />
       </div>
 
-      {error && <p className="text-red-600 text-sm">{error}</p>}
+      {error && <p role="alert" className="text-red-600 text-sm">{error}</p>}
       <div className="flex gap-2">
         <button
           type="submit"
           disabled={saving}
           className="flex-1 bg-amber text-ink py-2 font-medium transition-colors duration-150 hover:bg-amber-dark disabled:opacity-50"
         >
-          {saving ? "Saving…" : "Save changes"}
+          {saving ? tc("saving") : tc("save")}
         </button>
         <button
           type="button"
           onClick={() => setEditing(false)}
           className="rounded-lg border border-steel-light px-4 py-2 text-sm font-medium text-steel transition-colors duration-200 hover:bg-paper"
         >
-          Cancel
+          {tc("cancel")}
         </button>
       </div>
     </form>
