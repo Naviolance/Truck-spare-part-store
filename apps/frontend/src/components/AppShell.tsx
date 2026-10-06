@@ -33,6 +33,8 @@ const plexMono = IBM_Plex_Mono({
   variable: "--font-mono",
 });
 
+const SERVER_ONLY_NAMESPACES = new Set(["Hero", "ValueProps", "Home", "Footer", "PrivacyPage", "Meta", "Landing", "About"]);
+
 // The <html> document shared by the two root layouts: the storefront
 // (app/[locale]/layout.tsx) and the admin (app/admin/layout.tsx).
 export async function AppShell({
@@ -48,13 +50,19 @@ export async function AppShell({
   // Explicit locale: never rely on the per-request locale here — the global
   // not-found page is rendered alongside every page and has no locale.
   const messages = await getMessages({ locale });
+  // Namespaces only server components use never need to reach the browser
+  // (~10 KB of text — the privacy policy, FAQ, landing intros). If a CLIENT
+  // component starts using one of these, remove it from this list.
+  const clientMessages = Object.fromEntries(
+    Object.entries(messages).filter(([namespace]) => !SERVER_ONLY_NAMESPACES.has(namespace)),
+  );
 
   return (
     <html lang={locale}>
       <body
         className={`${inter.variable} ${bigShoulders.variable} ${plexMono.variable} font-sans min-h-screen bg-paper text-ink flex flex-col`}
       >
-        <NextIntlClientProvider locale={locale} messages={messages}>
+        <NextIntlClientProvider locale={locale} messages={clientMessages}>
           {/* Suspense boundary isolated here (not around the whole app) so
               useSearchParams() inside only de-opts this one component to
               client rendering, not every static page in the tree. */}

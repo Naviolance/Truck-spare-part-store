@@ -1,4 +1,5 @@
 const createNextIntlPlugin = require("next-intl/plugin");
+const { withSentryConfig } = require("@sentry/nextjs/config");
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 /** @type {import('next').NextConfig} */
@@ -37,4 +38,16 @@ const nextConfig = {
   },
 };
 
-module.exports = withNextIntl(nextConfig);
+// Sentry: uploads source maps (readable stack traces) only when
+// SENTRY_AUTH_TOKEN is set in the build environment; otherwise it just
+// wires up error reporting. Tracing code is tree-shaken out to keep the
+// browser bundle small.
+module.exports = withSentryConfig(withNextIntl(nextConfig), {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
+  telemetry: false,
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN, deleteSourcemapsAfterUpload: true },
+  webpack: { treeshake: { removeDebugLogging: true, removeTracing: true } },
+});

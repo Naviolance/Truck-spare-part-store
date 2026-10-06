@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
+import * as Sentry from "@sentry/node";
 import { OrderStatus } from "@truckparts/prisma";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { OrdersService } from "./orders.service";
@@ -57,6 +58,8 @@ export class OrderExpiryService {
         if (await this.orders.transition(order.id, OrderStatus.EXPIRED, "system")) expired++;
       } catch (err) {
         this.logger.error(`Couldn't expire ${order.orderNumber}: ${err instanceof Error ? err.message : err}`);
+        // Nobody watches a cron job's logs: make the failure visible.
+        Sentry.captureException(err, { tags: { job: "order-expiry" }, extra: { orderNumber: order.orderNumber } });
       }
     }
 

@@ -1,5 +1,6 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from "@nestjs/common";
 import type { Request, Response } from "express";
+import * as Sentry from "@sentry/node";
 
 // Nest already sanitizes unhandled errors before they reach the client (no
 // stack trace leaks), but its default logging is a single unstructured
@@ -31,6 +32,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
         `[ERROR] ${new Date().toISOString()} ${req.method} ${req.originalUrl} ${status} - ${message}`,
       );
       if (stack) console.error(stack);
+      // Expected 4xx are normal traffic; only real failures go to Sentry.
+      Sentry.captureException(exception);
     }
 
     res.status(status).json(body);
