@@ -1,8 +1,8 @@
 "use client";
 import NextLink from "next/link";
 import { Link as LocaleLink, usePathname } from "@/i18n/navigation";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { announceNavigation } from "@/lib/navigation-events";
 import { useAuth } from "@/context/AuthContext";
@@ -132,20 +132,38 @@ function SearchForm() {
       <label htmlFor="site-search" className="sr-only">
         {t("searchLabel")}
       </label>
-      <input
-        id="site-search"
-        name="search"
-        type="search"
-        enterKeyHint="search"
-        placeholder={t("searchPlaceholder")}
-        className="min-w-0 flex-1 bg-transparent px-4 text-base text-ink placeholder:text-steel focus:outline-none"
-      />
+      {/* Fallback renders before the URL is known (static rendering). */}
+      <Suspense fallback={<SearchInput placeholder={t("searchPlaceholder")} />}>
+        <CurrentSearchInput placeholder={t("searchPlaceholder")} />
+      </Suspense>
       <button type="submit" className="flex items-center gap-2 bg-amber px-4 font-bold text-ink transition-colors hover:bg-[#D9932C]">
         <SearchIcon />
         <span className="hidden sm:inline">{t("searchButton")}</span>
       </button>
     </form>
   );
+}
+
+function SearchInput({ placeholder, value }: { placeholder: string; value?: string }) {
+  return (
+    <input
+      id="site-search"
+      name="search"
+      type="search"
+      enterKeyHint="search"
+      placeholder={placeholder}
+      defaultValue={value}
+      className="min-w-0 flex-1 bg-transparent px-4 text-base text-ink placeholder:text-steel focus:outline-none"
+    />
+  );
+}
+
+// On the results page the box shows what was searched, so it can be edited.
+function CurrentSearchInput({ placeholder }: { placeholder: string }) {
+  const pathname = usePathname();
+  const search = useSearchParams().get("search");
+  const value = pathname === "/products" ? (search ?? "") : "";
+  return <SearchInput key={value} placeholder={placeholder} value={value} />;
 }
 
 function TruckLogo() {

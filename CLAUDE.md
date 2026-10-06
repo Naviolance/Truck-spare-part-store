@@ -164,6 +164,11 @@ language switch, hero truck finder). New page type → add its skeleton and rout
 (`rounded-[14px] border-line bg-card`), tokens in `tailwind.config.ts` (`card`, `line`, `sand`, `skeleton`,
 `stock`, `ink-soft`, `paper-dim`). Fonts: Source Sans 3 (body), Barlow Semi Condensed 600/700 (headings),
 IBM Plex Mono (part numbers). Mockups: the "TruckParts redesign" canvas artifact.
+Catalog (step 2, option A): `CatalogView` renders breadcrumb trail + its BreadcrumbList JSON-LD (pages pass `crumbs`,
+don't add their own), heading + `SortSelect`, removable active-filter pills (plain links), the `CatalogFilters`
+sidebar (single-choice category/brand radios — the API filters one of each; collapses behind "Filtres" below `lg`)
+and numbered pagination. On `/products` the search box is the header's (prefilled from the URL); landing pages keep
+a "search within" field. Change the layout → update `CatalogSkeleton` to match.
 
 **Search**: matches `products."searchText"` — one lower-case, accent-free string (name, descriptions,
 brand, category EN/FR, trucks, part/cross-reference numbers) with a GIN trigram index. It is written

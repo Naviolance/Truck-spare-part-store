@@ -35,20 +35,38 @@ export function ProductGridSkeleton({ count = 8 }: { count?: number }) {
   );
 }
 
-// /products, search, category / brand / truck pages, Find My Part results.
+// /products, search, category / brand / truck pages, Find My Part results —
+// same layout as CatalogView (trail, heading + sort, filter sidebar, grid).
 export function CatalogSkeleton() {
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <Bar className="h-8 w-64 mb-2" />
-      <Bar className="h-4 w-40 mb-8" />
-      <div className="flex gap-8">
-        <div className="hidden lg:flex w-56 shrink-0 flex-col gap-3">
-          {Array.from({ length: 6 }, (_, i) => (
-            <Bar key={i} className="h-10" />
+    <div className="max-w-6xl mx-auto px-4 py-8 sm:py-10 flex flex-col gap-5">
+      <Bar className="h-3.5 w-48" />
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-col gap-2">
+          <Bar className="h-9 w-64" />
+          <Bar className="h-4 w-52" />
+        </div>
+        <Bar className="h-11 w-48" />
+      </div>
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-7">
+        <Bar className="h-11 w-full lg:hidden" />
+        <div className="hidden lg:flex w-64 shrink-0 flex-col gap-5 rounded-[14px] border border-line bg-card p-[18px]">
+          {[5, 4, 2].map((rows, i) => (
+            <div key={i} className="flex flex-col gap-2.5">
+              <Bar className="h-5 w-24" />
+              {Array.from({ length: rows }, (_, j) => (
+                <Bar key={j} className="h-4 w-[70%]" />
+              ))}
+            </div>
           ))}
+          <Bar className="h-11 w-full" />
         </div>
         <div className="flex-1 min-w-0">
-          <ProductGridSkeleton />
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
+            {Array.from({ length: 6 }, (_, i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
+          </div>
         </div>
       </div>
     </div>

@@ -3,10 +3,9 @@ import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
 import { CatalogView } from "@/components/catalog/CatalogView";
-import { JsonLd } from "@/components/JsonLd";
 import { catalogHref, categoryName, parseCatalogParams } from "@/lib/catalog";
 import { getCategories, productCount } from "@/lib/landing";
-import { breadcrumbJsonLd, landingMetadata } from "@/lib/seo";
+import { landingMetadata } from "@/lib/seo";
 
 type Props = {
   params: Promise<{ locale: Locale; slug: string }>;
@@ -44,14 +43,8 @@ export default async function CategoryPage({ params, searchParams }: Props) {
 
   return (
     <>
-      <JsonLd
-        data={breadcrumbJsonLd([
-          { name: t("home"), path: `/${locale}` },
-          { name: t("categories"), path: `/${locale}/categories` },
-          { name, path: `/${locale}/categories/${slug}` },
-        ])}
-      />
       <CatalogView
+        crumbs={[{ name: t("home"), path: "" }, { name: t("categories"), path: "/categories" }, { name, path: `/categories/${slug}` }]}
         basePath={`/categories/${slug}`}
         query={parseCatalogParams(await searchParams)}
         locked={{ categoryId: category.id }}

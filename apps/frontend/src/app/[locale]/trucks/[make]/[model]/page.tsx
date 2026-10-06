@@ -4,10 +4,9 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
 import { Link } from "@/i18n/navigation";
 import { CatalogView } from "@/components/catalog/CatalogView";
-import { JsonLd } from "@/components/JsonLd";
 import { catalogHref, parseCatalogParams } from "@/lib/catalog";
 import { getTruckCatalog } from "@/lib/landing";
-import { breadcrumbJsonLd, landingMetadata } from "@/lib/seo";
+import { landingMetadata } from "@/lib/seo";
 
 type Props = {
   params: Promise<{ locale: Locale; make: string; model: string }>;
@@ -46,15 +45,13 @@ export default async function TruckModelPage({ params, searchParams }: Props) {
 
   return (
     <>
-      <JsonLd
-        data={breadcrumbJsonLd([
-          { name: t("home"), path: `/${locale}` },
-          { name: t("trucks"), path: `/${locale}/trucks` },
-          { name: names.make, path: `/${locale}/trucks/${makeSlug}` },
-          { name: names.model, path: `/${locale}/trucks/${makeSlug}/${modelSlug}` },
-        ])}
-      />
       <CatalogView
+        crumbs={[
+          { name: t("home"), path: "" },
+          { name: t("trucks"), path: "/trucks" },
+          { name: names.make, path: `/trucks/${makeSlug}` },
+          { name: names.model, path: `/trucks/${makeSlug}/${modelSlug}` },
+        ]}
         basePath={`/trucks/${makeSlug}/${modelSlug}`}
         query={parseCatalogParams(await searchParams)}
         locked={{ manufacturer: names.make, model: names.model }}

@@ -29,10 +29,12 @@ export default async function ProductsPage({ params, searchParams }: Props) {
   setRequestLocale(locale);
   const query = parseCatalogParams(await searchParams);
   const t = await getTranslations("Catalog");
+  const tl = await getTranslations("Landing");
 
   return (
     <CatalogView
       basePath="/products"
+      crumbs={[{ name: tl("home"), path: "" }, { name: t("allParts"), path: "/products" }]}
       query={query}
       heading={query.search ? t("searchResultsFor", { search: query.search }) : t("allParts")}
       intro={query.search ? undefined : t("allPartsIntro")}
