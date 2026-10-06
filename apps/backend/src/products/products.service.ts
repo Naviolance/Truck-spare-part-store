@@ -4,7 +4,7 @@ import { ProductStatus, Prisma } from "@truckparts/prisma";
 import { QueryProductsDto } from "./dto/query-products.dto";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
-import { slugify } from "../common/utils/slugify";
+import { uniqueSlug } from "../common/utils/unique-slug";
 import { buildListingQuery, ListingFilters } from "./product-listing";
 
 
@@ -157,12 +157,9 @@ export class ProductsService {
   }
 
   async create(dto: CreateProductDto) {
-    const baseSlug = slugify(dto.name);
-    let slug = baseSlug;
-    let suffix = 1;
-    while (await this.prisma.product.findUnique({ where: { slug } })) {
-      slug = `${baseSlug}-${suffix++}`;
-    }
+    const slug = await uniqueSlug(dto.name, async (candidate) =>
+      Boolean(await this.prisma.product.findUnique({ where: { slug: candidate }, select: { id: true } })),
+    );
 
     const { imageUrls, vehicleIds, status, ...rest } = dto;
 
