@@ -1,8 +1,8 @@
 # TruckParts
 
-An online store for truck spare parts. Customers check that a part fits their truck, pay online
-(Notch Pay) or in cash at pickup, and track their order. The owner runs the store from an admin
-panel that also works on a phone.
+An online store for truck spare parts. Customers check that a part fits their truck, order and
+pay in cash at pickup (online payment plugs in per provider), track their order, or ask for a
+part on WhatsApp. The owner runs the store from an admin panel that also works on a phone.
 
 **Live demo:** https://truck-spare-part-store-frontend.vercel.app
 (sandbox payments only, see [Try it out](#try-it-out))
@@ -22,10 +22,13 @@ under concurrency.
 
 - **Find My Part.** Customers filter parts by the truck they own (manufacturer, model and year), with
   search filters kept in the URL so a result can be shared.
-- **Real payments.** Checkout redirects to Notch Pay's hosted payment page. The backend verifies
-  each webhook with HMAC-SHA256 over the raw request body (timing-safe comparison). Webhooks
-  aren't guaranteed to arrive on time, so a still-pending order is also checked against Notch
-  Pay's API instead of trusting the webhook alone. Cash at pickup is also supported.
+- **Provider-agnostic payments.** Cash at pickup today; online payment plugs in as one adapter
+  file behind a `PaymentProvider` interface (Notch Pay is the reference adapter). Each payment
+  attempt is its own record, so a failed or abandoned payment can be retried, and results are
+  applied idempotently whether they arrive by signed webhook or by polling the provider.
+- **Order state machine.** Every status change goes through one server-side transition table with
+  a conditional update, so concurrent webhooks, polls, admin clicks and the expiry job can never
+  restock twice. Unpaid orders expire automatically and release their stock.
 - **No overselling.** Checkout reserves stock with one conditional
   `UPDATE ... WHERE quantity >= requested` inside a transaction, so two customers racing for the
   last unit can't both succeed. A failed payment puts the stock back.
@@ -38,17 +41,27 @@ under concurrency.
   account that can't change anything (details [below](#read-only-demo-admin)).
 - **Image uploads.** Product images are converted to WebP and size-capped on upload, stored in
   S3-compatible storage, and served through the backend so the bucket is never exposed.
-- **English and French** with `next-intl`. The language is stored in a cookie.
+- **English and French, both indexable.** `/fr/...` and `/en/...` URLs with hreflang, French by
+  default; every page, email-facing string and category name is translated.
+- **Built to be found.** Server-rendered catalog with crawlable pagination, category / brand /
+  truck landing pages, Product + Offer + Breadcrumb + FAQ JSON-LD, sitemap with hreflang,
+  `llms.txt` for answer engines, and part-number search that ignores spaces and dashes.
+- **Built to convert.** WhatsApp on every page (pre-filled per product and order), guest part
+  requests with phone number for out-of-stock or unlisted parts, and admin email alerts for new
+  orders and requests.
 - **XAF prices.** The Central African CFA franc has no decimals, so every amount is a whole
   number. No floating-point cents.
 - **Accessibility.** Passed an axe-core audit: landmark roles, labeled navigation, WCAG AA color
   contrast.
-- **Also:** order tracking, coupons, reviews, product requests and password reset by email.
+- **Operations.** Sentry error monitoring, cookieless Umami analytics with business events
+  (searches with no results, WhatsApp clicks, part requests), and scripts to promote the admin
+  and clear test data at launch ([docs/LAUNCH.md](docs/LAUNCH.md)).
+- **Also:** order tracking, coupons, verified-purchase reviews, password change and reset by email.
 
 ## Try it out
 
-The live demo uses Notch Pay's **sandbox**, so no real money moves, whatever you enter at
-checkout. To see the admin panel, use the read-only demo account shown on the login page.
+Where online payment is enabled on the demo, it uses Notch Pay's **sandbox**, so no real money
+moves, whatever you enter at checkout. To see the admin panel, use the read-only demo account shown on the login page.
 
 ## Screenshots
 
@@ -90,7 +103,7 @@ The screenshots show the desktop admin tables. On a phone, every list becomes a 
 | Database | PostgreSQL + Prisma | Orders, stock and payments need relational integrity and transactions |
 | Object storage | S3-compatible: MinIO locally, Backblaze B2 in production | Same S3 API in both places, so no code changes between local and production |
 | Auth | JWT access token + httpOnly refresh cookie | The short-lived token stays in memory, the session in a cookie JavaScript can't read |
-| Payments | Notch Pay | Hosted checkout and webhooks, with mobile money for Central Africa |
+| Payments | Provider adapters (Notch Pay reference) | Hosted checkout and webhooks behind one interface; cash at pickup always available |
 | Email | Nodemailer over SMTP: Mailhog locally, Resend in production | Password reset emails, testable locally without sending real mail |
 | i18n | next-intl | English and French |
 
@@ -107,16 +120,16 @@ Next.js frontend (Vercel)
 NestJS API (Railway)
   ├── PostgreSQL (Neon) ........ via Prisma
   ├── Backblaze B2 ............. product images, S3 API
-  ├── Notch Pay ................ creates hosted checkouts; sends signed webhooks back
+  ├── Payment provider ......... (optional) hosted checkouts + signed webhooks
   └── Resend (SMTP) ............ password reset emails
 ```
 
 - **Monorepo** with pnpm workspaces: `apps/frontend`, `apps/backend`, and `packages/prisma`
   (schema, migrations and seed script shared by the backend).
 - **Checkout is two steps.** `POST /orders` creates the order as `PAYMENT_PENDING` and reserves
-  stock in a transaction. `POST /orders/:id/pay` then starts the Notch Pay payment. The order
-  only becomes `PAID` (or `PAYMENT_FAILED`, which restores the stock) when the verified webhook
-  arrives, or when the backend confirms the status with Notch Pay directly.
+  stock in a transaction. Payment is then chosen (cash, or online via the configured provider);
+  the order only becomes `PAID` through a verified provider result or an admin confirming cash.
+  Unpaid orders expire (`EXPIRED`) and release their stock.
 - **Images are proxied** by the backend (`/uploads/file/...`) instead of linking to the bucket, so
   the frontend only ever talks to one origin.
 
@@ -128,9 +141,14 @@ NestJS API (Railway)
   cookie.
 - **Stock is reserved with one conditional UPDATE**, not "read stock, then write". The read-then-
   write version has a race window; the single statement doesn't.
-- **Webhook verification uses the raw request body.** Notch Pay signs the exact bytes it sent, so
+- **Webhook verification uses the raw request body.** Payment providers sign the exact bytes they send, so
   `main.ts` keeps `req.rawBody` for the signature check. Verifying against re-serialized JSON
   would fail on harmless formatting differences.
+- **Rate limits are per user, not per site.** Behind proxies every request looked like it came
+  from the proxy; buckets are now keyed by verified user id, or the real client IP
+  (`TRUST_PROXY`), and the frontend's own server renders are exempt.
+- **One catalog query.** Search, Find My Part and every landing page share one SQL builder, so
+  out-of-stock ordering, part-number normalisation and filters are defined once.
 - **Read-only demo mode is one global interceptor**, not checks in each controller. New routes
   are covered automatically. It's an interceptor rather than a global guard because global guards
   run before `JwtAuthGuard` has identified the user.
@@ -180,8 +198,8 @@ NestJS API (Railway)
    pnpm dev:frontend   # http://localhost:3000
    ```
 
-Online payments locally need a free Notch Pay sandbox account (business.notchpay.co). Put its
-three keys in `.env`. Everything else works without it, including cash-at-pickup checkout.
+Everything works locally without a payment provider: checkout is cash at pickup. To try the
+Notch Pay adapter, set `PAYMENT_PROVIDER=notchpay` and its sandbox keys in `.env`.
 
 ### Check that everything works
 
@@ -221,7 +239,16 @@ The values in `.env.example` are for local development only. Never commit real k
 | `MINIO_PORT`, `MINIO_CONSOLE_PORT` | Docker | Local MinIO ports |
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_FROM` | backend | SMTP for emails (Mailhog locally, Resend in production) |
 | `MAILHOG_WEB_PORT` | Docker | Local Mailhog inbox port |
-| `NOTCHPAY_PUBLIC_KEY`, `NOTCHPAY_PRIVATE_KEY`, `NOTCHPAY_WEBHOOK_HASH` | backend | Notch Pay API keys and webhook signing secret |
+| `PAYMENT_PROVIDER` | backend | Online payment adapter (`notchpay`); empty = cash only |
+| `NOTCHPAY_PUBLIC_KEY`, `NOTCHPAY_PRIVATE_KEY`, `NOTCHPAY_WEBHOOK_HASH` | backend | Notch Pay adapter keys (only with `PAYMENT_PROVIDER=notchpay`) |
+| `ORDER_PAYMENT_TTL_MINUTES`, `CASH_PICKUP_TTL_HOURS` | backend | When unpaid orders expire and release stock (60 min / 72 h) |
+| `ADMIN_NOTIFICATION_EMAIL` | backend | Where new-order, part-request and payment alerts go |
+| `TRUST_PROXY` | backend | Proxy hops in front of the API, for real client IPs (see docs/LAUNCH.md) |
+| `INTERNAL_API_KEY` | backend + frontend | Lets the frontend's server renders skip rate limiting |
+| `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | backend / frontend | Error monitoring; empty = off |
+| `NEXT_PUBLIC_WHATSAPP_NUMBER` | frontend | Business WhatsApp, digits with country code |
+| `NEXT_PUBLIC_UMAMI_WEBSITE_ID`, `NEXT_PUBLIC_UMAMI_DOMAINS` | frontend | Cookieless analytics; empty = off |
+| `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | frontend | Google Search Console ownership |
 
 ## Tests
 
@@ -229,23 +256,25 @@ The backend has unit tests (Jest) for authentication, sessions, password reset, 
 read-only mode, and more:
 
 ```bash
-pnpm --filter backend test
+pnpm --filter backend test      # unit tests
+pnpm --filter backend test:db   # against a real Postgres: order transitions and race conditions
 ```
 
 ## Deployment
 
 | Part | Host |
 |---|---|
-| Frontend (Next.js) | Vercel |
+| Frontend (Next.js) | Vercel (Pro for commercial use) |
 | Backend (NestJS) | Railway |
 | Database (PostgreSQL) | Neon |
 | Product images | Backblaze B2 |
 | Email | Resend (SMTP) |
-| Payments | Notch Pay (sandbox) |
+| Errors / analytics | Sentry, Umami |
 
-Production uses the same environment variables as above, set in each host's dashboard.
-In production the backend only accepts requests from `FRONTEND_URL` (CORS), and cookies are
-`Secure` with `SameSite=None`.
+The step-by-step go-live checklist (fresh database, environment variables, `TRUST_PROXY`,
+Search Console, monitoring, admin account, smoke test, backups) is in
+[docs/LAUNCH.md](docs/LAUNCH.md). In production the backend only accepts requests from
+`FRONTEND_URL` (CORS), and cookies are `Secure` with `SameSite=None`.
 
 ## Seeded test accounts
 
@@ -285,20 +314,19 @@ docker-compose.yml  Local services (Postgres, MinIO, Mailhog, Adminer)
 ## Scope
 
 Single-vendor store: no multi-vendor, commission or subscription logic. Covered: product
-catalog, vehicle compatibility search, cart and checkout (Notch Pay or cash at pickup), order
+catalog, vehicle compatibility search, cart and checkout (cash at pickup; online via a provider adapter), order
 tracking, coupons, reviews, product requests, and an admin panel for all of it.
 
 ## Future improvements
 
-- **Verified email domain.** Production email uses Resend's test sender, which only delivers to
-  the account owner's address. Verifying a domain in Resend would let reset emails reach every
-  customer.
-- **Live payments.** Move Notch Pay from sandbox to live keys when the store sells for real.
-- **Continuous integration.** Run the backend tests on every push (GitHub Actions).
-- **Linting setup.** ESLint isn't configured in either app yet, so `lint` doesn't run.
-- **Frontend tests.** Only the backend has tests today.
-- **Language in the URL** (`/en/...`, `/fr/...`) so search engines can index both languages. The
-  cookie-based switch shows one language per URL.
+- **Online payments.** Write the adapter for the chosen provider (see `payments/providers/`).
+- **Continuous integration.** Run lint, tests and builds on every push (GitHub Actions).
+- **Frontend tests.** Only the backend has automated tests today.
+- **Translated API errors.** Backend error messages are English; return codes and translate them.
+- **Instant catalog updates.** Pages refresh within 5 minutes of an admin edit (ISR); on-demand
+  revalidation would make it instant.
+- **Search at scale.** Fine for tens of thousands of products; beyond that, a search engine
+  (Meilisearch / Typesense) or Postgres full-text indexes.
 
 ## Author
 

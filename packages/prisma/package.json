@@ -9,7 +9,9 @@
     "migrate": "dotenv -e ../../.env -- prisma migrate dev",
     "migrate:deploy": "dotenv -e ../../.env -- prisma migrate deploy",
     "studio": "dotenv -e ../../.env -- prisma studio",
-    "seed": "dotenv -e ../../.env -- tsx seed.ts"
+    "seed": "dotenv -e ../../.env -- tsx seed.ts",
+    "admin:promote": "dotenv -e ../../.env -- tsx scripts/promote-admin.ts",
+    "launch:reset": "dotenv -e ../../.env -- tsx scripts/launch-reset.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",

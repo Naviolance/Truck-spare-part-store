@@ -11,7 +11,10 @@
     "prisma:studio": "pnpm --filter @truckparts/prisma studio",
     "prisma:seed": "pnpm --filter @truckparts/prisma seed",
     "docker:up": "docker compose up -d",
-    "docker:down": "docker compose down"
+    "docker:down": "docker compose down",
+    "admin:promote": "pnpm --filter @truckparts/prisma admin:promote",
+    "launch:reset": "pnpm --filter @truckparts/prisma launch:reset",
+    "prisma:deploy": "pnpm --filter @truckparts/prisma migrate:deploy"
   },
   "engines": {
     "node": ">=20.0.0"
