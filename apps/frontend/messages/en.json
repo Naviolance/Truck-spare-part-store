@@ -113,7 +113,7 @@
     "contactBody": "Questions about this page or your data — reach us at {email}.",
     "metaDescription": "What information TruckParts collects, why, and what cookies the site uses.",
     "analyticsTitle": "Visitor statistics",
-    "analyticsBody": "We count visits, searches and clicks with Umami, a privacy-friendly analytics tool that uses no cookies and doesn't identify you. It tells us things like which parts people look for, so we can stock them.",
+    "analyticsBody": "We count visits, searches and clicks with Umami, a privacy-friendly analytics tool that uses no cookies and doesn't identify you. It tells us things like which parts people look for, so we can stock them. We also keep anonymous daily totals ourselves — which search terms found nothing and how many times each WhatsApp button was used — with no IP address or account attached.",
     "errorsTitle": "Error reports",
     "errorsBody": "If something breaks, technical details about the error (the page, the browser, what went wrong) are sent to our error-monitoring service, Sentry, so we can fix it. We don't include your passwords or payment details."
   },

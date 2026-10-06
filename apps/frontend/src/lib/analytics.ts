@@ -22,4 +22,26 @@ export function track(event: AnalyticsEvent, data?: Record<string, string | numb
   } catch {
     // Analytics must never break the page.
   }
+  reportToStore(event, data);
+}
+
+// Searches and WhatsApp clicks also go to our own backend, which keeps daily
+// totals for the admin dashboard (insights module) — works with or without
+// Umami. keepalive lets the request finish even as the browser leaves for
+// WhatsApp. Fire-and-forget: failures are ignored.
+function reportToStore(event: AnalyticsEvent, data?: Record<string, string | number>) {
+  let body: Record<string, string | number> | null = null;
+  if ((event === "search" || event === "search_no_results") && data?.term) {
+    body = { type: "search", term: String(data.term), results: Number(data.results ?? 0) };
+  } else if (event === "whatsapp_click" && data?.from) {
+    body = { type: "whatsapp", source: String(data.from) };
+  }
+  if (!body) return;
+  fetch("/api/backend/insights/events", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    keepalive: true,
+    credentials: "omit",
+  }).catch(() => {});
 }

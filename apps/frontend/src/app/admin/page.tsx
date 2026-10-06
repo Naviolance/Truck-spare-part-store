@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { formatMoney } from "@/lib/money";
+import { DemandInsights } from "@/components/admin/DemandInsights";
 
 type RecentOrder = {
   id: string;
@@ -58,6 +59,8 @@ export default function AdminDashboardPage() {
           </div>
         ))}
       </div>
+
+      <DemandInsights />
 
       <h2 className="text-lg font-display font-semibold text-ink mb-3">Recent orders</h2>
       {stats.recentOrders.length === 0 ? (

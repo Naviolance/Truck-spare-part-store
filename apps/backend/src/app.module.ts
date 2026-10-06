@@ -6,6 +6,7 @@ import { ThrottlerModule } from "@nestjs/throttler";
 import { ScheduleModule } from "@nestjs/schedule";
 import { PrismaModule } from "./common/prisma/prisma.module";
 import { ProductsModule } from "./products/products.module";
+import { InsightsModule } from "./insights/insights.module";
 import { AuthModule } from "./auth/auth.module";
 import { UsersModule } from "./users/users.module";
 import { CategoriesModule } from "./categories/categories.module";
@@ -31,6 +32,7 @@ import { DemoReadOnlyInterceptor } from "./common/interceptors/demo-read-only.in
     ScheduleModule.forRoot(), // runs OrderExpiryService's cron
     PrismaModule,
     ProductsModule,
+    InsightsModule,
     AuthModule,
     UsersModule,
     CategoriesModule,

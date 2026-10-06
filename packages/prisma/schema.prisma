@@ -422,3 +422,28 @@ model Review {
   @@unique([productId, userId])
   @@map("reviews")
 }
+
+// ---------------------------------------------------------------------------
+// Insights — daily totals for the admin dashboard. No personal data: no IP,
+// no user, just what was searched / which WhatsApp button, and how often.
+// One row per day+term (or day+source), so the tables stay small.
+// ---------------------------------------------------------------------------
+
+model SearchStat {
+  day         DateTime @db.Date
+  term        String // lower-cased, whitespace-collapsed, max 100 chars
+  searches    Int      @default(0)
+  zeroResults Int      @default(0) // of those, how many found nothing
+
+  @@id([day, term])
+  @@map("search_stats")
+}
+
+model WhatsAppClickStat {
+  day    DateTime @db.Date
+  source String // which button: "product", "footer", "floating"... (whitelisted)
+  clicks Int      @default(0)
+
+  @@id([day, source])
+  @@map("whatsapp_click_stats")
+}
