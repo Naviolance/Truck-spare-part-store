@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { ConfigModule } from "@nestjs/config";
 import { join } from "path";
-import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
+import { ThrottlerModule } from "@nestjs/throttler";
 import { PrismaModule } from "./common/prisma/prisma.module";
 import { ProductsModule } from "./products/products.module";
 import { AuthModule } from "./auth/auth.module";
@@ -20,6 +20,7 @@ import { ReviewsModule } from "./reviews/reviews.module";
 import { CouponsModule } from "./coupons/coupons.module";
 import { MailModule } from "./mail/mail.module";
 import { ProductRequestsModule } from "./product-requests/product-requests.module";
+import { UserThrottlerGuard } from "./common/guards/user-throttler.guard";
 import { DemoReadOnlyInterceptor } from "./common/interceptors/demo-read-only.interceptor";
 
 @Module({
@@ -45,7 +46,8 @@ import { DemoReadOnlyInterceptor } from "./common/interceptors/demo-read-only.in
   ],
   controllers: [AppController],
   providers: [
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // Per-user / per-IP buckets, not one shared bucket (see the guard).
+    { provide: APP_GUARD, useClass: UserThrottlerGuard },
     // Blocks every data-changing request from demo accounts (see the file).
     { provide: APP_INTERCEPTOR, useClass: DemoReadOnlyInterceptor },
   ],

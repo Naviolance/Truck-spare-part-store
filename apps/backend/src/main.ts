@@ -1,4 +1,5 @@
 import { NestFactory } from "@nestjs/core";
+import type { NestExpressApplication } from "@nestjs/platform-express";
 import { ValidationPipe } from "@nestjs/common";
 import helmet from "helmet";
 import * as cookieParser from "cookie-parser";
@@ -8,7 +9,15 @@ import { AppModule } from "./app.module";
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // How many proxies sit between the client and this process. Express uses it
+  // to read the real client IP out of X-Forwarded-For — rate limiting
+  // (UserThrottlerGuard) keys anonymous traffic on that IP. Too low and every
+  // visitor looks like the proxy (one shared bucket); too high and clients can
+  // spoof their IP via the header. Check it by opening /health and comparing
+  // "clientIp" with your real IP (see TRUST_PROXY in the README).
+  app.set("trust proxy", parseTrustProxy(process.env.TRUST_PROXY));
 
   // Default body size limit is too small for image uploads — raise it.
   // The `verify` callback stashes the raw bytes for webhook signature checks,
@@ -23,11 +32,11 @@ async function bootstrap() {
   );
   app.use(urlencoded({ extended: true, limit: "10mb" }));
 
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" },
-  }),
-);
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    }),
+  );
   app.use((cookieParser as unknown as () => RequestHandler)());
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
@@ -59,6 +68,16 @@ app.use(
   await app.listen(port);
   console.log(`🚚 TruckParts backend running on http://localhost:${port}`);
   console.log(`   Health check: http://localhost:${port}/health`);
+}
+
+// "2" -> 2 hops, "true"/"false" -> boolean, anything else (e.g. "loopback")
+// is passed through as Express's named/subnet form. Unset: trust only
+// loopback, which is right for local dev and wrong behind any real proxy.
+function parseTrustProxy(raw: string | undefined): boolean | number | string {
+  if (!raw) return "loopback";
+  if (/^\d+$/.test(raw)) return Number(raw);
+  if (raw === "true" || raw === "false") return raw === "true";
+  return raw;
 }
 
 bootstrap();
