@@ -40,6 +40,13 @@ export class ProductsController {
     return this.productsService.findMostPurchased(parseLimit(limit));
   }
 
+  // Every published product's slug + last change, for sitemap.xml. Declared
+  // before ":slug" so it isn't captured by it.
+  @Get("sitemap")
+  sitemap() {
+    return this.productsService.sitemap();
+  }
+
   @Get(":slug")
   findOne(@Param("slug") slug: string) {
     return this.productsService.findOne(slug);

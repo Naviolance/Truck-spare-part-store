@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   setRequestLocale("en");
   return (
-    <AppShell locale="en">
+    <AppShell locale="en" storefront={false}>
       <AdminShell>{children}</AdminShell>
     </AppShell>
   );

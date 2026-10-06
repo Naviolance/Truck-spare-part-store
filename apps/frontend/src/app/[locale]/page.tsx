@@ -1,31 +1,25 @@
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import type { Locale } from "@/i18n/routing";
 import { ProductCard, ProductCardData } from "@/components/ProductCard";
+import { JsonLd } from "@/components/JsonLd";
+import { serverFetch } from "@/lib/server-api";
+import { getCategories, getTruckCatalog, productCount } from "@/lib/landing";
+import { categoryName, type ProductList } from "@/lib/catalog";
+import type { Metadata } from "next";
+import { localeAlternates, storeJsonLd } from "@/lib/seo";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+// Rebuilt in the background at most once a minute (ISR).
+export const revalidate = 60;
 
-async function getProducts(): Promise<ProductCardData[]> {
-  try {
-    const res = await fetch(`${API_URL}/products?limit=12`, { cache: "no-store" });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.items;
-  } catch {
-    // Backend not reachable yet — fail gracefully so the page still renders
-    return [];
-  }
+export async function generateMetadata({ params }: { params: Promise<{ locale: Locale }> }): Promise<Metadata> {
+  const { locale } = await params;
+  return { alternates: localeAlternates("/", locale) };
 }
 
-async function getRanked(path: string): Promise<ProductCardData[]> {
-  try {
-    const res = await fetch(`${API_URL}${path}`, { cache: "no-store" });
-    if (!res.ok) return [];
-    return res.json();
-  } catch {
-    return [];
-  }
-}
+const FAQ_KEYS = ["faq1", "faq2", "faq3", "faq4", "faq5"] as const;
 
 function ProductSection({ title, viewAllHref, viewAllLabel, products }: { title: string; viewAllHref?: string; viewAllLabel: string; products: ProductCardData[] }) {
   if (products.length === 0) return null;
@@ -48,15 +42,21 @@ function ProductSection({ title, viewAllHref, viewAllLabel, products }: { title:
   );
 }
 
-export default async function HomePage() {
-  const [products, mostPurchased, mostSearched, tHero, tValueProps, tHome] = await Promise.all([
-    getProducts(),
-    getRanked("/products/most-purchased?limit=6"),
-    getRanked("/products/most-searched?limit=6"),
+export default async function HomePage({ params }: { params: Promise<{ locale: Locale }> }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const [latest, mostPurchased, mostSearched, trucks, categories, tHero, tValueProps, tHome] = await Promise.all([
+    serverFetch<ProductList>("/products?limit=12&inStock=true"),
+    serverFetch<ProductCardData[]>("/products/most-purchased?limit=6"),
+    serverFetch<ProductCardData[]>("/products/most-searched?limit=6"),
+    getTruckCatalog(),
+    getCategories(),
     getTranslations("Hero"),
     getTranslations("ValueProps"),
     getTranslations("Home"),
   ]);
+  const products = latest?.items ?? [];
+  const faq = FAQ_KEYS.map((k) => ({ q: tHome(`${k}q`), a: tHome(`${k}a`) }));
 
   const valueProps = [
     { title: tValueProps("conditionTitle"), body: tValueProps("conditionBody") },
@@ -66,6 +66,30 @@ export default async function HomePage() {
 
   return (
     <main className="flex-1">
+      <JsonLd data={storeJsonLd()} />
+      {/* WebSite + SearchAction: lets Google show a search box for the store in results. */}
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: SITE_NAME,
+          url: SITE_URL,
+          inLanguage: locale,
+          potentialAction: {
+            "@type": "SearchAction",
+            target: { "@type": "EntryPoint", urlTemplate: `${SITE_URL}/${locale}/products?search={search_term_string}` },
+            "query-input": "required name=search_term_string",
+          },
+        }}
+      />
+      {/* Questions customers ask, as FAQPage: answer engines quote these. */}
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: faq.map(({ q, a }) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+        }}
+      />
       {/* Hero — full-bleed background photo, text overlaid on a dark scrim */}
       <section className="relative min-h-[480px] sm:min-h-[560px] flex items-center text-paper border-b-4 border-amber overflow-hidden">
         <Image
@@ -117,10 +141,63 @@ export default async function HomePage() {
       ) : (
         <>
           <ProductSection title={tHome("latestParts")} viewAllHref="/products" viewAllLabel={tHome("viewAll")} products={products} />
-          <ProductSection title={tHome("mostPurchased")} viewAllHref="/products" viewAllLabel={tHome("viewAll")} products={mostPurchased} />
-          <ProductSection title={tHome("mostSearched")} viewAllHref="/products" viewAllLabel={tHome("viewAll")} products={mostSearched} />
+          <ProductSection title={tHome("mostPurchased")} viewAllHref="/products" viewAllLabel={tHome("viewAll")} products={mostPurchased ?? []} />
+          <ProductSection title={tHome("mostSearched")} viewAllHref="/products" viewAllLabel={tHome("viewAll")} products={mostSearched ?? []} />
         </>
       )}
+
+      {/* Internal links into the landing pages: how both shoppers and
+          crawlers get from the homepage to "parts for my truck". */}
+      {trucks && trucks.some((m) => m.products > 0) && (
+        <section className="max-w-6xl mx-auto px-4 py-10">
+          <div className="flex items-baseline justify-between mb-6 pb-3 border-b-2 border-ink">
+            <h2 className="font-display font-bold text-2xl sm:text-3xl text-ink tracking-tight">{tHome("byTruck")}</h2>
+            <Link href="/trucks" className="text-sm font-medium text-steel hover:text-ink">{tHome("allTrucks")}</Link>
+          </div>
+          <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {trucks.filter((m) => m.products > 0).map((m) => (
+              <li key={m.slug}>
+                <Link href={`/trucks/${m.slug}`} className="block bg-white border border-steel-light px-4 py-3 font-display font-bold text-ink hover:border-ink">
+                  {m.manufacturer}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {categories && categories.some((c) => productCount(c) > 0) && (
+        <section className="max-w-6xl mx-auto px-4 py-10">
+          <div className="flex items-baseline justify-between mb-6 pb-3 border-b-2 border-ink">
+            <h2 className="font-display font-bold text-2xl sm:text-3xl text-ink tracking-tight">{tHome("byCategory")}</h2>
+            <Link href="/categories" className="text-sm font-medium text-steel hover:text-ink">{tHome("allCategories")}</Link>
+          </div>
+          <ul className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {categories.filter((c) => productCount(c) > 0).map((c) => (
+              <li key={c.slug}>
+                <Link href={`/categories/${c.slug}`} className="block bg-white border border-steel-light px-4 py-3 text-ink hover:border-ink">
+                  {categoryName(c, locale)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <section className="max-w-3xl mx-auto px-4 py-12">
+        <h2 className="font-display font-bold text-2xl sm:text-3xl text-ink tracking-tight mb-6">{tHome("faqTitle")}</h2>
+        <div className="divide-y divide-steel-light border-y border-steel-light">
+          {faq.map(({ q, a }) => (
+            <details key={q} className="group py-4">
+              <summary className="cursor-pointer list-none font-semibold text-ink flex justify-between gap-4">
+                {q}
+                <span aria-hidden="true" className="text-steel group-open:rotate-45 transition-transform">+</span>
+              </summary>
+              <p className="text-steel mt-2 text-sm leading-relaxed">{a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
     </main>
   );
 }

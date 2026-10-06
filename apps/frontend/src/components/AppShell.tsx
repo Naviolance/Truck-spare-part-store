@@ -11,6 +11,7 @@ import { CookieBanner } from "@/components/CookieBanner";
 import { PageTransition } from "@/components/PageTransition";
 import { NavigationProgress } from "@/components/NavigationProgress";
 import { Analytics } from "@/components/Analytics";
+import { FloatingWhatsApp } from "@/components/FloatingWhatsApp";
 
 const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-body" });
 // Condensed, steel-beam letterforms for headlines - deliberately not the
@@ -34,7 +35,16 @@ const plexMono = IBM_Plex_Mono({
 
 // The <html> document shared by the two root layouts: the storefront
 // (app/[locale]/layout.tsx) and the admin (app/admin/layout.tsx).
-export async function AppShell({ locale, children }: { locale: string; children: React.ReactNode }) {
+export async function AppShell({
+  locale,
+  children,
+  storefront = true,
+}: {
+  locale: string;
+  children: React.ReactNode;
+  // false for the admin: no customer chat button there.
+  storefront?: boolean;
+}) {
   // Explicit locale: never rely on the per-request locale here — the global
   // not-found page is rendered alongside every page and has no locale.
   const messages = await getMessages({ locale });
@@ -61,6 +71,7 @@ export async function AppShell({ locale, children }: { locale: string; children:
             </CartProvider>
           </AuthProvider>
           <CookieBanner />
+          {storefront && <FloatingWhatsApp />}
         </NextIntlClientProvider>
         <Analytics />
       </body>

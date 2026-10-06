@@ -5,7 +5,6 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { AppShell } from "@/components/AppShell";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
-import { localeAlternates } from "@/lib/seo";
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -20,8 +19,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     metadataBase: new URL(SITE_URL),
     title: { default: t("title"), template: t("titleTemplate") },
     description: t("description"),
-    // Pages override this with their own path; this covers the homepage.
-    alternates: localeAlternates("/", locale),
+    // No canonical here: it would be inherited by every page that doesn't
+    // set its own, making them all claim to be the homepage. Indexable
+    // pages set alternates themselves; private ones are noindex.
     openGraph: {
       type: "website",
       siteName: SITE_NAME,

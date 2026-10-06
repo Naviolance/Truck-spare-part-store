@@ -110,6 +110,17 @@ export class ProductsService {
     return this.cardsInOrder(grouped.map((g) => g.productId).filter((id) => availableIds.has(id)).slice(0, limit));
   }
 
+  // Just two columns, so even a large catalog is one cheap query. Includes
+  // out-of-stock products: their pages stay up (and requestable).
+  sitemap() {
+    return this.prisma.product.findMany({
+      where: { status: ProductStatus.PUBLISHED },
+      select: { slug: true, updatedAt: true },
+      orderBy: { updatedAt: "desc" },
+      take: 20_000, // 2 locales x 20k = 40k URLs, under the 50k-per-sitemap limit
+    });
+  }
+
   async findOne(slug: string) {
     const product = await this.prisma.product.findUnique({
       where: { slug },

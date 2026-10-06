@@ -1,11 +1,14 @@
+import type { Metadata } from "next";
 import { getTranslations, getLocale } from "next-intl/server";
+import type { Locale } from "@/i18n/routing";
+import { localeAlternates } from "@/lib/seo";
 
 // Using the owner's personal email as a stand-in until a dedicated business
 // address exists — swap this for something like privacy@<realdomain> once
 // one's set up. Same goes for the "last updated" date below: bump it
 // whenever this page's content actually changes.
 const CONTACT_EMAIL = "forsangamjunior@gmail.com";
-const LAST_UPDATED = "2026-09-15";
+const LAST_UPDATED = "2026-10-06";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -14,6 +17,12 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <div className="text-sm text-steel space-y-2">{children}</div>
     </section>
   );
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: Locale }> }): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "PrivacyPage" });
+  return { title: t("title"), description: t("metaDescription"), alternates: localeAlternates("/privacy", locale) };
 }
 
 export default async function PrivacyPage() {
@@ -51,6 +60,14 @@ export default async function PrivacyPage() {
           <li>{t("cookieCsrf")}</li>
           <li>{t("cookieLocale")}</li>
         </ul>
+      </Section>
+
+      <Section title={t("analyticsTitle")}>
+        <p>{t("analyticsBody")}</p>
+      </Section>
+
+      <Section title={t("errorsTitle")}>
+        <p>{t("errorsBody")}</p>
       </Section>
 
       <Section title={t("sharingTitle")}>

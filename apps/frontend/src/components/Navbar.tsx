@@ -91,6 +91,7 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-6">
             <NavLink href="/find-my-part">{t("findMyPart")}</NavLink>
             <NavLink href="/products">{t("allParts")}</NavLink>
+            <NavLink href="/trucks">{t("trucks")}</NavLink>
             <NavLink href="/about">{t("about")}</NavLink>
           </div>
 
@@ -171,6 +172,7 @@ export function Navbar() {
         <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col gap-4 text-sm">
           <NavLink href="/find-my-part" onClick={closeMenu}>{t("findMyPart")}</NavLink>
           <NavLink href="/products" onClick={closeMenu}>{t("allParts")}</NavLink>
+          <NavLink href="/trucks" onClick={closeMenu}>{t("trucks")}</NavLink>
           <NavLink href="/about" onClick={closeMenu}>{t("about")}</NavLink>
 
           {loading ? null : user ? (
