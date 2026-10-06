@@ -62,6 +62,10 @@ Wrong value = either everyone shares one rate-limit bucket, or clients can fake 
 
 If the production database had test data: `pnpm launch:reset --keep owner@example.com` (dry run), then add `--yes` (and `--wipe-catalog` to remove demo products). Back up first.
 
+Load the real catalog with Admin → Import: download the template, fill it in Excel, save as
+"CSV (separator: semicolon)", preview, fix any listed lines, then import. Product photos are
+added per product afterwards.
+
 ## 6. Search engines
 
 1. Google Search Console → add the domain → "HTML tag" method → put the `content` value in `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` → redeploy → Verify.

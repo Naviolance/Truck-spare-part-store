@@ -127,6 +127,12 @@ never `next/link`, in public pages. Every user-facing string is in `messages/{en
 The admin (`app/admin`, English, noindex) has its own root layout; both share `components/AppShell.tsx`.
 Don't call `setRequestLocale` in `app/not-found.tsx` (it's rendered inside every page's tree).
 
+**Bulk import**: `products/import/` — `product-import.parser.ts` is pure (decode UTF-8/Windows-1252,
+detect `;`/`,`, EN/FR headers, row validation; unit-tested); `product-import.service.ts` plans
+(`preview`, writes nothing) and `commit`s in one transaction, re-validating the file. Rows match
+existing products by normalized part number + brand (update) else create. Admin UI:
+`app/admin/import/page.tsx`. Excel files must be saved as CSV (xlsx is rejected on purpose).
+
 **Catalog & SEO**: one listing query (`products/product-listing.ts`) serves `/products`, search, Find My
 Part and the category/brand/truck landing pages — out-of-stock products stay listed (sorted last).
 Public pages are server-rendered via `CatalogView` and `lib/server-api.ts` (`serverFetch`, sends

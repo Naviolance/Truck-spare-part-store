@@ -37,6 +37,10 @@ under concurrency.
   CSRF double-submit token. Passwords are hashed with bcrypt; login is rate limited.
 - **Admin panel.** Products, categories, brands, vehicles, orders, coupons, reviews and product
   requests. Every list turns into cards on small screens instead of a table you scroll sideways.
+- **Bulk import from a spreadsheet.** Admin → Import takes a CSV saved from Excel (French or
+  English headers, `;` or `,`, accents preserved). A preview lists every error by line before
+  anything is written; the import itself is all-or-nothing. Re-uploading the same sheet updates
+  products by part number + brand, so one master spreadsheet keeps prices and stock current.
 - **Read-only demo admin.** Visitors can explore the whole admin panel with a published demo
   account that can't change anything (details [below](#read-only-demo-admin)).
 - **Image uploads.** Product images are converted to WebP and size-capped on upload, stored in
