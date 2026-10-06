@@ -10,7 +10,7 @@ export type PaymentOptions = { cash: boolean; online: boolean };
 export function usePaymentOptions(): PaymentOptions | null {
   const [options, setOptions] = useState<PaymentOptions | null>(null);
   useEffect(() => {
-    apiFetch("/orders/payment-options")
+    apiFetch("/payments/options", { skipAuth: true })
       .then((res) => (res.ok ? res.json() : { cash: true, online: false }))
       .then(setOptions)
       .catch(() => setOptions({ cash: true, online: false }));

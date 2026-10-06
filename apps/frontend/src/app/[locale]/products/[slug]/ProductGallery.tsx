@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { isUnoptimizableImage } from "@/lib/image";
@@ -22,6 +23,7 @@ function ChevronIcon({ direction }: { direction: "left" | "right" }) {
 const SWIPE_THRESHOLD = 40;
 
 export function ProductGallery({ images, productName }: { images: ProductImage[]; productName: string }) {
+  const t = useTranslations("Product");
   const [index, setIndex] = useState(0);
   const touchStartX = useRef<number | null>(null);
 
@@ -77,7 +79,7 @@ export function ProductGallery({ images, productName }: { images: ProductImage[]
             <button
               type="button"
               onClick={prev}
-              aria-label="Previous image"
+              aria-label={t("previousImage")}
               className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 text-steel shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-white"
             >
               <ChevronIcon direction="left" />
@@ -85,7 +87,7 @@ export function ProductGallery({ images, productName }: { images: ProductImage[]
             <button
               type="button"
               onClick={next}
-              aria-label="Next image"
+              aria-label={t("nextImage")}
               className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 text-steel shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-white"
             >
               <ChevronIcon direction="right" />

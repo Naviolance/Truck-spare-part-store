@@ -17,12 +17,6 @@ export class OrdersController {
     private orderPayments: OrderPaymentsService,
   ) {}
 
-  // Which payment methods checkout should offer (online only when a
-  // provider is configured). Declared before ":id" so it isn't swallowed by it.
-  @Get("payment-options")
-  paymentOptions() {
-    return this.orderPayments.options();
-  }
 
   @Post()
   checkout(@CurrentUser() user: { userId: string }, @Body() dto: CreateOrderDto) {
