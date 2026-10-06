@@ -1,6 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { useAdminList } from "@/lib/admin-list";
+import { FilterSelect, Pager, SearchBox } from "@/components/admin/ListControls";
 
 type ProductRequest = {
   id: string;
@@ -30,17 +32,10 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function AdminRequestsPage() {
-  const [requests, setRequests] = useState<ProductRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState("");
+  const list = useAdminList<ProductRequest>("/product-requests/admin/all", { status });
+  const { items: requests, data, reload: load } = list;
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-
-  async function load() {
-    const res = await apiFetch("/product-requests/admin/all");
-    if (res.ok) setRequests(await res.json());
-    setLoading(false);
-  }
-
-  useEffect(() => { load(); }, []);
 
   async function handleStatusChange(id: string, status: string) {
     setUpdatingId(id);
@@ -53,14 +48,23 @@ export default function AdminRequestsPage() {
     await apiFetch(`/product-requests/admin/${id}`, { method: "PATCH", body: JSON.stringify({ adminNote }) });
   }
 
-  if (loading) return <p className="text-steel">Loading…</p>;
+  if (list.loading) return <p className="text-steel">Loading…</p>;
 
   return (
     <div>
       <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">Product requests</h1>
+      <div className="flex flex-col sm:flex-row gap-2 mb-4">
+        <SearchBox value={list.search} onChange={list.setSearch} placeholder="Part, name, phone or email" />
+        <FilterSelect
+          label="Status"
+          value={status}
+          onChange={setStatus}
+          options={[{ value: "", label: "All statuses" }, ...STATUS_OPTIONS.map((s) => ({ value: s, label: s.replace(/_/g, " ").toLowerCase() }))]}
+        />
+      </div>
 
       {requests.length === 0 ? (
-        <p className="text-steel">No requests yet.</p>
+        <p className="text-steel">{list.searching || status ? "No requests match." : "No requests yet."}</p>
       ) : (
         <div className="space-y-3">
           {requests.map((r) => (
@@ -117,6 +121,7 @@ export default function AdminRequestsPage() {
           ))}
         </div>
       )}
+      {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} limit={data.limit} onPage={list.setPage} />}
     </div>
   );
 }

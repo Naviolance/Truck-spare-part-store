@@ -1,8 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
+import { useAdminList } from "@/lib/admin-list";
 import { formatMoney } from "@/lib/money";
+import { FilterSelect, Pager, SearchBox } from "@/components/admin/ListControls";
 
 type Product = {
   id: string; name: string; price: string; status: string; quantity: number; createdAt: string;
@@ -33,17 +35,11 @@ function StatusToggle({ status, pending, onSet }: { status: string; pending: boo
 }
 
 export default function AdminProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [status, setStatusFilter] = useState("");
+  const [stock, setStock] = useState("");
+  const list = useAdminList<Product, { outOfStock: number }>("/products/admin/all", { status, stock });
+  const { items: products, data, reload: load } = list;
   const [pendingId, setPendingId] = useState<string | null>(null);
-
-  async function load() {
-    const res = await apiFetch("/products/admin/all");
-    if (res.ok) setProducts(await res.json());
-    setLoading(false);
-  }
-
-  useEffect(() => { load(); }, []);
 
   async function setStatus(product: Product, status: "DRAFT" | "PUBLISHED") {
     if (status === product.status) return;
@@ -66,9 +62,9 @@ export default function AdminProductsPage() {
     setPendingId(null);
   }
 
-  if (loading) return <p className="text-steel">Loading…</p>;
+  if (list.loading) return <p className="text-steel">Loading…</p>;
 
-  const outOfStock = products.filter((p) => p.quantity === 0);
+  const outOfStock = data?.outOfStock ?? 0;
 
   return (
     <div>
@@ -81,11 +77,38 @@ export default function AdminProductsPage() {
           </div>
         </div>
       </div>
-      {outOfStock.length > 0 && (
+      {outOfStock > 0 && stock !== "out" && (
         <div className="bg-amber/10 border-l-4 border-amber p-3 mb-4 text-sm text-ink">
-          <span className="font-medium">{outOfStock.length} product{outOfStock.length !== 1 ? "s" : ""} out of stock</span>
-          {" "}— hidden from the storefront until restocked: {outOfStock.map((p) => p.name).join(", ")}
+          <span className="font-medium">{outOfStock.toLocaleString()} product{outOfStock !== 1 ? "s" : ""} out of stock</span>
+          {" "}— still listed in the store with an &ldquo;Out of stock&rdquo; label, customers can request them.{" "}
+          <button type="button" onClick={() => setStock("out")} className="underline">Show them</button>
         </div>
+      )}
+      <div className="flex flex-col sm:flex-row gap-2 mb-4">
+        <SearchBox value={list.search} onChange={list.setSearch} placeholder="Search name or part number" />
+        <FilterSelect
+          label="Status"
+          value={status}
+          onChange={setStatusFilter}
+          options={[
+            { value: "", label: "All statuses" },
+            { value: "PUBLISHED", label: "Published" },
+            { value: "DRAFT", label: "Draft" },
+            { value: "ARCHIVED", label: "Archived" },
+          ]}
+        />
+        <FilterSelect
+          label="Stock"
+          value={stock}
+          onChange={setStock}
+          options={[
+            { value: "", label: "Any stock" },
+            { value: "out", label: "Out of stock" },
+          ]}
+        />
+      </div>
+      {products.length === 0 && (
+        <p className="text-steel">{list.searching || status || stock ? "No products match." : "No products yet."}</p>
       )}
       <div className="sm:hidden space-y-3">
         {products.map((p) => (
@@ -156,6 +179,7 @@ export default function AdminProductsPage() {
         </tbody>
       </table>
       </div>
+      {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} limit={data.limit} onPage={list.setPage} />}
     </div>
   );
 }

@@ -5,6 +5,9 @@ import { CreateProductRequestDto } from "./dto/create-product-request.dto";
 import { UpdateProductRequestDto } from "./dto/update-product-request.dto";
 import { escapeHtml } from "../common/utils/escape-html";
 import { phoneDigits } from "../common/validators/contact-phone";
+import { paginate, searchTerm } from "../common/utils/paginate";
+import { AdminRequestsQueryDto } from "./dto/admin-requests-query.dto";
+import { Prisma } from "@truckparts/prisma";
 
 @Injectable()
 export class ProductRequestsService {
@@ -68,11 +71,32 @@ export class ProductRequestsService {
     });
   }
 
-  findAllAdmin() {
-    return this.prisma.productRequest.findMany({
-      include: { user: { select: { firstName: true, lastName: true, email: true } } },
-      orderBy: { createdAt: "desc" },
-    });
+  findAllAdmin(query: AdminRequestsQueryDto) {
+    const search = searchTerm(query.search);
+    const where: Prisma.ProductRequestWhereInput = {
+      ...(query.status && { status: query.status }),
+      ...(search && {
+        OR: [
+          { description: { contains: search, mode: "insensitive" as const } },
+          { partNumber: { contains: search, mode: "insensitive" as const } },
+          { contactName: { contains: search, mode: "insensitive" as const } },
+          { contactPhone: { contains: search, mode: "insensitive" as const } },
+          { contactEmail: { contains: search, mode: "insensitive" as const } },
+          { user: { is: { email: { contains: search, mode: "insensitive" as const } } } },
+        ],
+      }),
+    };
+    return paginate(
+      query,
+      (args) =>
+        this.prisma.productRequest.findMany({
+          where,
+          include: { user: { select: { firstName: true, lastName: true, email: true } } },
+          orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+          ...args,
+        }),
+      () => this.prisma.productRequest.count({ where }),
+    );
   }
 
   async updateAdmin(id: string, dto: UpdateProductRequestDto) {

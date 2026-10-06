@@ -10,6 +10,8 @@ import { CouponsService } from "../coupons/coupons.service";
 import { MailService } from "../mail/mail.service";
 import { Order, OrderStatus, PaymentStatus, Prisma } from "@truckparts/prisma";
 import { CreateOrderDto } from "./dto/create-order.dto";
+import { AdminOrdersQueryDto } from "./dto/admin-orders-query.dto";
+import { paginate, searchTerm } from "../common/utils/paginate";
 import { generateOrderNumber } from "../common/utils/order-number";
 import { escapeHtml } from "../common/utils/escape-html";
 import { formatXaf } from "../common/utils/money";
@@ -347,8 +349,24 @@ export class OrdersService {
 
   // nextStatuses: what the admin dropdown may offer for each order, straight
   // from the state machine, so the UI can never propose an illegal move.
-  async findAllAdmin() {
-    const orders = await this.prisma.order.findMany({ include: ORDER_DETAIL_INCLUDE, orderBy: { createdAt: "desc" } });
-    return orders.map((order) => ({ ...order, nextStatuses: nextStatusesForAdmin(order.status) }));
+  // One page at a time; search by order number, customer or phone.
+  async findAllAdmin(query: AdminOrdersQueryDto) {
+    const search = searchTerm(query.search);
+    const where: Prisma.OrderWhereInput = {
+      ...(query.status && { status: query.status }),
+      ...(search && {
+        OR: [
+          { orderNumber: { contains: search, mode: "insensitive" as const } },
+          { shippingPhone: { contains: search, mode: "insensitive" as const } },
+          { user: { OR: [{ email: { contains: search, mode: "insensitive" as const } }, { firstName: { contains: search, mode: "insensitive" as const } }, { lastName: { contains: search, mode: "insensitive" as const } }] } },
+        ],
+      }),
+    };
+    const page = await paginate(
+      query,
+      (args) => this.prisma.order.findMany({ where, include: ORDER_DETAIL_INCLUDE, orderBy: [{ createdAt: "desc" }, { id: "asc" }], ...args }),
+      () => this.prisma.order.count({ where }),
+    );
+    return { ...page, items: page.items.map((order) => ({ ...order, nextStatuses: nextStatusesForAdmin(order.status) })) };
   }
 }

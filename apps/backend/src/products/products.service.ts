@@ -5,8 +5,13 @@ import { QueryProductsDto } from "./dto/query-products.dto";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { uniqueSlug } from "../common/utils/unique-slug";
-import { buildListingQuery, ListingFilters } from "./product-listing";
+import { buildListingQuery, FUZZY_SETTING, ListingFilters } from "./product-listing";
+import { AdminProductsQueryDto } from "./dto/admin-products-query.dto";
+import { paginate, searchTerm } from "../common/utils/paginate";
 
+
+// Products per sitemap file: x2 locales = 40k URLs, under Google's 50k limit.
+export const SITEMAP_CHUNK_SIZE = 20_000;
 
 // What a product card needs: category, brand and the first image only.
 const CARD_INCLUDE = {
@@ -57,10 +62,19 @@ export class ProductsService {
 
   private async runListing(filters: ListingFilters, mode: "exact" | "fuzzy", page: number, limit: number) {
     const query = buildListingQuery(filters, mode, page, limit);
-    const [rows, [{ total }]] = await Promise.all([
-      this.prisma.$queryRaw<{ id: string }[]>(query.ids),
-      this.prisma.$queryRaw<{ total: number }[]>(query.count),
-    ]);
+    const [rows, [{ total }]] =
+      mode === "fuzzy"
+        ? await this.prisma
+            .$transaction([
+              this.prisma.$executeRaw(FUZZY_SETTING),
+              this.prisma.$queryRaw<{ id: string }[]>(query.ids),
+              this.prisma.$queryRaw<{ total: number }[]>(query.count),
+            ])
+            .then(([, ids, count]) => [ids, count] as const)
+        : await Promise.all([
+            this.prisma.$queryRaw<{ id: string }[]>(query.ids),
+            this.prisma.$queryRaw<{ total: number }[]>(query.count),
+          ]);
     return { items: await this.cardsInOrder(rows.map((r) => r.id)), total };
   }
 
@@ -112,13 +126,22 @@ export class ProductsService {
 
   // Just two columns, so even a large catalog is one cheap query. Includes
   // out-of-stock products: their pages stay up (and requestable).
-  sitemap() {
+  // One sitemap file's worth of products. Ordered by id (primary-key index)
+  // so a product stays in the same file from one crawl to the next.
+  sitemap(chunk = 0) {
     return this.prisma.product.findMany({
       where: { status: ProductStatus.PUBLISHED },
       select: { slug: true, updatedAt: true },
-      orderBy: { updatedAt: "desc" },
-      take: 20_000, // 2 locales x 20k = 40k URLs, under the 50k-per-sitemap limit
+      orderBy: { id: "asc" },
+      skip: chunk * SITEMAP_CHUNK_SIZE,
+      take: SITEMAP_CHUNK_SIZE,
     });
+  }
+
+  // How many product sitemap files the sitemap index should list.
+  async sitemapInfo() {
+    const products = await this.prisma.product.count({ where: { status: ProductStatus.PUBLISHED } });
+    return { products, chunkSize: SITEMAP_CHUNK_SIZE, chunks: Math.ceil(products / SITEMAP_CHUNK_SIZE) };
   }
 
   async findOne(slug: string) {
@@ -140,11 +163,30 @@ export class ProductsService {
     return product;
   }
 
-  findAllAdmin() {
-    return this.prisma.product.findMany({
-      include: { category: true, brand: true, images: true },
-      orderBy: { createdAt: "desc" },
-    });
+  // Admin list, one page at a time. `outOfStock` feeds the banner: a count
+  // (not names) so it stays small however big the catalog gets.
+  async findAllAdmin(query: AdminProductsQueryDto) {
+    const search = searchTerm(query.search);
+    const where: Prisma.ProductWhereInput = {
+      ...(query.status && { status: query.status }),
+      ...(query.stock === "out" && { quantity: 0 }),
+      ...(search && { OR: [{ name: { contains: search, mode: "insensitive" as const } }, { partNumber: { contains: search, mode: "insensitive" as const } }] }),
+    };
+    const [page, outOfStock] = await Promise.all([
+      paginate(
+        query,
+        (args) =>
+          this.prisma.product.findMany({
+            where,
+            include: { category: true, brand: true },
+            orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+            ...args,
+          }),
+        () => this.prisma.product.count({ where }),
+      ),
+      this.prisma.product.count({ where: { quantity: 0, status: { not: ProductStatus.ARCHIVED } } }),
+    ]);
+    return { ...page, outOfStock };
   }
 
   async findByIdAdmin(id: string) {

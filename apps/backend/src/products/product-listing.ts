@@ -67,29 +67,20 @@ function baseConditions(f: ListingFilters): Prisma.Sql[] {
   return c;
 }
 
-// Every word must match SOMEWHERE: name, either description, brand,
-// category, a compatible truck's make/model, or (normalised) the part number
-// or any cross-reference number.
+// Every word must match SOMEWHERE in the product's searchText: name, either
+// description, brand, category (EN/FR), a compatible truck's make/model, or a
+// part/cross-reference number. searchText is built by database triggers
+// (migration *_product_search_text) and has a trigram index, so this is an
+// index lookup, not a scan. Lower-cased and accent-free on both sides.
+//
+// A word containing a digit is also tried without punctuation, the way part
+// numbers are stored there too: "SC-0054" finds "sc0054321". Only with a
+// digit, so "pièce" isn't also searched as "pice".
 function wordCondition(word: string): Prisma.Sql {
-  const like = likeContains(word);
+  const typed = Prisma.sql`p."searchText" LIKE lower(unaccent(${likeContains(word)}))`;
   const normalized = normalizePartNumber(word);
-  const partNumberMatch = normalized
-    ? Prisma.sql`
-      OR regexp_replace(lower(coalesce(p."partNumber", '')), '[^a-z0-9]', '', 'g') LIKE ${likeContains(normalized)}
-      OR EXISTS (SELECT 1 FROM unnest(p."crossReference") ref
-                 WHERE regexp_replace(lower(ref), '[^a-z0-9]', '', 'g') LIKE ${likeContains(normalized)})`
-    : Prisma.empty;
-
-  return Prisma.sql`(
-    p.name ILIKE ${like}
-    OR p.description ILIKE ${like}
-    OR p."descriptionFr" ILIKE ${like}
-    OR b.name ILIKE ${like}
-    OR c.name ILIKE ${like}
-    ${partNumberMatch}
-    OR EXISTS (SELECT 1 FROM product_compatibility pc JOIN vehicles v ON v.id = pc."vehicleId"
-               WHERE pc."productId" = p.id AND (v.manufacturer ILIKE ${like} OR v.model ILIKE ${like}))
-  )`;
+  if (!/\d/.test(word) || !normalized) return typed;
+  return Prisma.sql`(${typed} OR p."searchText" LIKE ${likeContains(normalized)})`;
 }
 
 // Exact part/cross-reference number first, then name starts with the term,
@@ -128,8 +119,17 @@ function orderBy(f: ListingFilters, mode: "exact" | "fuzzy"): Prisma.Sql {
 // "brke" vs "Bosch Brake" = 0.40, vs "Bosch Engine Part" = 0.20.
 const FUZZY_THRESHOLD = 0.35;
 
+// Run before the fuzzy queries, in the same transaction (SET LOCAL lasts
+// until it ends), so `<%` uses our threshold instead of the 0.6 default.
+export const FUZZY_SETTING = Prisma.sql`SET LOCAL pg_trgm.word_similarity_threshold = ${Prisma.raw(String(FUZZY_THRESHOLD))}`;
+
+// `<%` is the indexed form of "word_similarity(word, searchText) above
+// pg_trgm.word_similarity_threshold" (set to FUZZY_THRESHOLD by the caller
+// — see FUZZY_SETTING). It narrows candidates via the trigram index; the
+// explicit checks then keep the rule to name, brand and part number, so
+// long descriptions don't add noisy near-matches.
 function fuzzyWordCondition(word: string): Prisma.Sql {
-  return Prisma.sql`(
+  return Prisma.sql`lower(unaccent(${word})) <% p."searchText" AND (
     word_similarity(${word}, p.name) > ${FUZZY_THRESHOLD}
     OR word_similarity(${word}, coalesce(b.name, '')) > ${FUZZY_THRESHOLD}
     OR word_similarity(${word}, coalesce(p."partNumber", '')) > ${FUZZY_THRESHOLD}

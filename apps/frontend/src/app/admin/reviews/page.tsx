@@ -1,6 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { useAdminList } from "@/lib/admin-list";
+import { Pager, SearchBox } from "@/components/admin/ListControls";
 
 type Review = {
   id: string;
@@ -12,17 +14,9 @@ type Review = {
 };
 
 export default function AdminReviewsPage() {
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
+  const list = useAdminList<Review>("/reviews/admin/all");
+  const { items: reviews, data, reload: load } = list;
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  async function load() {
-    const res = await apiFetch("/reviews/admin/all");
-    if (res.ok) setReviews(await res.json());
-    setLoading(false);
-  }
-
-  useEffect(() => { load(); }, []);
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this review?")) return;
@@ -32,13 +26,16 @@ export default function AdminReviewsPage() {
     setDeletingId(null);
   }
 
-  if (loading) return <p className="text-steel">Loading…</p>;
+  if (list.loading) return <p className="text-steel">Loading…</p>;
 
   return (
     <div>
       <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">Reviews</h1>
+      <div className="mb-4">
+        <SearchBox value={list.search} onChange={list.setSearch} placeholder="Product, comment or email" />
+      </div>
       {reviews.length === 0 ? (
-        <p className="text-steel">No reviews yet.</p>
+        <p className="text-steel">{list.searching ? "No reviews match." : "No reviews yet."}</p>
       ) : (
         <>
         <div className="sm:hidden space-y-3">
@@ -102,6 +99,7 @@ export default function AdminReviewsPage() {
         </div>
         </>
       )}
+      {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} limit={data.limit} onPage={list.setPage} />}
     </div>
   );
 }

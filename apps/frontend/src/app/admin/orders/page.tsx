@@ -1,7 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
+import { useAdminList } from "@/lib/admin-list";
+import { FilterSelect, Pager, SearchBox } from "@/components/admin/ListControls";
 import { formatMoney } from "@/lib/money";
 
 type Order = {
@@ -44,19 +46,10 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState("");
+  const list = useAdminList<Order>("/orders/admin/all", { status });
+  const { items: orders, data, reload: load } = list;
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-
-  async function load() {
-    const res = await apiFetch("/orders/admin/all");
-    if (res.ok) setOrders(await res.json());
-    setLoading(false);
-  }
-
-  useEffect(() => {
-    load();
-  }, []);
 
   async function handleStatusChange(orderId: string, status: string) {
     setUpdatingId(orderId);
@@ -100,7 +93,7 @@ export default function AdminOrdersPage() {
     setUpdatingId(null);
   }
 
-  if (loading) return <p className="text-steel">Loading…</p>;
+  if (list.loading) return <p className="text-steel">Loading…</p>;
 
   const rows = orders.map((o) => ({
     ...o,
@@ -110,9 +103,18 @@ export default function AdminOrdersPage() {
   return (
     <div>
       <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">Orders</h1>
+      <div className="flex flex-col sm:flex-row gap-2 mb-4">
+        <SearchBox value={list.search} onChange={list.setSearch} placeholder="Order number, customer or phone" />
+        <FilterSelect
+          label="Status"
+          value={status}
+          onChange={setStatus}
+          options={[{ value: "", label: "All statuses" }, ...Object.keys(STATUS_COLORS).map((s) => ({ value: s, label: s.replace(/_/g, " ").toLowerCase() }))]}
+        />
+      </div>
 
       {orders.length === 0 ? (
-        <p className="text-steel">No orders yet.</p>
+        <p className="text-steel">{list.searching || status ? "No orders match." : "No orders yet."}</p>
       ) : (
         <>
         <div className="sm:hidden space-y-3">
@@ -237,6 +239,7 @@ export default function AdminOrdersPage() {
         </div>
         </>
       )}
+      {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} limit={data.limit} onPage={list.setPage} />}
     </div>
   );
 }

@@ -182,6 +182,12 @@ model Product {
   partNumber     String? // OEM / manufacturer part number
   crossReference String[]         @default([]) // alternative part numbers
   searchHits     Int              @default(0) // incremented each time this product appears in a search-with-query result — powers "most searched"
+  // Everything a customer can search a product by, in one lower-case,
+  // accent-free string: name, descriptions, brand, category, compatible
+  // trucks, part/cross-reference numbers (as typed and punctuation-free).
+  // Written ONLY by database triggers (migration *_product_search_text) —
+  // never set it from code. @ignore keeps it out of Prisma Client entirely.
+  searchText     String           @default("") @ignore
 
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
@@ -202,6 +208,10 @@ model Product {
   @@index([brandId])
   @@index([status])
   @@index([searchHits])
+  // Trigram index: makes `searchText LIKE '%word%'` and typo matching (<%)
+  // index lookups instead of a scan of every product. Declared here so
+  // Prisma migrations never drop it.
+  @@index([searchText(ops: raw("gin_trgm_ops"))], type: Gin, map: "products_search_text_trgm_idx")
   @@map("products")
 }
 
@@ -286,6 +296,7 @@ model Order {
   @@index([userId])
   @@index([status])
   @@index([status, createdAt]) // expiry job: oldest PAYMENT_PENDING orders
+  @@index([createdAt]) // admin order list: newest first, one page at a time
   @@map("orders")
 }
 

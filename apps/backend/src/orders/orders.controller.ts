@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from "@nestjs/common";
 import { OrdersService } from "./orders.service";
 import { OrderPaymentsService } from "./order-payments.service";
 import { CreateOrderDto } from "./dto/create-order.dto";
 import { UpdateOrderStatusDto } from "./dto/update-order-status.dto";
+import { AdminOrdersQueryDto } from "./dto/admin-orders-query.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -49,8 +50,8 @@ export class OrdersController {
   @Get("admin/all")
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
-  findAllAdmin() {
-    return this.ordersService.findAllAdmin();
+  findAllAdmin(@Query() query: AdminOrdersQueryDto) {
+    return this.ordersService.findAllAdmin(query);
   }
 
   // Checks access first, then asks the provider about a still-pending online

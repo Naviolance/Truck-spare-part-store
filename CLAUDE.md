@@ -138,6 +138,22 @@ Part and the category/brand/truck landing pages — out-of-stock products stay l
 Public pages are server-rendered via `CatalogView` and `lib/server-api.ts` (`serverFetch`, sends
 `INTERNAL_API_KEY`, ISR caching). Each indexable page sets its own `alternates` via `lib/seo.ts`
 (canonical + hreflang); private pages are noindex. JSON-LD helpers are in `lib/seo.ts`.
+Sitemaps: `/sitemap.xml` is an index (route handler) over `/sitemaps/pages.xml` and
+`/sitemaps/products-<n>.xml` (20k products each) — built per request in `lib/sitemap.ts`, so a growing
+catalog needs no redeploy.
+
+**Search**: matches `products."searchText"` — one lower-case, accent-free string (name, descriptions,
+brand, category EN/FR, trucks, part/cross-reference numbers) with a GIN trigram index. It is written
+**only by database triggers** (migration `*_product_search_text`): never set it from code, and if you
+rename a column that feeds it, update `product_search_text()` in a new migration (the DB tests in
+`products/search-text.db.spec.ts` catch drift). It's `@ignore`d in `schema.prisma`, so it isn't in Prisma
+Client; the `@@index` there is what stops Prisma migrations dropping the index. Measured at 100k
+products: ~10–40 ms per search (was ~0.8 s scanning every row).
+
+**Admin lists** (products, orders, requests, reviews) are paginated server-side: `AdminListQueryDto`
+(`page`, `limit` ≤ 100, `search`) + `paginate()` in `common/`, `useAdminList` + `ListControls` on the
+frontend. Don't return unbounded `findMany` lists from admin endpoints; vehicles and coupons are the
+deliberate exceptions (small by nature).
 
 **Rate limiting**: `UserThrottlerGuard` buckets by verified user id, else client IP (needs correct
 `TRUST_PROXY`; check `/health`'s `clientIp`), and skips requests carrying `INTERNAL_API_KEY`.

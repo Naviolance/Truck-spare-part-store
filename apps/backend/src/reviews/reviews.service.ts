@@ -1,8 +1,10 @@
 import { Injectable, NotFoundException, ForbiddenException, ConflictException } from "@nestjs/common";
-import { OrderStatus } from "@truckparts/prisma";
+import { OrderStatus, Prisma } from "@truckparts/prisma";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { CreateReviewDto } from "./dto/create-review.dto";
 import { UpdateReviewDto } from "./dto/update-review.dto";
+import { AdminListQueryDto } from "../common/dto/admin-list-query.dto";
+import { paginate, searchTerm } from "../common/utils/paginate";
 
 const EDIT_WINDOW_MS = 10 * 60 * 1000; // customers can edit/delete their own review for 10 minutes after posting
 
@@ -64,14 +66,25 @@ export class ReviewsService {
     return review;
   }
 
-  findAllAdmin() {
-    return this.prisma.review.findMany({
-      include: {
-        product: { select: { id: true, name: true, slug: true } },
-        user: { select: { id: true, firstName: true, lastName: true, email: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+  findAllAdmin(query: AdminListQueryDto) {
+    const search = searchTerm(query.search);
+    const where: Prisma.ReviewWhereInput = search
+      ? { OR: [{ comment: { contains: search, mode: "insensitive" as const } }, { product: { name: { contains: search, mode: "insensitive" as const } } }, { user: { email: { contains: search, mode: "insensitive" as const } } }] }
+      : {};
+    return paginate(
+      query,
+      (args) =>
+        this.prisma.review.findMany({
+          where,
+          include: {
+            product: { select: { id: true, name: true, slug: true } },
+            user: { select: { id: true, firstName: true, lastName: true, email: true } },
+          },
+          orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+          ...args,
+        }),
+      () => this.prisma.review.count({ where }),
+    );
   }
 
   async removeAdmin(reviewId: string) {

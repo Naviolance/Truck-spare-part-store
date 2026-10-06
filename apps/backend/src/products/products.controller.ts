@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, DefaultValuePipe, ParseIntPipe } from "@nestjs/common";
 import { ProductsService } from "./products.service";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { QueryProductsDto } from "./dto/query-products.dto";
+import { AdminProductsQueryDto } from "./dto/admin-products-query.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -40,11 +41,17 @@ export class ProductsController {
     return this.productsService.findMostPurchased(parseLimit(limit));
   }
 
-  // Every published product's slug + last change, for sitemap.xml. Declared
-  // before ":slug" so it isn't captured by it.
+  // Published products' slug + last change for the sitemaps, one file
+  // (?chunk=0,1,...) at a time; /sitemap/info says how many files there are.
+  // Declared before ":slug" so they aren't captured by it.
+  @Get("sitemap/info")
+  sitemapInfo() {
+    return this.productsService.sitemapInfo();
+  }
+
   @Get("sitemap")
-  sitemap() {
-    return this.productsService.sitemap();
+  sitemap(@Query("chunk", new DefaultValuePipe(0), ParseIntPipe) chunk: number) {
+    return this.productsService.sitemap(Math.max(0, chunk));
   }
 
   @Get(":slug")
@@ -55,8 +62,8 @@ export class ProductsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Get("admin/all")
-  findAllAdmin() {
-    return this.productsService.findAllAdmin();
+  findAllAdmin(@Query() query: AdminProductsQueryDto) {
+    return this.productsService.findAllAdmin(query);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

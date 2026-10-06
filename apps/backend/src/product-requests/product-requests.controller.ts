@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
 import { ProductRequestsService } from "./product-requests.service";
 import { CreateProductRequestDto } from "./dto/create-product-request.dto";
 import { UpdateProductRequestDto } from "./dto/update-product-request.dto";
+import { AdminRequestsQueryDto } from "./dto/admin-requests-query.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { OptionalJwtAuthGuard } from "../auth/guards/optional-jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
@@ -33,8 +34,8 @@ export class ProductRequestsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Get("admin/all")
-  findAllAdmin() {
-    return this.productRequestsService.findAllAdmin();
+  findAllAdmin(@Query() query: AdminRequestsQueryDto) {
+    return this.productRequestsService.findAllAdmin(query);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
