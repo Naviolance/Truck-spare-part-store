@@ -15,14 +15,17 @@
     "account": "Account",
     "trucks": "Trucks",
     "whatsapp": "Chat with us on WhatsApp",
-    "mainNav": "Main navigation"
+    "mainNav": "Main navigation",
+    "searchLabel": "Search for a part",
+    "searchPlaceholder": "Part, part number or truck…",
+    "searchButton": "Search",
+    "browse": "Browse the catalog"
   },
   "Hero": {
     "title": "Truck parts that fit, without the guesswork.",
     "subtitle": "We grade every part new, used, or reconditioned before it's listed, and you inspect it in person before you buy — search by vehicle or browse the full catalogue below.",
     "findMyPart": "Find My Part",
-    "browseAll": "Browse all parts",
-    "imageAlt": "Truck parts on the shop floor"
+    "browseAll": "Browse all parts"
   },
   "ValueProps": {
     "conditionTitle": "Condition you can trust",
@@ -83,7 +86,8 @@
   },
   "LanguageSwitcher": {
     "english": "English",
-    "french": "Français"
+    "french": "Français",
+    "label": "Language"
   },
   "CookieBanner": {
     "text": "We use cookies to keep you signed in and to remember your language. We don't use analytics, advertising, or tracking cookies.",
@@ -221,7 +225,8 @@
     "unbranded": "Unbranded",
     "outOfStock": "Out of stock",
     "inStock": "In stock",
-    "lowStock": "Only {count} left"
+    "lowStock": "Only {count} left",
+    "ref": "Ref."
   },
   "RequestPart": {
     "teaser": "Can't find the part you need?",
@@ -338,7 +343,9 @@
     "notListed": "Your truck isn't listed? Tell us its make, model and year in the form below.",
     "step1": "Choose your truck",
     "step2": "See the parts that fit",
-    "step3": "Order, or ask us on WhatsApp"
+    "step3": "Order, or ask us on WhatsApp",
+    "whatDoYouDrive": "What do you drive?",
+    "showParts": "Show compatible parts"
   },
   "About": {
     "metaTitle": "About",

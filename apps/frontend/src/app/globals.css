@@ -14,9 +14,10 @@
 }
 
 @layer components {
-  /* Sharp corners, no soft drop-shadow kit - see design plan. */
+  /* Redesign step 1 ("B layout, A colours"): rounded corners, no drop
+     shadows; ink / paper / amber / rust palette unchanged. */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold transition-colors duration-150 disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-colors duration-150 disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-primary {
     @apply btn bg-amber text-ink hover:bg-amber-dark;
@@ -29,17 +30,24 @@
   }
 
   /* Condition hang-tags: color is functional (grading), not decorative -
-     amber/rust/steel map to New/Used/Reconditioned everywhere. */
+     amber/rust/steel map to New/Used/Reconditioned everywhere. Opaque, so
+     they stay readable on top of a product photo. */
   .tag-condition {
-    @apply inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-semibold font-mono tracking-tight;
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold font-mono tracking-tight;
   }
   .tag-new {
-    @apply tag-condition bg-amber/15 text-amber-dark;
+    @apply tag-condition bg-[#F6E6C8] text-amber-dark;
   }
   .tag-used {
-    @apply tag-condition bg-rust/15 text-rust-dark;
+    @apply tag-condition bg-[#F1DCD5] text-rust-dark;
   }
   .tag-reconditioned {
-    @apply tag-condition bg-steel/15 text-steel;
+    @apply tag-condition bg-[#E1E4E7] text-steel;
+  }
+
+  /* Skeleton placeholders: the shape of the content that's loading,
+     pulsing gently (replaces the old click-point spinner). */
+  .skeleton {
+    @apply rounded-lg bg-skeleton motion-safe:animate-pulse;
   }
 }

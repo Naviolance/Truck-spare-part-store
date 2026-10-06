@@ -15,14 +15,17 @@
     "account": "Compte",
     "trucks": "Camions",
     "whatsapp": "Discutez avec nous sur WhatsApp",
-    "mainNav": "Navigation principale"
+    "mainNav": "Navigation principale",
+    "searchLabel": "Rechercher une pièce",
+    "searchPlaceholder": "Pièce, référence ou camion…",
+    "searchButton": "Rechercher",
+    "browse": "Parcourir le catalogue"
   },
   "Hero": {
     "title": "Des pièces de camion qui conviennent, sans se tromper.",
     "subtitle": "Chaque pièce est évaluée neuve, d'occasion ou reconditionnée avant sa mise en ligne, et vous l'inspectez en personne avant d'acheter — recherchez par véhicule ou parcourez le catalogue complet ci-dessous.",
     "findMyPart": "Trouver ma pièce",
-    "browseAll": "Voir toutes les pièces",
-    "imageAlt": "Pièces de camion dans l'atelier"
+    "browseAll": "Voir toutes les pièces"
   },
   "ValueProps": {
     "conditionTitle": "Un état de confiance",
@@ -83,7 +86,8 @@
   },
   "LanguageSwitcher": {
     "english": "English",
-    "french": "Français"
+    "french": "Français",
+    "label": "Langue"
   },
   "CookieBanner": {
     "text": "Nous utilisons des cookies pour vous garder connecté et mémoriser votre langue. Nous n'utilisons aucun cookie publicitaire ou de suivi.",
@@ -221,7 +225,8 @@
     "unbranded": "Sans marque",
     "outOfStock": "Rupture de stock",
     "inStock": "En stock",
-    "lowStock": "Plus que {count}"
+    "lowStock": "Plus que {count}",
+    "ref": "Réf."
   },
   "RequestPart": {
     "teaser": "Vous ne trouvez pas la pièce qu'il vous faut ?",
@@ -338,7 +343,9 @@
     "notListed": "Votre camion n'est pas dans la liste ? Indiquez sa marque, son modèle et son année dans le formulaire ci-dessous.",
     "step1": "Choisissez votre camion",
     "step2": "Voyez les pièces compatibles",
-    "step3": "Commandez, ou demandez-nous sur WhatsApp"
+    "step3": "Commandez, ou demandez-nous sur WhatsApp",
+    "whatDoYouDrive": "Quel est votre camion ?",
+    "showParts": "Voir les pièces compatibles"
   },
   "About": {
     "metaTitle": "À propos",

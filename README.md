@@ -340,6 +340,8 @@ Read this before changing the code. [CLAUDE.md](CLAUDE.md) has the same rules in
   `@RevalidatesCatalog()` — that's what makes the storefront update instantly instead of after ~60 s.
 - **Admin lists:** paginate on the server (`AdminListQueryDto` + `paginate()`); never return an
   unbounded list. Vehicles and coupons are the only exceptions (small by nature).
+- **Loading states:** never add a route `loading.tsx` — it turns missing pages' 404 into a 200. Page
+  skeletons come from `NavigationSkeleton` (see CLAUDE.md, "Loading states").
 - **Webhooks:** `main.ts` keeps the raw request body for payment signature checks — don't remove it.
 - **Seed:** never run `pnpm prisma:seed` against production (its account passwords are public).
 

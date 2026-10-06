@@ -1,8 +1,8 @@
 import { Link } from "@/i18n/navigation";
-import Image from "next/image";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
 import { ProductCard, ProductCardData } from "@/components/ProductCard";
+import { HeroTruckFinder } from "@/components/HeroTruckFinder";
 import { JsonLd } from "@/components/JsonLd";
 import { serverFetch } from "@/lib/server-api";
 import { getCategories, getTruckCatalog, productCount } from "@/lib/landing";
@@ -25,15 +25,15 @@ function ProductSection({ title, viewAllHref, viewAllLabel, products }: { title:
   if (products.length === 0) return null;
   return (
     <section className="max-w-6xl mx-auto px-4 py-10">
-      <div className="flex items-baseline justify-between mb-6 pb-3 border-b-2 border-ink">
-        <h2 className="font-display font-bold text-2xl sm:text-3xl text-ink tracking-tight">{title}</h2>
+      <div className="flex flex-wrap items-baseline justify-between gap-2 mb-5">
+        <h2 className="font-display font-bold text-2xl sm:text-[32px] text-ink">{title}</h2>
         {viewAllHref && (
-          <Link href={viewAllHref} className="text-sm font-medium text-steel transition-colors duration-200 hover:text-ink">
-            {viewAllLabel}
+          <Link href={viewAllHref} className="text-[15px] font-semibold text-ink transition-colors duration-200 hover:text-amber-dark">
+            {viewAllLabel} →
           </Link>
         )}
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-[18px]">
         {products.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
@@ -90,34 +90,28 @@ export default async function HomePage({ params }: { params: Promise<{ locale: L
           mainEntity: faq.map(({ q, a }) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
         }}
       />
-      {/* Hero — full-bleed background photo, text overlaid on a dark scrim */}
-      <section className="relative min-h-[480px] sm:min-h-[560px] flex items-center text-paper border-b-4 border-amber overflow-hidden">
-        <Image
-          src="/hero-bg.jpg"
-          alt={tHero("imageAlt")}
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-ink/95 via-ink/80 to-ink/40" />
-        <div className="relative max-w-6xl mx-auto px-4 py-16 sm:py-20 w-full">
-          <div className="max-w-xl">
-            <h1 className="font-display font-black text-4xl sm:text-6xl leading-[0.95] tracking-tight">
-              {tHero("title")}
-            </h1>
-            <p className="text-paper/70 mt-6 max-w-md text-base sm:text-lg">
-              {tHero("subtitle")}
-            </p>
-            <div className="flex flex-wrap gap-3 mt-8">
-              <Link href="/find-my-part" className="btn-primary">
-                {tHero("findMyPart")}
-              </Link>
-              <Link href="/products" className="btn-outline border-paper/40 text-paper hover:bg-paper hover:text-ink">
-                {tHero("browseAll")}
-              </Link>
-            </div>
+      {/* Hero — redesign step 1: dark like the header, the pitch on the
+          left, "What do you drive?" on the right (the fastest way in). */}
+      <section className="bg-ink text-paper border-t border-ink-soft">
+        <div className="max-w-6xl mx-auto px-4 py-10 sm:py-14 grid gap-8 md:grid-cols-2 md:items-center">
+          <div className="flex flex-col gap-4">
+            <h1 className="font-display font-bold text-4xl sm:text-[52px] leading-[1.02]">{tHero("title")}</h1>
+            <p className="text-paper-dim text-base sm:text-lg leading-relaxed max-w-xl">{tHero("subtitle")}</p>
+            <ul className="flex flex-wrap gap-x-5 gap-y-2 text-[15px]">
+              {[tValueProps("conditionTitle"), tValueProps("fitTitle")].map((point) => (
+                <li key={point} className="inline-flex items-center gap-1.5">
+                  <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] text-amber" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M5 12l4 4 10-10" />
+                  </svg>
+                  {point}
+                </li>
+              ))}
+            </ul>
+            <Link href="/products" className="text-amber font-semibold hover:underline w-fit">
+              {tHero("browseAll")} →
+            </Link>
           </div>
+          <HeroTruckFinder makes={(trucks ?? []).filter((m) => m.products > 0)} />
         </div>
       </section>
 

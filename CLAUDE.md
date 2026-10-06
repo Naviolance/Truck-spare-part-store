@@ -154,6 +154,17 @@ Sitemaps: `/sitemap.xml` is an index (route handler) over `/sitemaps/pages.xml` 
 `/sitemaps/products-<n>.xml` (20k products each) — built per request in `lib/sitemap.ts`, so a growing
 catalog needs no redeploy.
 
+**Loading states**: no route `loading.tsx` — it makes Next stream a 200 before a page can call `notFound()`,
+so missing products answer "200 + noindex" instead of a real 404 (measured, even for Googlebot). Instead
+`components/NavigationSkeleton.tsx` shows a skeleton of the destination page (`components/Skeletons.tsx`)
+on internal link clicks and on `announceNavigation(href)` (`lib/navigation-events.ts`: search form,
+language switch, hero truck finder). New page type → add its skeleton and route pattern there.
+
+**Design (redesign step 1)**: dark ink header/hero with amber accents, paper background, rounded cards
+(`rounded-[14px] border-line bg-card`), tokens in `tailwind.config.ts` (`card`, `line`, `sand`, `skeleton`,
+`stock`, `ink-soft`, `paper-dim`). Fonts: Source Sans 3 (body), Barlow Semi Condensed 600/700 (headings),
+IBM Plex Mono (part numbers). Mockups: the "TruckParts redesign" canvas artifact.
+
 **Search**: matches `products."searchText"` — one lower-case, accent-free string (name, descriptions,
 brand, category EN/FR, trucks, part/cross-reference numbers) with a GIN trigram index. It is written
 **only by database triggers** (migration `*_product_search_text`): never set it from code, and if you
