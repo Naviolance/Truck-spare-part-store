@@ -1,8 +1,8 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { useRouter } from "next/navigation";
-import { apiFetch, setAccessToken, refreshSession, onSessionExpire } from "@/lib/api";
+import { useRouter } from "@/i18n/navigation";
+import { apiFetch, setAccessToken, refreshSession, onSessionExpire, readError } from "@/lib/api";
 
 type User = {
   id: string;
@@ -108,10 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ email, password }),
       skipAuth: true,
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || "Login failed");
-    }
+    if (!res.ok) throw new Error(await readError(res, "Login failed"));
     const data = await res.json();
     setAccessToken(data.accessToken);
     await fetchMe();
@@ -123,10 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify(data),
       skipAuth: true,
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || "Registration failed");
-    }
+    if (!res.ok) throw new Error(await readError(res, "Registration failed"));
     const resData = await res.json();
     setAccessToken(resData.accessToken);
     await fetchMe();

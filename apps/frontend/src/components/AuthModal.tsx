@@ -1,15 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { useAuth } from "@/context/AuthContext";
-import { PasswordInput } from "@/components/PasswordInput";
-import { IconInput, MailIcon, UserIcon } from "@/components/IconInput";
-
-const inputClass = "w-full border border-steel-light rounded-lg px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:border-steel";
+import { useTranslations } from "next-intl";
+import { LoginForm, RegisterForm } from "@/components/auth/AuthForms";
 
 function CloseIcon() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5" aria-hidden="true">
       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
     </svg>
   );
@@ -23,15 +20,15 @@ type Props = {
   message?: string;
 };
 
+// Log in or sign up without leaving the page (e.g. "Add to cart" while
+// logged out). Same forms as /login and /register.
 export function AuthModal({ open, onClose, onAuthenticated, message }: Props) {
-  const { login, register } = useAuth();
+  const t = useTranslations("Auth");
   const [mode, setMode] = useState<"login" | "register">("login");
-  const [form, setForm] = useState({ email: "", password: "", firstName: "", lastName: "" });
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!open) return;
+    setMode("login");
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
@@ -39,38 +36,11 @@ export function AuthModal({ open, onClose, onAuthenticated, message }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  useEffect(() => {
-    if (open) {
-      setError(null);
-      setSubmitting(false);
-      setForm({ email: "", password: "", firstName: "", lastName: "" });
-      setMode("login");
-    }
-  }, [open]);
-
   if (!open) return null;
 
-  function update(field: string, value: string) {
-    setForm((f) => ({ ...f, [field]: value }));
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setSubmitting(true);
-    try {
-      if (mode === "login") {
-        await login(form.email, form.password);
-      } else {
-        await register(form);
-      }
-      onAuthenticated?.();
-      onClose();
-    } catch (err: any) {
-      setError(err.message || "Something went wrong");
-    } finally {
-      setSubmitting(false);
-    }
+  function done() {
+    onAuthenticated?.();
+    onClose();
   }
 
   return createPortal(
@@ -79,88 +49,31 @@ export function AuthModal({ open, onClose, onAuthenticated, message }: Props) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm bg-white rounded-xl shadow-xl p-6 relative animate-scaleIn"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="auth-modal-title"
+        className="w-full max-w-sm max-h-[90vh] overflow-y-auto bg-white rounded-xl shadow-xl p-6 relative animate-scaleIn"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          onClick={onClose}
-          aria-label="Close"
-          className="absolute top-4 right-4 text-steel transition-colors duration-200 hover:text-steel"
-        >
+        <button onClick={onClose} aria-label={t("close")} className="absolute top-4 right-4 text-steel transition-colors duration-200 hover:text-ink">
           <CloseIcon />
         </button>
 
-        <h2 className="text-xl font-display font-bold text-ink tracking-tight mb-1">
-          {mode === "login" ? "Log in" : "Create an account"}
+        <h2 id="auth-modal-title" className="text-xl font-display font-bold text-ink tracking-tight mb-1">
+          {mode === "login" ? t("loginTitle") : t("registerTitle")}
         </h2>
-        <p className="text-sm text-steel mb-5">
-          {message || (mode === "login" ? "Log in to continue." : "Sign up to continue.")}
-        </p>
+        <p className="text-sm text-steel mb-5">{message || (mode === "login" ? t("modalLoginHint") : t("modalRegisterHint"))}</p>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          {mode === "register" && (
-            <div className="grid grid-cols-2 gap-3">
-              <IconInput
-                icon={<UserIcon />}
-                placeholder="First name"
-                required
-                value={form.firstName}
-                onChange={(e) => update("firstName", e.target.value)}
-                className={inputClass}
-              />
-              <IconInput
-                icon={<UserIcon />}
-                placeholder="Last name"
-                required
-                value={form.lastName}
-                onChange={(e) => update("lastName", e.target.value)}
-                className={inputClass}
-              />
-            </div>
-          )}
-          <IconInput
-            icon={<MailIcon />}
-            type="email"
-            placeholder="Email"
-            required
-            value={form.email}
-            onChange={(e) => update("email", e.target.value)}
-            className={inputClass}
-          />
-          <div>
-            <PasswordInput
-              placeholder="Password"
-              required
-              value={form.password}
-              onChange={(e) => update("password", e.target.value)}
-              className={inputClass}
-            />
-            {mode === "register" && (
-              <p className="text-xs text-steel mt-1">
-                At least 10 characters, with uppercase, lowercase, a number, and a symbol.
-              </p>
-            )}
-          </div>
-
-          {error && <p className="text-red-600 text-sm">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full bg-amber text-ink py-2.5 text-sm font-medium transition-colors duration-150 hover:bg-amber-dark disabled:opacity-50"
-          >
-            {submitting ? "Please wait…" : mode === "login" ? "Log in" : "Sign up"}
-          </button>
-        </form>
+        {mode === "login" ? <LoginForm onSuccess={done} /> : <RegisterForm onSuccess={done} />}
 
         <p className="text-sm text-steel mt-4 text-center">
-          {mode === "login" ? "New here?" : "Already have an account?"}{" "}
+          {mode === "login" ? t("newHere") : t("haveAccount")}{" "}
           <button
             type="button"
             onClick={() => setMode(mode === "login" ? "register" : "login")}
             className="text-ink font-medium underline transition-colors duration-200 hover:text-steel"
           >
-            {mode === "login" ? "Create an account" : "Log in"}
+            {mode === "login" ? t("switchToRegister") : t("switchToLogin")}
           </button>
         </p>
       </div>

@@ -192,3 +192,21 @@ export async function apiFetch(path: string, options: FetchOptions = {}) {
 
   return res;
 }
+
+// The backend's error message for a failed response, in a form a person can
+// read. Validation errors arrive as an ARRAY of messages; show the first
+// (one clear thing to fix) rather than a comma-joined wall of text.
+export async function readError(res: Response, fallback: string): Promise<string> {
+  const body = await res.json().catch(() => ({}));
+  const message = Array.isArray(body?.message) ? body.message[0] : body?.message;
+  return typeof message === "string" && message ? message : fallback;
+}
+
+// Where to send someone after login/register: only a path on THIS site.
+// "//evil.com" and "https://evil.com" are rejected — otherwise
+// /login?next=https://evil.com would make our login page an open redirect
+// that phishing links could abuse.
+export function safeNext(next: string | null | undefined): string | null {
+  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return null;
+  return next;
+}

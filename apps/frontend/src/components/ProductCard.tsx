@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { formatMoney } from "@/lib/money";
 import { isUnoptimizableImage } from "@/lib/image";
