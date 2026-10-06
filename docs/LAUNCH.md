@@ -5,6 +5,8 @@ Each step says how to check it worked.
 
 ## 1. Hosting decisions
 
+> Pending: see [HOSTING.md](HOSTING.md) for the costed options (Railway-only vs one VPS). The table below is the original plan.
+
 | Part | Host | Note |
 |---|---|---|
 | Frontend | Vercel | **Hobby plan is non-commercial only.** A store selling for real needs Vercel Pro (~$20/month) or the Next.js app hosted on Railway next to the backend. |
