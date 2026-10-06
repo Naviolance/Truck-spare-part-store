@@ -1,7 +1,13 @@
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { S3Client, PutObjectCommand, GetObjectCommand, CreateBucketCommand, HeadBucketCommand } from "@aws-sdk/client-s3";
 import { randomUUID } from "crypto";
-import * as sharp from "sharp";
+import * as sharpModule from "sharp";
+
+// sharp >= 0.35 types its ESM entry as `export default`, but under this
+// project's CommonJS output require("sharp") returns the function itself
+// (there is no .default at runtime). So keep the namespace import, which is
+// the real function, and only fix its type. Same pattern as cookieParser in main.ts.
+const sharp = sharpModule as unknown as typeof sharpModule.default;
 
 @Injectable()
 export class UploadsService implements OnModuleInit {

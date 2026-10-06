@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Big_Shoulders_Display, IBM_Plex_Mono } from "next/font/google";
+import { Inter, Big_Shoulders, IBM_Plex_Mono } from "next/font/google";
 import { Suspense } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
@@ -15,10 +15,12 @@ import { NavigationProgress } from "@/components/NavigationProgress";
 const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-body" });
 // Condensed, steel-beam letterforms for headlines - deliberately not the
 // same neutral grotesk as the body copy (see Footer/Navbar/hero usage).
-const bigShoulders = Big_Shoulders_Display({
+const bigShoulders = Big_Shoulders({
   subsets: ["latin"],
   weight: ["700", "900"],
   display: "swap",
+  // Next 15 has no fallback metrics for the merged "Big Shoulders" family.
+  adjustFontFallback: false,
   variable: "--font-display",
 });
 // Used narrowly for part numbers/SKUs/spec rows - real parts-catalog
