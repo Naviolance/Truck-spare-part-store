@@ -257,23 +257,26 @@ The values in `.env.example` are for local development only. Never commit real k
 ## Tests
 
 The backend has unit tests (Jest) for authentication, sessions, password reset, the demo
-read-only mode, and more:
+read-only mode, error codes, import parsing and more, plus tests against a real Postgres:
 
 ```bash
 pnpm --filter backend test      # unit tests
-pnpm --filter backend test:db   # against a real Postgres: order transitions and race conditions
+pnpm --filter backend test:db   # real Postgres: order transitions and races, search triggers, import, insights
+pnpm --filter backend lint
+pnpm --filter frontend lint
+pnpm --filter frontend build    # also type-checks the frontend
 ```
+
+**CI** ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs all of the above on every pull
+request, against a fresh Postgres with every migration applied from scratch. Don't merge a red PR.
 
 ## Deployment
 
-| Part | Host |
-|---|---|
-| Frontend (Next.js) | Vercel (Pro for commercial use) |
-| Backend (NestJS) | Railway |
-| Database (PostgreSQL) | Neon |
-| Product images | Backblaze B2 |
-| Email | Resend (SMTP) |
-| Errors / analytics | Sentry, Umami |
+**Hosting isn't chosen yet** — the costed options (one Railway project vs one VPS, in XAF) are in
+[docs/HOSTING.md](docs/HOSTING.md). Don't buy shared/cPanel hosting: it can't run this stack (needs an
+always-on Node.js server, PostgreSQL and S3-compatible storage). Whatever the host, the pieces are:
+the Next.js frontend, the NestJS backend, PostgreSQL, S3-compatible image storage (Backblaze B2 or
+MinIO), SMTP email (Resend) and optionally Sentry + Umami.
 
 The step-by-step go-live checklist (fresh database, environment variables, `TRUST_PROXY`,
 Search Console, monitoring, admin account, smoke test, backups) is in
@@ -321,16 +324,53 @@ Single-vendor store: no multi-vendor, commission or subscription logic. Covered:
 catalog, vehicle compatibility search, cart and checkout (cash at pickup; online via a provider adapter), order
 tracking, coupons, reviews, product requests, and an admin panel for all of it.
 
+## Maintainer notes
+
+Read this before changing the code. [CLAUDE.md](CLAUDE.md) has the same rules in more detail.
+
+**Rules that break things if ignored**
+- **Order status:** never update `Order.status` directly — go through `OrdersService.transition()`
+  (state machine in `orders/order-status.ts`). It's what keeps stock and coupons correct under concurrency.
+- **Search:** `products."searchText"` is written **only by database triggers** (migration
+  `*_product_search_text`). Never set it from code. If you rename a column it's built from (product
+  name, descriptions, part numbers, brand/category/vehicle names), update `product_search_text()` in a
+  new migration — `search-text.db.spec.ts` fails otherwise. The index is declared in `schema.prisma`
+  so Prisma doesn't drop it; keep it there.
+- **Admin catalog edits:** any new admin route that changes what the public catalog shows needs
+  `@RevalidatesCatalog()` — that's what makes the storefront update instantly instead of after ~60 s.
+- **Admin lists:** paginate on the server (`AdminListQueryDto` + `paginate()`); never return an
+  unbounded list. Vehicles and coupons are the only exceptions (small by nature).
+- **Webhooks:** `main.ts` keeps the raw request body for payment signature checks — don't remove it.
+- **Seed:** never run `pnpm prisma:seed` against production (its account passwords are public).
+
+**Conventions**
+- **Text shown to users** lives in `apps/frontend/messages/en.json` and `fr.json` — always add both.
+  Storefront pages are under `/fr` and `/en`; the admin's language is a cookie (EN/FR switch in the
+  sidebar) and its text is in the `Admin*` sections (shared words in `AdminCommon`).
+- **Errors shown to users:** throw with a code — `new BadRequestException(apiError("CODE", "English
+  message"))` — add the code to `common/errors.ts` and to `ApiErrors` in both message files (a test
+  fails if you forget). The frontend shows it with `useApiError()`.
+- **Money** is XAF, whole numbers only: `formatMoney()` (frontend), `formatXaf()` (emails).
+- **Public links:** use `Link` from `@/i18n/navigation`, not `next/link`, in storefront pages.
+- **Payments:** a new provider is one adapter file in `payments/providers/` + one `case` in
+  `PaymentGatewayService`.
+
+**Good to know**
+- Search results are cached for 60 s; admin edits refresh them immediately, customer orders don't
+  (on purpose — checkout re-checks stock).
+- The admin dashboard's "Customer demand" section shows searches that found nothing — the best list
+  of parts to stock next.
+- The browser's file picker ("Choose File") follows the browser's language, not the admin switch;
+  row errors in the import preview are in English (they come from the backend).
+- Measured at 100,000 products / 2,000,000 users: search 10–40 ms, admin pages ~0.1 s, a 5,000-row
+  import ~26 s. The design holds at that size; commit e59f432 has the full measurements.
+
 ## Future improvements
 
 - **Online payments.** Write the adapter for the chosen provider (see `payments/providers/`).
-- **Continuous integration.** Run lint, tests and builds on every push (GitHub Actions).
-- **Frontend tests.** Only the backend has automated tests today.
-- **Translated API errors.** Backend error messages are English; return codes and translate them.
-- **Instant catalog updates.** Pages refresh within 5 minutes of an admin edit (ISR); on-demand
-  revalidation would make it instant.
-- **Search at scale.** Fine for tens of thousands of products; beyond that, a search engine
-  (Meilisearch / Typesense) or Postgres full-text indexes.
+- **Frontend tests.** Only the backend has automated tests; browser end-to-end tests exist outside the
+  repo and should be brought in (Playwright).
+- **French review.** Have a native speaker check the storefront and admin wording.
 
 ## Author
 
