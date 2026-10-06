@@ -25,22 +25,8 @@ export class VehiclesController {
     return this.vehiclesService.getConfigs(manufacturer, model);
   }
 
-  @Get(":id/products")
-  getProductsForVehicle(@Param("id") id: string) {
-    return this.vehiclesService.getProductsForVehicle(id);
-  }
-
-  // Progressive Find My Part search — see vehicles.service.ts's
-  // getProductsForFilter for why this takes any subset of the three filters
-  // instead of requiring a fully resolved vehicleId.
-  @Get("products")
-  getProductsForFilter(
-    @Query("manufacturer") manufacturer?: string,
-    @Query("model") model?: string,
-    @Query("vehicleId") vehicleId?: string,
-  ) {
-    return this.vehiclesService.getProductsForFilter({ manufacturer, model, vehicleId });
-  }
+  // Products for a truck are served by GET /products?manufacturer=&model=&vehicleId=
+  // (the shared catalog query), not here.
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)

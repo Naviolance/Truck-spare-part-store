@@ -19,18 +19,20 @@ async function bootstrap() {
   // "clientIp" with your real IP (see TRUST_PROXY in the README).
   app.set("trust proxy", parseTrustProxy(process.env.TRUST_PROXY));
 
-  // Default body size limit is too small for image uploads — raise it.
+  // JSON/form bodies are capped at 1mb: images arrive as multipart (with
+  // their own 5MB limit in UploadsController), so nothing legitimate needs
+  // more, and a big limit lets any client make us parse huge payloads.
   // The `verify` callback stashes the raw bytes for webhook signature checks,
-  // since Notch Pay signs the exact raw payload, not our parsed JSON object.
+  // since payment providers sign the exact raw payload, not our parsed JSON.
   app.use(
     json({
-      limit: "10mb",
+      limit: "1mb",
       verify: (req: IncomingMessage & { rawBody?: string }, _res, buf) => {
         req.rawBody = buf.toString();
       },
     }),
   );
-  app.use(urlencoded({ extended: true, limit: "10mb" }));
+  app.use(urlencoded({ extended: true, limit: "1mb" }));
 
   app.use(
     helmet({

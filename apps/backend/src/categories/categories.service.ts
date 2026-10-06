@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ConflictException } from "@nestjs/common
 import { PrismaService } from "../common/prisma/prisma.service";
 import { CreateCategoryDto } from "./dto/create-category.dto";
 import { slugify } from "../common/utils/slugify";
+import { ProductStatus } from "@truckparts/prisma";
 
 @Injectable()
 export class CategoriesService {
@@ -9,7 +10,8 @@ export class CategoriesService {
 
   findAll() {
     return this.prisma.category.findMany({
-      include: { _count: { select: { products: true } } },
+      // Count only what a shopper can see (landing pages / filters).
+      include: { _count: { select: { products: { where: { status: ProductStatus.PUBLISHED } } } } },
       orderBy: { name: "asc" },
     });
   }

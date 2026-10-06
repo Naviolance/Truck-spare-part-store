@@ -1,6 +1,7 @@
-import { Injectable, OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger, NotFoundException, OnModuleInit } from "@nestjs/common";
 import { S3Client, PutObjectCommand, GetObjectCommand, CreateBucketCommand, HeadBucketCommand } from "@aws-sdk/client-s3";
 import { randomUUID } from "crypto";
+import type { Readable } from "stream";
 import * as sharpModule from "sharp";
 
 // sharp >= 0.35 types its ESM entry as `export default`, but under this
@@ -11,14 +12,12 @@ const sharp = sharpModule as unknown as typeof sharpModule.default;
 
 @Injectable()
 export class UploadsService implements OnModuleInit {
+  private readonly logger = new Logger(UploadsService.name);
   private s3: S3Client;
   private bucket: string;
-  private publicUrl: string;
 
   constructor() {
     this.bucket = process.env.MINIO_BUCKET || "truckparts-media";
-    // This is the URL a BROWSER can reach to view the image, e.g. http://localhost:9000
-    this.publicUrl = process.env.MINIO_PUBLIC_URL || "http://localhost:9000";
 
     this.s3 = new S3Client({
       endpoint: process.env.MINIO_ENDPOINT || "http://localhost:9000",
@@ -35,13 +34,18 @@ export class UploadsService implements OnModuleInit {
     });
   }
 
-  // Runs once when the backend starts — makes sure our bucket exists so we
-  // never have to think about it manually in MinIO's console.
+  // Makes sure the bucket exists at startup. Storage being down must NOT
+  // stop the API from booting — the store can still list products and take
+  // orders; only image upload/serving is affected until storage is back.
   async onModuleInit() {
     try {
       await this.s3.send(new HeadBucketCommand({ Bucket: this.bucket }));
     } catch {
-      await this.s3.send(new CreateBucketCommand({ Bucket: this.bucket }));
+      try {
+        await this.s3.send(new CreateBucketCommand({ Bucket: this.bucket }));
+      } catch (err) {
+        this.logger.error(`Object storage unreachable at startup (${err instanceof Error ? err.message : err}); continuing without it`);
+      }
     }
   }
 
@@ -51,7 +55,8 @@ export class UploadsService implements OnModuleInit {
     // Re-encode every upload to WebP and cap dimensions at 2000px - phone
     // photos routinely arrive as multi-MB JPEGs far larger than anything the
     // storefront ever displays, and both changes are visually lossless at
-    // normal viewing sizes while cutting typical file size by 80%+.
+    // normal viewing sizes while cutting typical file size by 80%+. Decoding
+    // also proves the file really is an image, whatever its MIME type claimed.
     const optimized = await sharp(file.buffer)
       .rotate() // bake in EXIF orientation before the metadata is stripped
       .resize({ width: 2000, height: 2000, fit: "inside", withoutEnlargement: true })
@@ -70,9 +75,21 @@ export class UploadsService implements OnModuleInit {
     const backendUrl = process.env.BACKEND_PUBLIC_URL || "http://localhost:4000";
     return `${backendUrl}/uploads/file/${key}`;
   }
-    async getImage(key: string) {
-    const command = new GetObjectCommand({ Bucket: this.bucket, Key: key });
-    const response = await this.s3.send(command);
-    return { stream: response.Body, contentType: response.ContentType };
+
+  // NotFoundException for a missing key (S3's NoSuchKey) instead of letting
+  // it surface as a 500; any other storage failure still propagates.
+  async getImage(key: string): Promise<{ stream: Readable; contentType?: string; contentLength?: number }> {
+    try {
+      const response = await this.s3.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
+      return {
+        stream: response.Body as Readable,
+        contentType: response.ContentType,
+        contentLength: response.ContentLength,
+      };
+    } catch (err) {
+      const name = (err as { name?: string })?.name;
+      if (name === "NoSuchKey" || name === "NotFound") throw new NotFoundException("Image not found");
+      throw err;
     }
+  }
 }
