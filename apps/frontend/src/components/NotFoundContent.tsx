@@ -1,11 +1,11 @@
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { SOCIAL } from "@/lib/site";
 
 // A 404 is still a chance to keep the visitor: offer the catalog and a
 // direct line to the store instead of a dead end.
-export async function NotFoundContent() {
-  const t = await getTranslations("NotFound");
+export async function NotFoundContent({ locale }: { locale?: string }) {
+  const t = await getTranslations({ locale: locale ?? (await getLocale()), namespace: "NotFound" });
   return (
     <main className="flex-1 flex items-center justify-center px-4 py-20 text-center">
       <div>

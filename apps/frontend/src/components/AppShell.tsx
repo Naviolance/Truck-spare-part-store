@@ -35,7 +35,9 @@ const plexMono = IBM_Plex_Mono({
 // The <html> document shared by the two root layouts: the storefront
 // (app/[locale]/layout.tsx) and the admin (app/admin/layout.tsx).
 export async function AppShell({ locale, children }: { locale: string; children: React.ReactNode }) {
-  const messages = await getMessages();
+  // Explicit locale: never rely on the per-request locale here — the global
+  // not-found page is rendered alongside every page and has no locale.
+  const messages = await getMessages({ locale });
 
   return (
     <html lang={locale}>
