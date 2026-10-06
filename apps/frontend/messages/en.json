@@ -15,14 +15,17 @@
     "account": "Account",
     "trucks": "Trucks",
     "whatsapp": "Chat with us on WhatsApp",
-    "mainNav": "Main navigation"
+    "mainNav": "Main navigation",
+    "searchLabel": "Search for a part",
+    "searchPlaceholder": "Part, part number or truck…",
+    "searchButton": "Search",
+    "browse": "Browse the catalog"
   },
   "Hero": {
     "title": "Truck parts that fit, without the guesswork.",
     "subtitle": "We grade every part new, used, or reconditioned before it's listed, and you inspect it in person before you buy — search by vehicle or browse the full catalogue below.",
     "findMyPart": "Find My Part",
-    "browseAll": "Browse all parts",
-    "imageAlt": "Truck parts on the shop floor"
+    "browseAll": "Browse all parts"
   },
   "ValueProps": {
     "conditionTitle": "Condition you can trust",
@@ -83,7 +86,8 @@
   },
   "LanguageSwitcher": {
     "english": "English",
-    "french": "Français"
+    "french": "Français",
+    "label": "Language"
   },
   "CookieBanner": {
     "text": "We use cookies to keep you signed in and to remember your language. We don't use analytics, advertising, or tracking cookies.",
@@ -191,9 +195,7 @@
     "metaDescription": "Browse new, used and reconditioned truck spare parts in Cameroon by category, brand and truck model.",
     "searchResultsFor": "Results for “{search}”",
     "filters": "Filters",
-    "search": "Search",
     "searchPlaceholder": "Part name, part number, truck…",
-    "searchButton": "Search",
     "category": "Category",
     "allCategories": "All categories",
     "brand": "Brand",
@@ -209,19 +211,31 @@
     "sortPriceDesc": "Price: high to low",
     "inStockOnly": "In stock only",
     "apply": "Apply",
-    "clear": "Clear all filters",
     "results": "{count, plural, =0 {No parts} one {# part} other {# parts}}",
     "fuzzy": "No exact match — showing close matches for “{search}”.",
     "noResultsTitle": "We couldn't find that part online",
     "noResultsBody": "Not everything we can get is listed. Tell us what you need and we'll look for it.",
     "previous": "Previous",
     "next": "Next",
-    "pageOf": "Page {page} of {total}",
     "unavailable": "Couldn't load parts right now. Please try again in a moment.",
     "unbranded": "Unbranded",
     "outOfStock": "Out of stock",
     "inStock": "In stock",
-    "lowStock": "Only {count} left"
+    "lowStock": "Only {count} left",
+    "ref": "Ref.",
+    "searchWithin": "Search these parts",
+    "showAll": "Show all ({count})",
+    "anyConditionShort": "All",
+    "sortRelevance": "Relevance",
+    "inStockFirst": "in-stock parts first",
+    "priceFrom": "From {price}",
+    "priceUpTo": "Up to {price}",
+    "activeFilters": "Active filters",
+    "removeFilter": "Remove filter: {name}",
+    "clearAll": "Clear all",
+    "breadcrumb": "Breadcrumb",
+    "pagination": "Pagination",
+    "pageN": "Page {page}"
   },
   "RequestPart": {
     "teaser": "Can't find the part you need?",
@@ -338,7 +352,9 @@
     "notListed": "Your truck isn't listed? Tell us its make, model and year in the form below.",
     "step1": "Choose your truck",
     "step2": "See the parts that fit",
-    "step3": "Order, or ask us on WhatsApp"
+    "step3": "Order, or ask us on WhatsApp",
+    "whatDoYouDrive": "What do you drive?",
+    "showParts": "Show compatible parts"
   },
   "About": {
     "metaTitle": "About",

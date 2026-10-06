@@ -15,6 +15,7 @@ export type ProductCardData = {
   images: { url: string; altText?: string | null }[];
   category: { name: string; nameFr?: string | null };
   brand: { name: string } | null;
+  partNumber?: string | null;
 };
 
 const LOW_STOCK = 3;
@@ -39,13 +40,15 @@ export function ConditionTag({ condition }: { condition: string }) {
 }
 
 // Stock as a shopper needs it: "out of stock" must be unmissable (the part
-// stays listed so it can still be found and requested), low stock nudges.
+// stays listed so it can still be found and requested), low stock nudges,
+// and plain availability is reassuring enough to show too.
 export function StockBadge({ quantity }: { quantity: number | undefined }) {
   const t = useTranslations("Catalog");
   if (quantity === undefined) return null;
-  if (quantity <= 0) return <span className="tag-condition bg-red-100 text-red-700">{t("outOfStock")}</span>;
-  if (quantity <= LOW_STOCK) return <span className="text-xs font-medium text-amber-dark">{t("lowStock", { count: quantity })}</span>;
-  return null;
+  const pill = "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold";
+  if (quantity <= 0) return <span className={`${pill} bg-rust/15 text-rust-dark`}>{t("outOfStock")}</span>;
+  if (quantity <= LOW_STOCK) return <span className={`${pill} bg-amber/20 text-amber-dark`}>{t("lowStock", { count: quantity })}</span>;
+  return <span className={`${pill} bg-stock-bg text-stock`}>{t("inStock")}</span>;
 }
 
 export function ProductCard({ product, eager = false }: { product: ProductCardData; eager?: boolean }) {
@@ -57,9 +60,9 @@ export function ProductCard({ product, eager = false }: { product: ProductCardDa
   return (
     <Link
       href={`/products/${product.slug}`}
-      className="relative block bg-white border border-steel-light transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:scale-[1.03] hover:z-10 hover:border-ink hover:shadow-lg"
+      className="group flex flex-col overflow-hidden rounded-[14px] border border-line bg-card transition-[border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-ink"
     >
-      <div className="relative w-full aspect-square overflow-hidden bg-steel-light">
+      <div className="relative w-full aspect-[4/3] overflow-hidden bg-sand">
         {image ? (
           <Image
             src={image.url}
@@ -72,28 +75,32 @@ export function ProductCard({ product, eager = false }: { product: ProductCardDa
           />
         ) : (
           // Same footprint as a photo, so cards line up and nothing shifts.
-          <div className="absolute inset-0 flex items-center justify-center text-steel" aria-hidden="true">
-            <svg viewBox="0 0 24 24" className="w-10 h-10" fill="none" stroke="currentColor" strokeWidth={1.5}>
+          <div className="absolute inset-0 flex items-center justify-center text-steel/60" aria-hidden="true">
+            <svg viewBox="0 0 24 24" className="w-11 h-11" fill="none" stroke="currentColor" strokeWidth={1.4}>
               <rect x="3" y="5" width="18" height="14" rx="2" />
-              <circle cx="9" cy="10" r="1.5" />
-              <path d="M4 18l5-5 3 3 3-3 5 5" />
+              <circle cx="9" cy="10" r="1.8" />
+              <path d="M21 16l-5-5-8 8" />
             </svg>
           </div>
         )}
-        {soldOut && (
-          <span className="absolute top-2 left-2 bg-ink text-paper text-xs font-semibold px-2 py-1">{t("outOfStock")}</span>
-        )}
-      </div>
-      <div className="p-3">
-        <p className="text-xs text-steel">
-          {product.brand?.name ?? t("unbranded")} / {categoryName(product.category, locale)}
-        </p>
-        <h2 className="font-sans font-bold mt-1 text-sm text-ink leading-snug">{product.name}</h2>
-        <div className="flex items-center justify-between flex-wrap gap-x-2 gap-y-1 mt-2">
-          <p className="font-mono font-semibold text-ink">{formatMoney(product.price)}</p>
+        <span className="absolute top-2.5 left-2.5">
           <ConditionTag condition={product.condition} />
+        </span>
+      </div>
+      <div className="flex flex-1 flex-col gap-1 p-3.5 sm:p-4">
+        <h2 className="text-[15px] sm:text-[17px] font-bold leading-snug text-ink">{product.name}</h2>
+        <p className="text-sm text-steel">
+          {product.brand?.name ?? t("unbranded")} · {categoryName(product.category, locale)}
+        </p>
+        {product.partNumber && (
+          <p className="font-mono text-xs text-steel">
+            {t("ref")} {product.partNumber}
+          </p>
+        )}
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-1 pt-2.5">
+          <p className="text-lg sm:text-xl font-bold text-ink">{formatMoney(product.price)}</p>
+          <StockBadge quantity={product.quantity} />
         </div>
-        {!soldOut && <div className="mt-1"><StockBadge quantity={product.quantity} /></div>}
       </div>
     </Link>
   );

@@ -36,7 +36,7 @@ export function AuthLayout({ mode, next, children }: Props) {
           )}
 
           <div className="relative">
-            <p className="font-display font-black text-xl tracking-tight">TruckParts</p>
+            <p className="font-display font-bold text-xl tracking-tight">TruckParts</p>
           </div>
 
           <div className="relative">

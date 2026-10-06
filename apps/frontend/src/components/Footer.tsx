@@ -50,7 +50,7 @@ export async function Footer() {
     <footer className="bg-ink mt-auto">
       <div className="max-w-6xl mx-auto px-4 py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
         <div>
-          <p className="font-display font-black text-2xl text-paper tracking-tight">TruckParts</p>
+          <p className="font-display font-bold text-2xl text-paper tracking-tight">TruckParts</p>
           <p className="text-sm text-paper/60 mt-2">{t("tagline")}</p>
           <div className="flex items-center gap-4 mt-5">
             <WhatsAppButton href={SOCIAL.whatsapp} label="WhatsApp" source="footer_icon" variant="icon" />

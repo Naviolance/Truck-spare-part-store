@@ -1,4 +1,4 @@
-import { Inter, Big_Shoulders, IBM_Plex_Mono } from "next/font/google";
+import { Source_Sans_3, Barlow_Semi_Condensed, IBM_Plex_Mono } from "next/font/google";
 import { Suspense } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
@@ -9,19 +9,20 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { CookieBanner } from "@/components/CookieBanner";
 import { PageTransition } from "@/components/PageTransition";
-import { NavigationProgress } from "@/components/NavigationProgress";
+import { NavigationSkeleton } from "@/components/NavigationSkeleton";
+import { getCategories, productCount } from "@/lib/landing";
+import { categoryName } from "@/lib/catalog";
 import { Analytics } from "@/components/Analytics";
 import { FloatingWhatsApp } from "@/components/FloatingWhatsApp";
 
-const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-body" });
-// Condensed, steel-beam letterforms for headlines - deliberately not the
-// same neutral grotesk as the body copy (see Footer/Navbar/hero usage).
-const bigShoulders = Big_Shoulders({
+// Redesign step 1: Source Sans 3 for reading (a variable font — one file
+// covers every weight) and Barlow Semi Condensed for headings: condensed
+// like road and truck signage, but cleaner than the old display face.
+const sourceSans = Source_Sans_3({ subsets: ["latin"], display: "swap", variable: "--font-body" });
+const barlow = Barlow_Semi_Condensed({
   subsets: ["latin"],
-  weight: ["700", "900"],
+  weight: ["600", "700"],
   display: "swap",
-  // Next 15 has no fallback metrics for the merged "Big Shoulders" family.
-  adjustFontFallback: false,
   variable: "--font-display",
 });
 // Used narrowly for part numbers/SKUs/spec rows - real parts-catalog
@@ -53,6 +54,15 @@ export async function AppShell({
   // Namespaces only server components use never need to reach the browser
   // (~10 KB of text — the privacy policy, FAQ, landing intros). If a CLIENT
   // component starts using one of these, remove it from this list.
+  // The header's browse row: the 6 categories with the most parts, cached
+  // with the catalog (refreshed on admin edits). Storefront only.
+  const navCategories = storefront
+    ? ((await getCategories()) ?? [])
+        .filter((c) => productCount(c) > 0)
+        .sort((a, b) => productCount(b) - productCount(a))
+        .slice(0, 6)
+        .map((c) => ({ slug: c.slug, label: categoryName(c, locale) }))
+    : [];
   const clientMessages = Object.fromEntries(
     Object.entries(messages).filter(([namespace]) => !SERVER_ONLY_NAMESPACES.has(namespace)),
   );
@@ -60,20 +70,22 @@ export async function AppShell({
   return (
     <html lang={locale}>
       <body
-        className={`${inter.variable} ${bigShoulders.variable} ${plexMono.variable} font-sans min-h-screen bg-paper text-ink flex flex-col`}
+        className={`${sourceSans.variable} ${barlow.variable} ${plexMono.variable} font-sans min-h-screen bg-paper text-ink flex flex-col`}
       >
         <NextIntlClientProvider locale={locale} messages={clientMessages}>
-          {/* Suspense boundary isolated here (not around the whole app) so
-              useSearchParams() inside only de-opts this one component to
-              client rendering, not every static page in the tree. */}
-          <Suspense fallback={null}>
-            <NavigationProgress />
-          </Suspense>
           <AuthProvider>
             <CartProvider>
-              <Navbar />
-              <div className="flex-1">
+              <Navbar categories={navCategories} />
+              <div className="relative flex-1">
                 <PageTransition>{children}</PageTransition>
+                {/* Suspense isolated here (not around the whole app) so
+                    useSearchParams() inside only de-opts this component to
+                    client rendering, not every static page in the tree. */}
+                {storefront && (
+                  <Suspense fallback={null}>
+                    <NavigationSkeleton />
+                  </Suspense>
+                )}
               </div>
               <Footer />
             </CartProvider>

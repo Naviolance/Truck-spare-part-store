@@ -33,6 +33,7 @@ export default async function FindMyPartPage({ params, searchParams }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("FindMyPart");
+  const tl = await getTranslations("Landing");
   const query = parseCatalogParams(await searchParams);
   const { manufacturer, model, vehicleId } = query;
 
@@ -99,6 +100,7 @@ export default async function FindMyPartPage({ params, searchParams }: Props) {
     <>
       <CatalogView
         basePath="/find-my-part"
+        crumbs={[{ name: tl("home"), path: "" }, { name: t("title"), path: "/find-my-part" }]}
         query={query}
         locked={{ manufacturer, model, vehicleId }}
         heading={t("resultsFor", { truck })}
