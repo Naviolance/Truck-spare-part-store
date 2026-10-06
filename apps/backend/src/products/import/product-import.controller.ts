@@ -1,4 +1,5 @@
 import { BadRequestException, Body, Controller, Get, HttpCode, Post, Res, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import { RevalidatesCatalog } from "../../common/catalog-cache/revalidates-catalog.decorator";
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
 import { ProductStatus, UserRole } from "@truckparts/prisma";
@@ -50,6 +51,7 @@ export class ProductImportController {
 
   // Step 2: apply it — all rows or none.
   @Post("commit")
+  @RevalidatesCatalog()
   @HttpCode(200)
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_FILE_BYTES, files: 1 } }))
   commit(@UploadedFile() file?: Express.Multer.File, @Body("defaultStatus") defaultStatus?: string) {

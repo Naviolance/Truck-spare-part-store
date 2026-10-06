@@ -1,4 +1,5 @@
 import { Controller, Post, Patch, Delete, Get, Body, Param, Query, UseGuards } from "@nestjs/common";
+import { RevalidatesCatalog } from "../common/catalog-cache/revalidates-catalog.decorator";
 import { ReviewsService } from "./reviews.service";
 import { CreateReviewDto } from "./dto/create-review.dto";
 import { UpdateReviewDto } from "./dto/update-review.dto";
@@ -39,6 +40,7 @@ export class ReviewsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
   @Delete("admin/:id")
+  @RevalidatesCatalog()
   removeAdmin(@Param("id") id: string) {
     return this.reviewsService.removeAdmin(id);
   }

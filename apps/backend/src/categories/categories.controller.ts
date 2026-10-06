@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from "@nestjs/common";
+import { RevalidatesCatalog } from "../common/catalog-cache/revalidates-catalog.decorator";
 import { CategoriesService } from "./categories.service";
 import { CreateCategoryDto } from "./dto/create-category.dto";
 import { UpdateCategoryDto } from "./dto/update-category.dto";
@@ -19,6 +20,7 @@ export class CategoriesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Post()
+  @RevalidatesCatalog()
   create(@Body() dto: CreateCategoryDto) {
     return this.categoriesService.create(dto);
   }
@@ -26,6 +28,7 @@ export class CategoriesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Patch(":id")
+  @RevalidatesCatalog()
   update(@Param("id") id: string, @Body() dto: UpdateCategoryDto) {
     return this.categoriesService.update(id, dto);
   }
@@ -33,6 +36,7 @@ export class CategoriesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Delete(":id")
+  @RevalidatesCatalog()
   remove(@Param("id") id: string) {
     return this.categoriesService.remove(id);
   }

@@ -7,6 +7,7 @@ import { ScheduleModule } from "@nestjs/schedule";
 import { PrismaModule } from "./common/prisma/prisma.module";
 import { ProductsModule } from "./products/products.module";
 import { InsightsModule } from "./insights/insights.module";
+import { CatalogCacheModule } from "./common/catalog-cache/catalog-cache.module";
 import { AuthModule } from "./auth/auth.module";
 import { UsersModule } from "./users/users.module";
 import { CategoriesModule } from "./categories/categories.module";
@@ -33,6 +34,7 @@ import { DemoReadOnlyInterceptor } from "./common/interceptors/demo-read-only.in
     PrismaModule,
     ProductsModule,
     InsightsModule,
+    CatalogCacheModule,
     AuthModule,
     UsersModule,
     CategoriesModule,
