@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { routing, type Locale } from "@/i18n/routing";
-import { SITE_NAME, SITE_URL, SOCIAL } from "./site";
+import { SITE_NAME, SITE_URL, SOCIAL, WHATSAPP_DISPLAY } from "./site";
 
 // Canonical + hreflang for a page that exists in every locale. `path` is the
 // locale-less path ("/products/brake-pad"). Search engines index each
@@ -35,6 +35,7 @@ export function storeJsonLd() {
     currenciesAccepted: "XAF",
     paymentAccepted: "Cash",
     areaServed: { "@type": "Country", name: "Cameroon" },
+    ...(WHATSAPP_DISPLAY && { telephone: WHATSAPP_DISPLAY }),
     sameAs: [SOCIAL.facebook, SOCIAL.tiktok, SOCIAL.instagram].filter(Boolean),
   };
 }

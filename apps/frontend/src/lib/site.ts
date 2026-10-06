@@ -6,9 +6,8 @@ export const SITE_NAME = "TruckParts";
 
 // International format WITHOUT "+" or spaces, e.g. 237654321100 — that's
 // what wa.me links require. Set NEXT_PUBLIC_WHATSAPP_NUMBER in production.
-// The fallback below is the number as provided so far; it looks incomplete
-// (Cameroonian mobiles are 237 + 9 digits) and must be confirmed.
-const WHATSAPP_NUMBER = (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "6544326").replace(/\D/g, "");
+// The fallback is the business number: Cameroon (237) + 654 43 26 41.
+const WHATSAPP_NUMBER = (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "237654432641").replace(/\D/g, "");
 
 export const SOCIAL = {
   whatsapp: WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}` : null,
@@ -18,7 +17,12 @@ export const SOCIAL = {
   instagram: null as string | null,
 };
 
-export const WHATSAPP_DISPLAY = WHATSAPP_NUMBER ? `+${WHATSAPP_NUMBER}` : null;
+// Cameroonian numbers read as "+237 654 43 26 41"; anything else as "+<digits>".
+export const WHATSAPP_DISPLAY = WHATSAPP_NUMBER
+  ? /^237\d{9}$/.test(WHATSAPP_NUMBER)
+    ? WHATSAPP_NUMBER.replace(/^237(\d{3})(\d{2})(\d{2})(\d{2})$/, "+237 $1 $2 $3 $4")
+    : `+${WHATSAPP_NUMBER}`
+  : null;
 
 // A WhatsApp chat link with a pre-filled message, e.g. about one product.
 export function whatsappLink(message: string): string | null {
