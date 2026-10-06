@@ -1,3 +1,4 @@
+import { apiError } from "../common/errors";
 import {
   Injectable,
   BadRequestException,
@@ -96,12 +97,12 @@ export class OrdersService {
   async transition(orderId: string, to: OrderStatus, actor: Actor, options: TransitionOptions = {}) {
     const result = await this.prisma.$transaction(async (tx) => {
       const order = await tx.order.findUnique({ where: { id: orderId }, include: { items: true } });
-      if (!order) throw new NotFoundException("Order not found");
+      if (!order) throw new NotFoundException(apiError("ORDER_NOT_FOUND", "Order not found"));
       const from = order.status;
       if (from === to) return null;
 
       if (!canTransition(actor, from, to)) {
-        if (actor === "admin") throw new BadRequestException(`An order can't go from ${from} to ${to}`);
+        if (actor === "admin") throw new BadRequestException(apiError("ORDER_TRANSITION_INVALID", `An order can't go from ${from} to ${to}`, { from, to }));
         return null;
       }
 
@@ -192,7 +193,7 @@ export class OrdersService {
   // OrderExpiryService releases the stock after the time limit.
   async checkout(userId: string, dto: CreateOrderDto) {
     const cart = await this.prisma.cart.findUnique({ where: { userId } });
-    if (!cart) throw new BadRequestException("Cart is empty");
+    if (!cart) throw new BadRequestException(apiError("CART_EMPTY", "Cart is empty"));
 
     const order = await this.prisma.$transaction(async (tx) => {
       const cartItems = await tx.cartItem.findMany({
@@ -200,7 +201,7 @@ export class OrdersService {
         include: { product: true },
       });
 
-      if (cartItems.length === 0) throw new BadRequestException("Cart is empty");
+      if (cartItems.length === 0) throw new BadRequestException(apiError("CART_EMPTY", "Cart is empty"));
 
       // Claim the cart. A concurrent checkout of the same cart waits on these
       // row locks, then finds the rows already gone.
@@ -209,7 +210,7 @@ export class OrdersService {
       });
 
       if (claimed.count !== cartItems.length) {
-        throw new ConflictException("This cart is already being checked out");
+        throw new ConflictException(apiError("CHECKOUT_IN_PROGRESS", "This cart is already being checked out"));
       }
 
       let subtotal = 0;
@@ -222,7 +223,7 @@ export class OrdersService {
 
         if (result.count === 0) {
           throw new BadRequestException(
-            `"${item.product.name}" no longer has enough stock available`,
+            apiError("STOCK_CHANGED", `"${item.product.name}" no longer has enough stock available`, { product: item.product.name }),
           );
         }
 
@@ -279,9 +280,9 @@ export class OrdersService {
   // the cash was received. Idempotent: a double click records one payment.
   async selectCashPayment(userId: string, orderId: string) {
     const order = await this.prisma.order.findFirst({ where: { id: orderId, userId }, include: { payments: true } });
-    if (!order) throw new NotFoundException("Order not found");
+    if (!order) throw new NotFoundException(apiError("ORDER_NOT_FOUND", "Order not found"));
     if (order.status !== OrderStatus.PAYMENT_PENDING) {
-      throw new BadRequestException("This order has already been processed");
+      throw new BadRequestException(apiError("ORDER_ALREADY_PROCESSED", "This order has already been processed"));
     }
 
     const hasPendingCash = order.payments.some((p) => p.provider === "cash" && p.status === PaymentStatus.PENDING);
@@ -300,32 +301,32 @@ export class OrdersService {
     const cashPayment = await this.prisma.payment.findFirst({
       where: { orderId, provider: "cash", status: PaymentStatus.PENDING },
     });
-    if (!cashPayment) throw new BadRequestException("This order has no pending cash payment");
+    if (!cashPayment) throw new BadRequestException(apiError("NO_PENDING_CASH_PAYMENT", "This order has no pending cash payment"));
 
     const result = await this.transition(orderId, OrderStatus.PAID, "system", {
       inTransaction: async (tx) => {
         await tx.payment.update({ where: { id: cashPayment.id }, data: { status: PaymentStatus.SUCCEEDED } });
       },
     });
-    if (!result) throw new BadRequestException("This order has already been processed");
+    if (!result) throw new BadRequestException(apiError("ORDER_ALREADY_PROCESSED", "This order has already been processed"));
   }
 
   // Admin "cancel" button: a never-paid order is CANCELLED, a paid one is
   // REFUNDED. Actually sending the money back is manual for now.
   async cancelOrder(orderId: string) {
     const order = await this.prisma.order.findUnique({ where: { id: orderId } });
-    if (!order) throw new NotFoundException("Order not found");
+    if (!order) throw new NotFoundException(apiError("ORDER_NOT_FOUND", "Order not found"));
 
     const to = order.status === OrderStatus.PAYMENT_PENDING ? OrderStatus.CANCELLED : OrderStatus.REFUNDED;
     const result = await this.transition(orderId, to, "admin");
-    if (!result) throw new ConflictException("This order was changed by someone else — refresh and try again");
+    if (!result) throw new ConflictException(apiError("ORDER_CHANGED", "This order was changed by someone else — refresh and try again"));
 
     return this.prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
   }
 
   async updateStatus(orderId: string, status: OrderStatus) {
     const result = await this.transition(orderId, status, "admin");
-    if (!result) throw new ConflictException("This order was changed by someone else — refresh and try again");
+    if (!result) throw new ConflictException(apiError("ORDER_CHANGED", "This order was changed by someone else — refresh and try again"));
     return this.prisma.order.findUnique({ where: { id: orderId } });
   }
 
@@ -340,9 +341,9 @@ export class OrdersService {
   async findOne(userId: string, orderId: string, isAdmin: boolean) {
     const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: ORDER_DETAIL_INCLUDE });
 
-    if (!order) throw new NotFoundException("Order not found");
+    if (!order) throw new NotFoundException(apiError("ORDER_NOT_FOUND", "Order not found"));
     if (!isAdmin && order.userId !== userId) {
-      throw new ForbiddenException("You do not have access to this order");
+      throw new ForbiddenException(apiError("ORDER_FORBIDDEN", "You do not have access to this order"));
     }
     return order;
   }

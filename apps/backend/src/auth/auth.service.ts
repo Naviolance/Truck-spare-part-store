@@ -1,3 +1,4 @@
+import { apiError } from "../common/errors";
 import {
   BadRequestException,
   ConflictException,
@@ -52,7 +53,7 @@ export class AuthService {
   async register(dto: RegisterDto) {
     const existing = await this.usersService.findByEmail(dto.email);
     if (existing) {
-      throw new ConflictException("An account with this email already exists");
+      throw new ConflictException(apiError("EMAIL_TAKEN", "An account with this email already exists"));
     }
 
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
@@ -68,7 +69,7 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const user = await this.usersService.findByEmail(dto.email);
-    const genericError = () => new UnauthorizedException("Invalid email or password");
+    const genericError = () => new UnauthorizedException(apiError("INVALID_CREDENTIALS", "Invalid email or password"));
 
     if (!user) throw genericError();
 
@@ -125,7 +126,7 @@ export class AuthService {
     const tokenHash = this.hashToken(sessionTokenPlain);
     const session = await this.prisma.session.findUnique({ where: { tokenHash } });
 
-    const invalid = () => new UnauthorizedException("Session expired, please log in again");
+    const invalid = () => new UnauthorizedException(apiError("SESSION_EXPIRED", "Session expired, please log in again"));
     if (!session || session.expiresAt < new Date()) throw invalid();
 
     if (session.revokedAt) {
@@ -225,10 +226,10 @@ export class AuthService {
     if (!user) throw new NotFoundException("Account not found");
 
     if (!(await bcrypt.compare(currentPassword, user.passwordHash))) {
-      throw new UnauthorizedException("Your current password is incorrect");
+      throw new UnauthorizedException(apiError("CURRENT_PASSWORD_WRONG", "Your current password is incorrect"));
     }
     if (await bcrypt.compare(newPassword, user.passwordHash)) {
-      throw new BadRequestException("The new password must be different from the current one");
+      throw new BadRequestException(apiError("PASSWORD_UNCHANGED", "The new password must be different from the current one"));
     }
 
     const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
@@ -247,7 +248,7 @@ export class AuthService {
     const tokenHash = this.hashToken(tokenPlain);
     const stored = await this.prisma.passwordResetToken.findUnique({ where: { tokenHash } });
 
-    const invalidLink = () => new UnauthorizedException("This reset link is invalid or has expired");
+    const invalidLink = () => new UnauthorizedException(apiError("RESET_LINK_INVALID", "This reset link is invalid or has expired"));
     if (!stored || stored.usedAt || stored.expiresAt < new Date()) throw invalidLink();
 
     const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);

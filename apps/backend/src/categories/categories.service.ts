@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ConflictException } from "@nestjs/common";
+import { apiError } from "../common/errors";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { CreateCategoryDto } from "./dto/create-category.dto";
 import { UpdateCategoryDto } from "./dto/update-category.dto";
@@ -20,7 +21,7 @@ export class CategoriesService {
   async create(dto: CreateCategoryDto) {
     const slug = slugify(dto.name);
     const existing = await this.prisma.category.findUnique({ where: { slug } });
-    if (existing) throw new ConflictException("A category with this name already exists");
+    if (existing) throw new ConflictException(apiError("CATEGORY_EXISTS", "A category with this name already exists"));
 
     return this.prisma.category.create({
       data: { name: dto.name, nameFr: dto.nameFr || null, slug, parentId: dto.parentId },
@@ -49,7 +50,7 @@ export class CategoriesService {
     // Say what to do instead.
     const products = await this.prisma.product.count({ where: { categoryId: id } });
     if (products > 0) {
-      throw new ConflictException(`This category still has ${products} product(s). Move them to another category first.`);
+      throw new ConflictException(apiError("CATEGORY_HAS_PRODUCTS", `This category still has ${products} product(s). Move them to another category first.`, { count: products }));
     }
     return this.prisma.category.delete({ where: { id } });
   }

@@ -1,6 +1,7 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from "@nestjs/common";
 import type { Request, Response } from "express";
 import * as Sentry from "@sentry/node";
+import { defaultCode } from "../errors";
 
 // Nest already sanitizes unhandled errors before they reach the client (no
 // stack trace leaks), but its default logging is a single unstructured
@@ -16,9 +17,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     const isHttpException = exception instanceof HttpException;
     const status = isHttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
-    const body = isHttpException
-      ? exception.getResponse()
-      : { statusCode: status, message: "Internal server error" };
+    const body = normalizeBody(status, isHttpException ? exception.getResponse() : "Internal server error");
 
     // Expected client errors (validation, not-found, unauthorized, etc.)
     // aren't worth logging as errors — they're normal application traffic
@@ -38,4 +37,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     res.status(status).json(body);
   }
+}
+
+// Every error leaves in one shape: { statusCode, code, message, params? }.
+// Handlers that used apiError() already chose a code; everything else
+// (class-validator's message arrays, the throttler's plain string, a
+// guard's bare 404) gets one from its status, so the frontend can always
+// translate (common/errors.ts).
+function normalizeBody(status: number, response: string | object): Record<string, unknown> {
+  const body: Record<string, unknown> =
+    typeof response === "string" ? { message: response } : { ...(response as Record<string, unknown>) };
+  const validation = status === 400 && Array.isArray(body.message);
+  return { statusCode: status, ...body, code: typeof body.code === "string" ? body.code : defaultCode(status, validation) };
 }

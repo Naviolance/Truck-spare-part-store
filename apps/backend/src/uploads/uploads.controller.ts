@@ -1,3 +1,4 @@
+import { apiError } from "../common/errors";
 import {
   Controller,
   Post,
@@ -52,9 +53,9 @@ export class UploadsController {
   @Post("image")
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_SIZE_BYTES, files: 1, fields: 5 } }))
   async uploadImage(@UploadedFile() file?: Express.Multer.File) {
-    if (!file) throw new BadRequestException("No file provided");
+    if (!file) throw new BadRequestException(apiError("NO_FILE", "No file provided"));
     if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-      throw new BadRequestException("Only JPEG, PNG, or WEBP images are allowed");
+      throw new BadRequestException(apiError("IMAGE_TYPE", "Only JPEG, PNG, or WEBP images are allowed"));
     }
 
     try {
@@ -63,7 +64,7 @@ export class UploadsController {
     } catch (err) {
       // sharp couldn't decode it: the bytes aren't really an image.
       if (err instanceof Error && /unsupported image format|Input buffer/i.test(err.message)) {
-        throw new BadRequestException("That file isn't a valid image");
+        throw new BadRequestException(apiError("IMAGE_INVALID", "That file isn't a valid image"));
       }
       throw err;
     }

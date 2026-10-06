@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
+import { apiError } from "../common/errors";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { ProductStatus } from "@truckparts/prisma";
 
@@ -33,10 +34,10 @@ export class CartService {
   async addItem(userId: string, productId: string, quantity: number) {
     const product = await this.prisma.product.findUnique({ where: { id: productId } });
     if (!product || product.status !== ProductStatus.PUBLISHED) {
-      throw new NotFoundException("Product not available");
+      throw new NotFoundException(apiError("PRODUCT_UNAVAILABLE", "Product not available"));
     }
     if (product.quantity < quantity) {
-      throw new BadRequestException("Not enough stock available");
+      throw new BadRequestException(apiError("NOT_ENOUGH_STOCK", "Not enough stock available"));
     }
 
     const cart = await this.getOrCreateCart(userId);
@@ -48,7 +49,7 @@ export class CartService {
     if (existing) {
       const newQuantity = existing.quantity + quantity;
       if (product.quantity < newQuantity) {
-        throw new BadRequestException("Not enough stock available");
+        throw new BadRequestException(apiError("NOT_ENOUGH_STOCK", "Not enough stock available"));
       }
       return this.prisma.cartItem.update({
         where: { id: existing.id },
@@ -69,7 +70,7 @@ export class CartService {
     });
     if (!item) throw new NotFoundException("Cart item not found");
     if (item.product.quantity < quantity) {
-      throw new BadRequestException("Not enough stock available");
+      throw new BadRequestException(apiError("NOT_ENOUGH_STOCK", "Not enough stock available"));
     }
 
     return this.prisma.cartItem.update({ where: { id: itemId }, data: { quantity } });

@@ -3,12 +3,14 @@ import { Suspense, useId, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { apiFetch, readError } from "@/lib/api";
+import { apiFetch, readApiError } from "@/lib/api";
 import { PasswordInput } from "@/components/PasswordInput";
 import { authInputClass } from "@/components/auth/AuthForms";
+import { useApiError } from "@/lib/use-api-error";
 
 function ResetPasswordInner() {
   const t = useTranslations("Auth");
+  const apiError = useApiError();
   const id = useId();
   const token = useSearchParams().get("token");
   const [password, setPassword] = useState("");
@@ -26,7 +28,7 @@ function ResetPasswordInner() {
       skipAuth: true,
     });
     setSubmitting(false);
-    if (!res.ok) return setError(await readError(res, t("genericError")));
+    if (!res.ok) return setError(apiError(await readApiError(res), t("genericError")));
     setDone(true);
   }
 

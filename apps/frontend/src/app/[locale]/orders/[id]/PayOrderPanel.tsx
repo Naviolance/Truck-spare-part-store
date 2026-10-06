@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { payOrder, usePaymentOptions } from "@/lib/payment";
 import { formatMoney } from "@/lib/money";
+import { useApiError } from "@/lib/use-api-error";
 
 // Shown on an unpaid order that has no payment in progress: the first
 // payment start failed, an online attempt failed or was abandoned, or the
@@ -20,6 +21,7 @@ export function PayOrderPanel({
   onPaid: () => void;
 }) {
   const t = useTranslations("Orders");
+  const apiError = useApiError();
   const options = usePaymentOptions();
   const [busy, setBusy] = useState<"online" | "cash" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +31,7 @@ export function PayOrderPanel({
     setError(null);
     const result = await payOrder(orderId, method);
     if (!result.ok) {
-      setError(result.error);
+      setError(apiError(result.error, t("payError")));
       setBusy(null);
       return;
     }

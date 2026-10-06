@@ -2,8 +2,9 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useTranslations } from "next-intl";
-import { apiFetch, readError } from "@/lib/api";
+import { apiFetch, readApiError } from "@/lib/api";
 import { AuthModal } from "@/components/AuthModal";
+import { useApiError } from "@/lib/use-api-error";
 
 const EDIT_WINDOW_MS = 10 * 60 * 1000;
 
@@ -17,6 +18,7 @@ type Review = {
 
 export function ReviewsSection({ productId, initialReviews }: { productId: string; initialReviews: Review[] }) {
   const t = useTranslations("Product");
+  const apiError = useApiError();
   const { user } = useAuth();
   const [reviews, setReviews] = useState(initialReviews);
   const [rating, setRating] = useState(5);
@@ -61,7 +63,7 @@ export function ReviewsSection({ productId, initialReviews }: { productId: strin
       : await apiFetch("/reviews", { method: "POST", body: JSON.stringify({ productId, rating, comment }) });
 
     if (!res.ok) {
-      setError(await readError(res, t("genericError")));
+      setError(apiError(await readApiError(res), t("genericError")));
       setSubmitting(false);
       return;
     }

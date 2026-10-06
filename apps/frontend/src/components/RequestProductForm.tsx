@@ -1,10 +1,11 @@
 "use client";
 import { useId, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, readError } from "@/lib/api";
+import { apiFetch, readApiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { track } from "@/lib/analytics";
 import { whatsappLink } from "@/lib/site";
+import { useApiError } from "@/lib/use-api-error";
 
 const inputClass =
   "w-full border border-steel-light rounded-lg px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:border-steel bg-white";
@@ -25,6 +26,7 @@ export function RequestProductForm({
   startOpen?: boolean;
 }) {
   const t = useTranslations("RequestPart");
+  const apiError = useApiError();
   const { user } = useAuth();
   const id = useId();
   const [open, setOpen] = useState(startOpen);
@@ -83,7 +85,7 @@ export function RequestProductForm({
       }),
     }).catch(() => null);
     setSubmitting(false);
-    if (!res || !res.ok) return setError(res ? await readError(res, t("error")) : t("error"));
+    if (!res || !res.ok) return setError(res ? apiError(await readApiError(res), t("error")) : t("error"));
     track("part_request_submitted");
     setDone(true);
   }

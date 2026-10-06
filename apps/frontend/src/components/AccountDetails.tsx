@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useId, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, readError } from "@/lib/api";
+import { apiFetch, readApiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useApiError } from "@/lib/use-api-error";
 
 const inputClass = "w-full border border-steel-light rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:border-steel";
 const labelClass = "block text-sm font-medium mb-1 text-steel";
@@ -23,6 +24,7 @@ const emptyForm: ProfileForm = {
 
 export function AccountDetails({ variant }: { variant: "customer" | "admin" }) {
   const t = useTranslations("Account");
+  const apiError = useApiError();
   const tc = useTranslations("Common");
   const id = useId();
   const { user } = useAuth();
@@ -69,7 +71,7 @@ export function AccountDetails({ variant }: { variant: "customer" | "admin" }) {
     setSaving(true);
     const res = await apiFetch("/users/me", { method: "PATCH", body: JSON.stringify(form) });
     if (!res.ok) {
-      setError(await readError(res, t("saveError")));
+      setError(apiError(await readApiError(res), t("saveError")));
       setSaving(false);
       return;
     }

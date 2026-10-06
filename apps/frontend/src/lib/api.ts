@@ -196,6 +196,34 @@ export async function apiFetch(path: string, options: FetchOptions = {}) {
 // The backend's error message for a failed response, in a form a person can
 // read. Validation errors arrive as an ARRAY of messages; show the first
 // (one clear thing to fix) rather than a comma-joined wall of text.
+// An API error as the backend sends it (apps/backend/src/common/errors.ts):
+// a stable `code` the UI translates, the English `message`, and `params`
+// to fill the translation. Show it with useApiError() (lib/use-api-error.ts).
+export type ApiError = { code?: string; message?: string; params?: Record<string, string | number> };
+
+export async function readApiError(res: Response): Promise<ApiError> {
+  const body = await res.json().catch(() => ({}));
+  const message = Array.isArray(body?.message) ? body.message[0] : body?.message;
+  return {
+    code: typeof body?.code === "string" ? body.code : undefined,
+    message: typeof message === "string" ? message : undefined,
+    params: body?.params && typeof body.params === "object" ? body.params : undefined,
+  };
+}
+
+// For code that reports failure by throwing (e.g. AuthContext's login):
+// carries the ApiError so the UI can still translate it.
+export class ApiRequestError extends Error {
+  constructor(
+    readonly api: ApiError,
+    fallback: string,
+  ) {
+    super(api.message || fallback);
+  }
+}
+
+// English message only — for the admin panel and logs. Customer-facing
+// pages use readApiError + useApiError so the message is translated.
 export async function readError(res: Response, fallback: string): Promise<string> {
   const body = await res.json().catch(() => ({}));
   const message = Array.isArray(body?.message) ? body.message[0] : body?.message;

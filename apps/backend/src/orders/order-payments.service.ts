@@ -1,3 +1,4 @@
+import { apiError } from "../common/errors";
 import {
   BadRequestException,
   Injectable,
@@ -44,12 +45,12 @@ export class OrderPaymentsService {
   // PAYMENT_PENDING order: each call is a new attempt.
   async startOnlinePayment(userId: string, orderId: string) {
     const provider = this.gateway.active();
-    if (!provider) throw new BadRequestException("Online payment isn't available — please choose cash at pickup");
+    if (!provider) throw new BadRequestException(apiError("ONLINE_PAYMENT_UNAVAILABLE", "Online payment isn't available — please choose cash at pickup"));
 
     const order = await this.prisma.order.findFirst({ where: { id: orderId, userId }, include: { user: true } });
-    if (!order) throw new NotFoundException("Order not found");
+    if (!order) throw new NotFoundException(apiError("ORDER_NOT_FOUND", "Order not found"));
     if (order.status !== OrderStatus.PAYMENT_PENDING) {
-      throw new BadRequestException("This order can no longer be paid");
+      throw new BadRequestException(apiError("ORDER_NOT_PAYABLE", "This order can no longer be paid"));
     }
 
     const attempt = (await this.prisma.payment.count({ where: { orderId } })) + 1;
@@ -83,7 +84,7 @@ export class OrderPaymentsService {
       await this.prisma.payment.update({ where: { id: payment.id }, data: { status: PaymentStatus.FAILED } });
       this.logger.error(`createCheckout failed for ${payment.reference}: ${err instanceof Error ? err.message : err}`);
       throw new ServiceUnavailableException(
-        "We couldn't reach the payment service. Your order is saved — please try again in a moment.",
+        apiError("PAYMENT_SERVICE_DOWN", "We couldn't reach the payment service. Your order is saved — please try again in a moment."),
       );
     }
   }

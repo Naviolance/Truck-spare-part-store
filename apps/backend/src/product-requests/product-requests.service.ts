@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { apiError } from "../common/errors";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../mail/mail.service";
 import { CreateProductRequestDto } from "./dto/create-product-request.dto";
@@ -24,7 +25,7 @@ export class ProductRequestsService {
 
     const user = userId ? await this.prisma.user.findUnique({ where: { id: userId } }) : null;
     const contactName = dto.contactName || (user ? `${user.firstName} ${user.lastName}` : "");
-    if (!contactName) throw new BadRequestException("Please tell us your name so we know who to ask for");
+    if (!contactName) throw new BadRequestException(apiError("CONTACT_NAME_REQUIRED", "Please tell us your name so we know who to ask for"));
 
     const request = await this.prisma.productRequest.create({
       data: {

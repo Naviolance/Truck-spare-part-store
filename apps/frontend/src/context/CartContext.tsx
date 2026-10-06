@@ -2,8 +2,9 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, readError } from "@/lib/api";
+import { apiFetch, readApiError } from "@/lib/api";
 import { useAuth } from "./AuthContext";
+import { useApiError } from "@/lib/use-api-error";
 
 type CartItem = {
   id: string;
@@ -33,6 +34,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const t = useTranslations("Cart");
+  const apiError = useApiError();
   const { user } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
   const [subtotal, setSubtotal] = useState(0);
@@ -63,7 +65,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       method: "POST",
       body: JSON.stringify({ productId, quantity }),
     });
-    if (!res.ok) return { ok: false, error: await readError(res, t("addError")) };
+    if (!res.ok) return { ok: false, error: apiError(await readApiError(res), t("addError")) };
     await refresh();
     return { ok: true };
   }

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, readApiError, type ApiError } from "@/lib/api";
 
 export type PaymentOptions = { cash: boolean; online: boolean };
 
@@ -18,15 +18,14 @@ export function usePaymentOptions(): PaymentOptions | null {
   return options;
 }
 
-type PayResult = { ok: true } | { ok: false; error: string };
+type PayResult = { ok: true } | { ok: false; error: ApiError };
 
 // Starts (or retries) payment for an existing unpaid order. Online redirects
 // the browser to the provider's hosted page; cash just records the choice.
 export async function payOrder(orderId: string, method: "online" | "cash"): Promise<PayResult> {
   const res = await apiFetch(`/orders/${orderId}/${method === "cash" ? "pay-cash" : "pay"}`, { method: "POST" });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    return { ok: false, error: err.message || "Could not start payment" };
+    return { ok: false, error: await readApiError(res) };
   }
   if (method === "online") {
     const { checkoutUrl } = await res.json();

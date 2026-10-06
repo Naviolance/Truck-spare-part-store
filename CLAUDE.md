@@ -118,6 +118,12 @@ payment SUCCEEDED + order PAID commit in one transaction. Webhook signatures are
 5 min) expires unpaid orders after `ORDER_PAYMENT_TTL_MINUTES` / `CASH_PICKUP_TTL_HOURS` and releases
 their stock. To add a provider: one adapter file + one `case` in `PaymentGatewayService`.
 
+**Errors shown to users**: throw with a code — `new BadRequestException(apiError("NOT_ENOUGH_STOCK", "English
+message", params?))` (`common/errors.ts`); `AllExceptionsFilter` gives every error `{ statusCode, code, message,
+params? }`. Frontend: `readApiError(res)` + `useApiError()` translate `code` from `messages/*.json`
+"ApiErrors" (French users never see the English `message`). A new code needs an entry in `ERROR_CODES` and in
+both message files — `common/errors.spec.ts` fails otherwise.
+
 **Money formatting**: use `formatMoney()` from `apps/frontend/src/lib/money.ts` for every price
 display (backend emails: `formatXaf()` in `common/utils/money.ts`). Don't hand-roll `$`/`toFixed(2)`.
 

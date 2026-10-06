@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException, ConflictException } from "@nestjs/common";
+import { apiError } from "../common/errors";
 import { OrderStatus, Prisma } from "@truckparts/prisma";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { CreateReviewDto } from "./dto/create-review.dto";
@@ -25,14 +26,14 @@ export class ReviewsService {
       where: { productId: dto.productId, order: { userId, status: { in: PURCHASED } } },
     });
     if (bought === 0) {
-      throw new ForbiddenException("Only customers who bought this part can review it");
+      throw new ForbiddenException(apiError("REVIEW_NOT_PURCHASED", "Only customers who bought this part can review it"));
     }
 
     const existing = await this.prisma.review.findUnique({
       where: { productId_userId: { productId: dto.productId, userId } },
     });
     if (existing) {
-      throw new ConflictException("You've already reviewed this product — edit your existing review instead.");
+      throw new ConflictException(apiError("REVIEW_DUPLICATE", "You've already reviewed this product — edit your existing review instead."));
     }
 
     return this.prisma.review.create({
@@ -56,11 +57,11 @@ export class ReviewsService {
   private async findOwnedWithinWindow(userId: string, reviewId: string) {
     const review = await this.prisma.review.findUnique({ where: { id: reviewId } });
     if (!review) throw new NotFoundException("Review not found");
-    if (review.userId !== userId) throw new ForbiddenException("This isn't your review");
+    if (review.userId !== userId) throw new ForbiddenException(apiError("REVIEW_NOT_YOURS", "This isn't your review"));
 
     const ageMs = Date.now() - review.createdAt.getTime();
     if (ageMs > EDIT_WINDOW_MS) {
-      throw new ForbiddenException("Reviews can only be edited or deleted within 10 minutes of posting");
+      throw new ForbiddenException(apiError("REVIEW_EDIT_WINDOW", "Reviews can only be edited or deleted within 10 minutes of posting"));
     }
 
     return review;

@@ -1,4 +1,5 @@
 import { Controller, Post, Body, Res, Req, UnauthorizedException, ForbiddenException, HttpCode, UseGuards } from "@nestjs/common";
+import { apiError } from "../common/errors";
 import { Throttle } from "@nestjs/throttler";
 import type { Response, Request } from "express";
 import * as crypto from "crypto";
@@ -59,7 +60,7 @@ export class AuthController {
   @Post("refresh")
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const token = req.cookies?.[SESSION_COOKIE_NAME];
-    if (!token) throw new UnauthorizedException("No session provided");
+    if (!token) throw new UnauthorizedException(apiError("SESSION_EXPIRED", "No session provided"));
     this.verifyCsrf(req);
 
     const { accessToken, sessionToken, user } = await this.authService.touchSession(token);

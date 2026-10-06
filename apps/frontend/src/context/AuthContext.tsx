@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { useRouter } from "@/i18n/navigation";
-import { apiFetch, setAccessToken, refreshSession, onSessionExpire, readError } from "@/lib/api";
+import { apiFetch, setAccessToken, refreshSession, onSessionExpire, readApiError, ApiRequestError } from "@/lib/api";
 
 type User = {
   id: string;
@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ email, password }),
       skipAuth: true,
     });
-    if (!res.ok) throw new Error(await readError(res, "Login failed"));
+    if (!res.ok) throw new ApiRequestError(await readApiError(res), "Login failed");
     const data = await res.json();
     setAccessToken(data.accessToken);
     await fetchMe();
@@ -120,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify(data),
       skipAuth: true,
     });
-    if (!res.ok) throw new Error(await readError(res, "Registration failed"));
+    if (!res.ok) throw new ApiRequestError(await readApiError(res), "Registration failed");
     const resData = await res.json();
     setAccessToken(resData.accessToken);
     await fetchMe();

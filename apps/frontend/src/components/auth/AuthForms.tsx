@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { PasswordInput } from "@/components/PasswordInput";
 import { IconInput, MailIcon, UserIcon } from "@/components/IconInput";
+import { useApiError } from "@/lib/use-api-error";
 
 // The login and registration forms, used by the /login and /register pages
 // AND the in-page AuthModal — one implementation of the fields, validation
@@ -18,6 +19,7 @@ const submitClass =
 
 function useSubmit(action: () => Promise<void>, onSuccess: () => void) {
   const t = useTranslations("Auth");
+  const apiError = useApiError();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -29,7 +31,7 @@ function useSubmit(action: () => Promise<void>, onSuccess: () => void) {
       await action();
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : t("genericError"));
+      setError(apiError(err, t("genericError")));
     } finally {
       setSubmitting(false);
     }

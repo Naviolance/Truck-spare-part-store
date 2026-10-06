@@ -7,6 +7,7 @@ import {
 } from "@nestjs/common";
 import { Observable } from "rxjs";
 import { DEMO_READ_ONLY_MESSAGE } from "../../auth/demo-accounts";
+import { apiError } from "../errors";
 
 // Methods that only read data. Anything else changes something.
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
@@ -27,7 +28,7 @@ export class DemoReadOnlyInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const request = context.switchToHttp().getRequest();
     if (request.user?.isDemo && !SAFE_METHODS.has(request.method)) {
-      throw new ForbiddenException(DEMO_READ_ONLY_MESSAGE);
+      throw new ForbiddenException(apiError("DEMO_READ_ONLY", DEMO_READ_ONLY_MESSAGE));
     }
     return next.handle();
   }
