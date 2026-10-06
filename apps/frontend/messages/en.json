@@ -532,5 +532,102 @@
     "NO_FILE": "Choose a file first.",
     "IMAGE_TYPE": "Only JPEG, PNG or WEBP images are allowed.",
     "IMAGE_INVALID": "That file isn't a valid image."
+  },
+  "AdminShell": {
+    "checkingAccess": "Checking access…",
+    "sections": "Admin sections",
+    "language": "Admin language",
+    "demoTitle": "You're viewing the admin panel in demo mode.",
+    "demoBody": "Look around as much as you like. Saving, deleting and other changes are turned off for this account.",
+    "nav": {
+      "dashboard": "Dashboard",
+      "products": "Products",
+      "import": "Import",
+      "categories": "Categories",
+      "brands": "Brands",
+      "vehicles": "Vehicles",
+      "orders": "Orders",
+      "requests": "Requests",
+      "coupons": "Coupons",
+      "reviews": "Reviews",
+      "account": "Account"
+    }
+  },
+  "AdminAccount": {
+    "title": "Personal details",
+    "subtitle": "Your own profile info — not shown to customers."
+  },
+  "AdminList": {
+    "range": "{from}–{to} of {total}",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {page} of {pages}"
+  },
+  "AdminDashboard": {
+    "title": "Dashboard",
+    "loading": "Loading…",
+    "revenue": "Revenue (paid orders)",
+    "orders": "Orders",
+    "awaitingPayment": "Awaiting payment",
+    "products": "Products",
+    "outOfStock": "Out of stock",
+    "categories": "Categories",
+    "brands": "Brands",
+    "users": "Users",
+    "recentOrders": "Recent orders",
+    "noOrders": "No orders yet.",
+    "demandTitle": "Customer demand",
+    "period": "Period",
+    "days": "{days} days",
+    "notFoundTitle": "Searched but <strong>not found</strong>",
+    "notFoundCount": "({zero} of {total} searches)",
+    "notFoundHint": "Parts customers want that the catalog doesn't have — stock or add them first.",
+    "notFoundEmpty": "Nothing yet — every search found something.",
+    "openSearch": "Open this search on the store",
+    "timesLast": "{times}× · last {date}",
+    "whatsappClicks": "WhatsApp clicks",
+    "topSearches": "Top searches",
+    "noSearches": "No searches yet.",
+    "sources": {
+      "product": "Product page",
+      "product_out_of_stock": "Product page (out of stock)",
+      "footer": "Footer button",
+      "footer_icon": "Footer icon",
+      "floating": "Floating button",
+      "order": "Order page",
+      "about": "About page",
+      "find_my_part_photo": "Find My Part (send a photo)",
+      "request_form": "Part request form"
+    }
+  },
+  "AdminCommon": {
+    "loading": "Loading…",
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "deleting": "Deleting…",
+    "edit": "Edit",
+    "add": "Add",
+    "adding": "Adding…",
+    "actions": "Actions",
+    "name": "Name",
+    "status": "Status",
+    "search": "Search",
+    "allStatuses": "All statuses",
+    "genericError": "Something went wrong. Please try again.",
+    "yes": "Yes",
+    "no": "No",
+    "productStatus": {
+      "DRAFT": "Draft",
+      "PUBLISHED": "Published",
+      "ARCHIVED": "Archived"
+    },
+    "requestStatus": {
+      "OPEN": "Open",
+      "IN_PROGRESS": "In progress",
+      "FULFILLED": "Fulfilled",
+      "DECLINED": "Declined"
+    }
   }
 }

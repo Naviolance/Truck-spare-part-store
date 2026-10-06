@@ -532,5 +532,102 @@
     "NO_FILE": "Choisissez d'abord un fichier.",
     "IMAGE_TYPE": "Seules les images JPEG, PNG ou WEBP sont acceptées.",
     "IMAGE_INVALID": "Ce fichier n'est pas une image valide."
+  },
+  "AdminShell": {
+    "checkingAccess": "Vérification de l'accès…",
+    "sections": "Sections de l'administration",
+    "language": "Langue de l'administration",
+    "demoTitle": "Vous consultez l'administration en mode démonstration.",
+    "demoBody": "Explorez librement. L'enregistrement, la suppression et toute autre modification sont désactivés pour ce compte.",
+    "nav": {
+      "dashboard": "Tableau de bord",
+      "products": "Produits",
+      "import": "Importer",
+      "categories": "Catégories",
+      "brands": "Marques",
+      "vehicles": "Camions",
+      "orders": "Commandes",
+      "requests": "Demandes",
+      "coupons": "Codes promo",
+      "reviews": "Avis",
+      "account": "Compte"
+    }
+  },
+  "AdminAccount": {
+    "title": "Informations personnelles",
+    "subtitle": "Votre propre profil — jamais affiché aux clients."
+  },
+  "AdminList": {
+    "range": "{from}–{to} sur {total}",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "page": "Page {page} sur {pages}"
+  },
+  "AdminDashboard": {
+    "title": "Tableau de bord",
+    "loading": "Chargement…",
+    "revenue": "Chiffre d'affaires (commandes payées)",
+    "orders": "Commandes",
+    "awaitingPayment": "En attente de paiement",
+    "products": "Produits",
+    "outOfStock": "En rupture de stock",
+    "categories": "Catégories",
+    "brands": "Marques",
+    "users": "Utilisateurs",
+    "recentOrders": "Commandes récentes",
+    "noOrders": "Aucune commande pour l'instant.",
+    "demandTitle": "Demande des clients",
+    "period": "Période",
+    "days": "{days} jours",
+    "notFoundTitle": "Recherché mais <strong>introuvable</strong>",
+    "notFoundCount": "({zero} recherches sur {total})",
+    "notFoundHint": "Les pièces que les clients veulent et que le catalogue n'a pas — à stocker ou ajouter en priorité.",
+    "notFoundEmpty": "Rien pour l'instant — chaque recherche a trouvé quelque chose.",
+    "openSearch": "Ouvrir cette recherche sur la boutique",
+    "timesLast": "{times}× · dernière fois le {date}",
+    "whatsappClicks": "Clics WhatsApp",
+    "topSearches": "Recherches les plus fréquentes",
+    "noSearches": "Aucune recherche pour l'instant.",
+    "sources": {
+      "product": "Page produit",
+      "product_out_of_stock": "Page produit (rupture de stock)",
+      "footer": "Bouton du pied de page",
+      "footer_icon": "Icône du pied de page",
+      "floating": "Bouton flottant",
+      "order": "Page commande",
+      "about": "Page À propos",
+      "find_my_part_photo": "Trouver ma pièce (envoi de photo)",
+      "request_form": "Formulaire de demande de pièce"
+    }
+  },
+  "AdminCommon": {
+    "loading": "Chargement…",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "deleting": "Suppression…",
+    "edit": "Modifier",
+    "add": "Ajouter",
+    "adding": "Ajout…",
+    "actions": "Actions",
+    "name": "Nom",
+    "status": "Statut",
+    "search": "Rechercher",
+    "allStatuses": "Tous les statuts",
+    "genericError": "Un problème est survenu. Veuillez réessayer.",
+    "yes": "Oui",
+    "no": "Non",
+    "productStatus": {
+      "DRAFT": "Brouillon",
+      "PUBLISHED": "Publié",
+      "ARCHIVED": "Archivé"
+    },
+    "requestStatus": {
+      "OPEN": "Ouverte",
+      "IN_PROGRESS": "En cours",
+      "FULFILLED": "Traitée",
+      "DECLINED": "Refusée"
+    }
   }
 }

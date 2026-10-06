@@ -1,4 +1,5 @@
 "use client";
+import { useLocale, useTranslations } from "next-intl";
 
 // Search box + pager shared by the paginated admin lists (lib/admin-list.ts).
 
@@ -22,13 +23,16 @@ export function Pager({ page, totalPages, total, limit, onPage }: {
   limit: number;
   onPage: (page: number) => void;
 }) {
+  const t = useTranslations("AdminList");
+  const locale = useLocale();
   if (total === 0) return null;
+  const n = (value: number) => value.toLocaleString(locale);
   const from = (page - 1) * limit + 1;
   const to = Math.min(total, page * limit);
   return (
     <div className="flex items-center justify-between gap-3 mt-4 text-sm text-steel">
       <span>
-        {from.toLocaleString()}–{to.toLocaleString()} of {total.toLocaleString()}
+        {t("range", { from: n(from), to: n(to), total: n(total) })}
       </span>
       {totalPages > 1 && (
         <div className="flex items-center gap-2">
@@ -38,18 +42,16 @@ export function Pager({ page, totalPages, total, limit, onPage }: {
             disabled={page <= 1}
             className="border border-steel-light rounded-lg px-3 py-1.5 disabled:opacity-40 hover:border-ink"
           >
-            Previous
+            {t("previous")}
           </button>
-          <span>
-            Page {page} of {totalPages.toLocaleString()}
-          </span>
+          <span>{t("page", { page: n(page), pages: n(totalPages) })}</span>
           <button
             type="button"
             onClick={() => onPage(page + 1)}
             disabled={page >= totalPages}
             className="border border-steel-light rounded-lg px-3 py-1.5 disabled:opacity-40 hover:border-ink"
           >
-            Next
+            {t("next")}
           </button>
         </div>
       )}

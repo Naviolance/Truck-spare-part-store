@@ -1,8 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { formatMoney } from "@/lib/money";
+import { useOrderStatusLabel } from "@/lib/order-status";
 import { DemandInsights } from "@/components/admin/DemandInsights";
 
 type RecentOrder = {
@@ -27,6 +29,9 @@ type Stats = {
 };
 
 export default function AdminDashboardPage() {
+  const t = useTranslations("AdminDashboard");
+  const locale = useLocale();
+  const statusLabel = useOrderStatusLabel();
   const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
@@ -35,22 +40,22 @@ export default function AdminDashboardPage() {
     });
   }, []);
 
-  if (!stats) return <p className="text-steel">Loading…</p>;
+  if (!stats) return <p className="text-steel">{t("loading")}</p>;
 
   const cards = [
-    { label: "Revenue (paid orders)", value: formatMoney(stats.revenue) },
-    { label: "Orders", value: stats.orders },
-    { label: "Awaiting payment", value: stats.pendingPayment, warn: stats.pendingPayment > 0 },
-    { label: "Products", value: stats.products },
-    { label: "Out of stock", value: stats.outOfStock, warn: stats.outOfStock > 0 },
-    { label: "Categories", value: stats.categories },
-    { label: "Brands", value: stats.brands },
-    { label: "Users", value: stats.users },
+    { label: t("revenue"), value: formatMoney(stats.revenue) },
+    { label: t("orders"), value: stats.orders.toLocaleString(locale) },
+    { label: t("awaitingPayment"), value: stats.pendingPayment.toLocaleString(locale), warn: stats.pendingPayment > 0 },
+    { label: t("products"), value: stats.products.toLocaleString(locale) },
+    { label: t("outOfStock"), value: stats.outOfStock.toLocaleString(locale), warn: stats.outOfStock > 0 },
+    { label: t("categories"), value: stats.categories.toLocaleString(locale) },
+    { label: t("brands"), value: stats.brands.toLocaleString(locale) },
+    { label: t("users"), value: stats.users.toLocaleString(locale) },
   ];
 
   return (
     <div>
-      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">Dashboard</h1>
+      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">{t("title")}</h1>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {cards.map((c) => (
           <div key={c.label} className="border border-steel-light rounded-lg p-4 bg-white transition-shadow duration-200 hover:shadow-sm">
@@ -62,9 +67,9 @@ export default function AdminDashboardPage() {
 
       <DemandInsights />
 
-      <h2 className="text-lg font-display font-semibold text-ink mb-3">Recent orders</h2>
+      <h2 className="text-lg font-display font-semibold text-ink mb-3">{t("recentOrders")}</h2>
       {stats.recentOrders.length === 0 ? (
-        <p className="text-steel text-sm">No orders yet.</p>
+        <p className="text-steel text-sm">{t("noOrders")}</p>
       ) : (
         <div className="bg-white border border-steel-light rounded-lg divide-y divide-steel-light">
           {stats.recentOrders.map((o) => (
@@ -76,12 +81,12 @@ export default function AdminDashboardPage() {
               <div>
                 <p className="font-medium text-ink">#{o.orderNumber}</p>
                 <p className="text-xs text-steel">
-                  {o.user.firstName} {o.user.lastName} · {new Date(o.createdAt).toLocaleDateString()}
+                  {o.user.firstName} {o.user.lastName} · {new Date(o.createdAt).toLocaleDateString(locale)}
                 </p>
               </div>
               <div className="text-right">
                 <p className="font-semibold text-ink">{formatMoney(o.total)}</p>
-                <p className="text-xs text-steel">{o.status}</p>
+                <p className="text-xs text-steel">{statusLabel({ status: o.status, payments: [] })}</p>
               </div>
             </Link>
           ))}
