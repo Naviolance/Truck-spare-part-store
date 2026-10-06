@@ -2,7 +2,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
-import { apiFetch } from "@/lib/api";
+import { parseCrossReferences } from "@/lib/part-numbers";
+import { useTranslations } from "next-intl";
+import { apiFetch, ApiRequestError, readApiError } from "@/lib/api";
+import { useApiError } from "@/lib/use-api-error";
 import { isUnoptimizableImage } from "@/lib/image";
 import { ConditionTag } from "@/components/ProductCard";
 import { VehicleCompatibilityPicker } from "@/components/VehicleCompatibilityPicker";
@@ -25,6 +28,10 @@ export default function EditProductPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
+  const t = useTranslations("AdminProductForm");
+  const tc = useTranslations("AdminCommon");
+  const tCond = useTranslations("Condition");
+  const apiError = useApiError();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [categories, setCategories] = useState<Option[]>([]);
@@ -36,7 +43,7 @@ export default function EditProductPage() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [form, setForm] = useState({
     name: "", description: "", descriptionFr: "", price: "", quantity: "", condition: "NEW",
-    categoryId: "", brandId: "", partNumber: "", conditionNotes: "",
+    categoryId: "", brandId: "", partNumber: "", crossReference: "", conditionNotes: "",
   });
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [vehicleIds, setVehicleIds] = useState<string[]>([]);
@@ -50,6 +57,7 @@ export default function EditProductPage() {
         name: p.name, description: p.description, descriptionFr: p.descriptionFr || "", price: String(p.price), quantity: String(p.quantity),
         condition: p.condition, categoryId: p.categoryId, brandId: p.brandId || "", partNumber: p.partNumber || "",
         conditionNotes: p.conditionNotes || "",
+        crossReference: (p.crossReference ?? []).join(", "),
       });
       setImageUrls(p.images?.map((img: { url: string }) => img.url) ?? []);
       setVehicleIds(p.compatibility?.map((c: { vehicleId: string }) => c.vehicleId) ?? []);
@@ -71,13 +79,12 @@ export default function EditProductPage() {
     try {
       const res = await apiFetch("/uploads/image", { method: "POST", body: formData, headers: {} });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Upload failed");
+        throw new ApiRequestError(await readApiError(res), "Upload failed");
       }
       const data = await res.json();
       setImageUrls((prev) => [...prev, data.url]);
-    } catch (err: any) {
-      setPhotoError(err.message || "Upload failed");
+    } catch (err) {
+      setPhotoError(apiError(err, t("errors.uploadFailed")));
     } finally {
       setUploadingPhoto(false);
       e.target.value = "";
@@ -102,6 +109,7 @@ export default function EditProductPage() {
       method: "PATCH",
       body: JSON.stringify({
         ...form,
+        crossReference: parseCrossReferences(form.crossReference),
         descriptionFr: form.descriptionFr || undefined,
         price: Number(form.price),
         quantity: Number(form.quantity),
@@ -111,27 +119,26 @@ export default function EditProductPage() {
       }),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      setError(err.message || "Failed to update product");
+      setError(apiError(await readApiError(res), t("errors.updateFailed")));
       setSaving(false);
       return;
     }
     router.push("/admin/products");
   }
 
-  if (loading) return <p className="text-steel">Loading…</p>;
+  if (loading) return <p className="text-steel">{tc("loading")}</p>;
 
   return (
     <form onSubmit={handleSubmit} className="max-w-xl">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-display font-bold text-ink tracking-tight">Edit product</h1>
+        <h1 className="text-2xl font-display font-bold text-ink tracking-tight">{t("editTitle")}</h1>
         <button type="button" onClick={() => router.push("/admin/products")} className="text-sm text-steel transition-colors duration-200 hover:text-ink">
-          Cancel
+          {tc("cancel")}
         </button>
       </div>
 
       <div>
-        <p className={labelClass}>Photos</p>
+        <p className={labelClass}>{t("photos")}</p>
         <div className="relative aspect-square rounded-lg overflow-hidden border border-steel-light bg-steel-light">
           {imageUrls[0] ? (
             <Image
@@ -143,7 +150,7 @@ export default function EditProductPage() {
               className="object-cover"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-steel text-sm">No photos yet</div>
+            <div className="w-full h-full flex items-center justify-center text-steel text-sm">{t("noPhotos")}</div>
           )}
         </div>
 
@@ -153,7 +160,7 @@ export default function EditProductPage() {
               <button
                 type="button"
                 onClick={() => makeCover(url)}
-                aria-label={i === 0 ? "Cover image" : "Set as cover"}
+                aria-label={i === 0 ? t("coverImage") : t("setAsCover")}
                 className={`relative block w-16 h-16 rounded-lg overflow-hidden border-2 ${i === 0 ? "border-ink" : "border-transparent"}`}
               >
                 <Image src={url} alt="" fill sizes="64px" unoptimized={isUnoptimizableImage(url)} className="object-cover" />
@@ -161,7 +168,7 @@ export default function EditProductPage() {
               <button
                 type="button"
                 onClick={() => removeImage(url)}
-                aria-label="Remove image"
+                aria-label={t("removeImage")}
                 className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center text-xs leading-none"
               >
                 ×
@@ -172,7 +179,7 @@ export default function EditProductPage() {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploadingPhoto}
-            aria-label="Add photo"
+            aria-label={t("addPhoto")}
             className="w-16 h-16 shrink-0 rounded-lg border-2 border-dashed border-steel-light flex items-center justify-center text-steel transition-colors duration-200 hover:border-steel hover:text-ink disabled:opacity-50"
           >
             {uploadingPhoto ? "…" : <PlusIcon />}
@@ -183,28 +190,28 @@ export default function EditProductPage() {
 
         <div className={sectionClass}>
           <div>
-            <label htmlFor="edit-name" className={labelClass}>Name</label>
+            <label htmlFor="edit-name" className={labelClass}>{tc("name")}</label>
             <input
               id="edit-name"
               value={form.name}
               onChange={(e) => update("name", e.target.value)}
-              placeholder="Product name"
+              placeholder={t("namePlaceholder")}
               className={fieldClass}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3 mt-4">
             <div>
-              <label htmlFor="edit-brand" className={labelClass}>Brand</label>
+              <label htmlFor="edit-brand" className={labelClass}>{t("brand")}</label>
               <select id="edit-brand" value={form.brandId} onChange={(e) => update("brandId", e.target.value)} className={fieldClass}>
-                <option value="">Unbranded</option>
+                <option value="">{t("unbranded")}</option>
                 {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
             </div>
             <div>
-              <label htmlFor="edit-category" className={labelClass}>Category</label>
+              <label htmlFor="edit-category" className={labelClass}>{t("category")}</label>
               <select id="edit-category" value={form.categoryId} onChange={(e) => update("categoryId", e.target.value)} className={fieldClass}>
-                <option value="">Select a category</option>
+                <option value="">{t("selectCategory")}</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
@@ -212,7 +219,7 @@ export default function EditProductPage() {
 
           <div className="grid grid-cols-3 gap-3 mt-4">
             <div>
-              <label htmlFor="edit-price" className={labelClass}>Price (FCFA)</label>
+              <label htmlFor="edit-price" className={labelClass}>{t("price")}</label>
               <input
                 id="edit-price"
                 type="number"
@@ -224,7 +231,7 @@ export default function EditProductPage() {
               />
             </div>
             <div>
-              <label htmlFor="edit-quantity" className={labelClass}>Quantity</label>
+              <label htmlFor="edit-quantity" className={labelClass}>{t("quantity")}</label>
               <input
                 id="edit-quantity"
                 type="number"
@@ -235,16 +242,16 @@ export default function EditProductPage() {
               />
             </div>
             <div>
-              <label htmlFor="edit-condition" className={labelClass}>Condition</label>
+              <label htmlFor="edit-condition" className={labelClass}>{t("condition")}</label>
               <select
                 id="edit-condition"
                 value={form.condition}
                 onChange={(e) => update("condition", e.target.value)}
                 className={fieldClass}
               >
-                <option value="NEW">New</option>
-                <option value="USED">Used</option>
-                <option value="RECONDITIONED">Reconditioned</option>
+                <option value="NEW">{tCond("NEW")}</option>
+                <option value="USED">{tCond("USED")}</option>
+                <option value="RECONDITIONED">{tCond("RECONDITIONED")}</option>
               </select>
             </div>
           </div>
@@ -254,12 +261,12 @@ export default function EditProductPage() {
 
           {form.condition !== "NEW" && (
             <div className="mt-4">
-              <label htmlFor="edit-condition-notes" className={labelClass}>Condition notes</label>
+              <label htmlFor="edit-condition-notes" className={labelClass}>{t("conditionNotes")}</label>
               <textarea
                 id="edit-condition-notes"
                 value={form.conditionNotes}
                 onChange={(e) => update("conditionNotes", e.target.value)}
-                placeholder="Describe wear, testing, functionality, etc."
+                placeholder={t("conditionNotesPlaceholder")}
                 rows={2}
                 className={`${fieldClass} resize-none`}
               />
@@ -268,7 +275,7 @@ export default function EditProductPage() {
         </div>
 
         <div className={sectionClass}>
-          <label htmlFor="edit-description" className={labelClass}>Description</label>
+          <label htmlFor="edit-description" className={labelClass}>{t("description")}</label>
           <textarea
             id="edit-description"
             value={form.description}
@@ -278,25 +285,37 @@ export default function EditProductPage() {
           />
 
           <div className="mt-4">
-            <label htmlFor="edit-description-fr" className={labelClass}>French description (optional)</label>
+            <label htmlFor="edit-description-fr" className={labelClass}>{t("frenchDescriptionOptional")}</label>
             <textarea
               id="edit-description-fr"
               value={form.descriptionFr}
               onChange={(e) => update("descriptionFr", e.target.value)}
-              placeholder="Include the French product name in here — the name field itself stays untranslated, but this text is searched."
+              placeholder={t("descriptionFrPlaceholder")}
               rows={3}
               className={`${fieldClass} resize-none`}
             />
           </div>
 
           <div className="mt-4">
-            <label htmlFor="edit-part-number" className={labelClass}>Part number (optional)</label>
+            <label htmlFor="edit-part-number" className={labelClass}>{t("partNumberOptional")}</label>
             <input
               id="edit-part-number"
               value={form.partNumber}
               onChange={(e) => update("partNumber", e.target.value)}
               className={`${fieldClass} font-mono`}
             />
+          </div>
+
+          <div className="mt-4">
+            <label htmlFor="edit-cross-ref" className={labelClass}>{t("crossReferenceOptional")}</label>
+            <input
+              id="edit-cross-ref"
+              value={form.crossReference}
+              onChange={(e) => update("crossReference", e.target.value)}
+              placeholder={t("crossReferencePlaceholder")}
+              className={`${fieldClass} font-mono`}
+            />
+            <p className="text-xs text-steel mt-1">{t("crossReferenceHint")}</p>
           </div>
         </div>
 
@@ -309,7 +328,7 @@ export default function EditProductPage() {
 
       <div className="sticky bottom-0 bg-paper py-4 mt-2 border-t border-steel-light">
         <button type="submit" disabled={saving} className="w-full bg-ink text-white rounded-lg py-3 text-sm font-medium disabled:opacity-40">
-          {saving ? "Saving…" : "Save changes"}
+          {saving ? tc("saving") : t("saveChanges")}
         </button>
       </div>
     </form>

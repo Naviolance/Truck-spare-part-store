@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Delete, Body, Param, Query, UseGuards } from "@nestjs/common";
+import { RevalidatesCatalog } from "../common/catalog-cache/revalidates-catalog.decorator";
 import { VehiclesService } from "./vehicles.service";
 import { CreateVehicleDto } from "./dto/create-vehicle.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
@@ -9,6 +10,11 @@ import { UserRole } from "@truckparts/prisma";
 @Controller("vehicles")
 export class VehiclesController {
   constructor(private vehiclesService: VehiclesService) {}
+
+  @Get("catalog")
+  catalog() {
+    return this.vehiclesService.catalog();
+  }
 
   @Get("manufacturers")
   getManufacturers() {
@@ -25,22 +31,8 @@ export class VehiclesController {
     return this.vehiclesService.getConfigs(manufacturer, model);
   }
 
-  @Get(":id/products")
-  getProductsForVehicle(@Param("id") id: string) {
-    return this.vehiclesService.getProductsForVehicle(id);
-  }
-
-  // Progressive Find My Part search — see vehicles.service.ts's
-  // getProductsForFilter for why this takes any subset of the three filters
-  // instead of requiring a fully resolved vehicleId.
-  @Get("products")
-  getProductsForFilter(
-    @Query("manufacturer") manufacturer?: string,
-    @Query("model") model?: string,
-    @Query("vehicleId") vehicleId?: string,
-  ) {
-    return this.vehiclesService.getProductsForFilter({ manufacturer, model, vehicleId });
-  }
+  // Products for a truck are served by GET /products?manufacturer=&model=&vehicleId=
+  // (the shared catalog query), not here.
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
@@ -52,6 +44,7 @@ export class VehiclesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Post()
+  @RevalidatesCatalog()
   create(@Body() dto: CreateVehicleDto) {
     return this.vehiclesService.create(dto);
   }
@@ -59,6 +52,7 @@ export class VehiclesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Delete(":id")
+  @RevalidatesCatalog()
   remove(@Param("id") id: string) {
     return this.vehiclesService.remove(id);
   }

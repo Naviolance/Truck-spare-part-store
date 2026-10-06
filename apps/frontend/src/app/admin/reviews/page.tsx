@@ -1,6 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api";
+import { useAdminList } from "@/lib/admin-list";
+import { Pager, SearchBox } from "@/components/admin/ListControls";
 
 type Review = {
   id: string;
@@ -12,33 +15,31 @@ type Review = {
 };
 
 export default function AdminReviewsPage() {
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
+  const t = useTranslations("AdminReviews");
+  const tc = useTranslations("AdminCommon");
+  const locale = useLocale();
+  const list = useAdminList<Review>("/reviews/admin/all");
+  const { items: reviews, data, reload: load } = list;
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  async function load() {
-    const res = await apiFetch("/reviews/admin/all");
-    if (res.ok) setReviews(await res.json());
-    setLoading(false);
-  }
-
-  useEffect(() => { load(); }, []);
-
   async function handleDelete(id: string) {
-    if (!confirm("Delete this review?")) return;
+    if (!confirm(t("deleteConfirm"))) return;
     setDeletingId(id);
     await apiFetch(`/reviews/admin/${id}`, { method: "DELETE" });
     await load();
     setDeletingId(null);
   }
 
-  if (loading) return <p className="text-steel">Loading…</p>;
+  if (list.loading) return <p className="text-steel">{tc("loading")}</p>;
 
   return (
     <div>
-      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">Reviews</h1>
+      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">{t("title")}</h1>
+      <div className="mb-4">
+        <SearchBox value={list.search} onChange={list.setSearch} placeholder={t("searchPlaceholder")} />
+      </div>
       {reviews.length === 0 ? (
-        <p className="text-steel">No reviews yet.</p>
+        <p className="text-steel">{list.searching ? t("noMatch") : t("empty")}</p>
       ) : (
         <>
         <div className="sm:hidden space-y-3">
@@ -51,13 +52,13 @@ export default function AdminReviewsPage() {
               <p className="text-xs text-steel mt-1">{r.user.firstName} {r.user.lastName} · {r.user.email}</p>
               {r.comment && <p className="text-sm text-ink mt-2">{r.comment}</p>}
               <div className="mt-3 flex items-center justify-between gap-3">
-                <p className="text-xs text-steel">{new Date(r.createdAt).toLocaleDateString()}</p>
+                <p className="text-xs text-steel">{new Date(r.createdAt).toLocaleDateString(locale)}</p>
                 <button
                   onClick={() => handleDelete(r.id)}
                   disabled={deletingId === r.id}
                   className="border border-red-200 bg-red-50 text-red-600 rounded-lg px-3 py-1.5 text-xs transition-colors duration-200 hover:bg-red-100 disabled:opacity-50"
                 >
-                  {deletingId === r.id ? "Deleting…" : "Delete"}
+                  {deletingId === r.id ? tc("deleting") : tc("delete")}
                 </button>
               </div>
             </div>
@@ -67,11 +68,11 @@ export default function AdminReviewsPage() {
         <table className="w-full text-sm bg-white border border-steel-light rounded-lg overflow-hidden">
           <thead className="bg-paper text-left">
             <tr>
-              <th className="p-3">Product</th>
-              <th className="p-3">Customer</th>
-              <th className="p-3">Rating</th>
-              <th className="p-3">Comment</th>
-              <th className="p-3">Date</th>
+              <th className="p-3">{t("colProduct")}</th>
+              <th className="p-3">{t("colCustomer")}</th>
+              <th className="p-3">{t("colRating")}</th>
+              <th className="p-3">{t("colComment")}</th>
+              <th className="p-3">{t("colDate")}</th>
               <th className="p-3"></th>
             </tr>
           </thead>
@@ -85,14 +86,14 @@ export default function AdminReviewsPage() {
                 </td>
                 <td className="p-3">★ {r.rating}/5</td>
                 <td className="p-3 max-w-xs truncate">{r.comment}</td>
-                <td className="p-3 text-steel">{new Date(r.createdAt).toLocaleDateString()}</td>
+                <td className="p-3 text-steel">{new Date(r.createdAt).toLocaleDateString(locale)}</td>
                 <td className="p-3 text-right">
                   <button
                     onClick={() => handleDelete(r.id)}
                     disabled={deletingId === r.id}
                     className="border border-red-200 bg-red-50 text-red-600 rounded-lg px-3 py-1.5 text-xs transition-colors duration-200 hover:bg-red-100 disabled:opacity-50"
                   >
-                    {deletingId === r.id ? "Deleting…" : "Delete"}
+                    {deletingId === r.id ? tc("deleting") : tc("delete")}
                   </button>
                 </td>
               </tr>
@@ -102,6 +103,7 @@ export default function AdminReviewsPage() {
         </div>
         </>
       )}
+      {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} limit={data.limit} onPage={list.setPage} />}
     </div>
   );
 }

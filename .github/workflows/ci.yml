@@ -1,0 +1,79 @@
+# Runs on every pull request and on pushes to main: the same checks a
+# contributor runs locally (see CLAUDE.md). Two jobs in parallel; a red
+# check on a PR means don't merge yet.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A new push to the same PR cancels the run for the previous commit.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (lint, unit + database tests, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      # Throwaway Postgres for the *.db.spec.ts tests (real transactions,
+      # triggers, races). The official image ships pg_trgm and unaccent,
+      # which the migrations enable.
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: truckparts
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: truckparts
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U truckparts"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      DATABASE_URL: postgresql://truckparts:ci-only-password@localhost:5432/truckparts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma:generate
+      - name: Apply migrations (also proves they run on a fresh database)
+        run: pnpm prisma:deploy
+      - run: pnpm --filter backend lint
+      - run: pnpm --filter backend test
+      - run: pnpm --filter backend test:db
+      - run: pnpm --filter backend build
+
+  frontend:
+    name: Frontend (lint, build + type-check)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma:generate
+      - run: pnpm --filter frontend lint
+      # No backend runs here: server-rendered pages degrade gracefully when
+      # the API is unreachable, so the build still compiles and type-checks
+      # every page.
+      - run: pnpm --filter frontend build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"

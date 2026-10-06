@@ -1,10 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { useTranslations } from "next-intl";
+import { apiFetch, readApiError } from "@/lib/api";
+import { useApiError } from "@/lib/use-api-error";
 
 type Brand = { id: string; name: string; _count: { products: number } };
 
 export default function AdminBrandsPage() {
+  const t = useTranslations("AdminBrands");
+  const tc = useTranslations("AdminCommon");
+  const apiError = useApiError();
   const [brands, setBrands] = useState<Brand[]>([]);
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -24,8 +29,7 @@ export default function AdminBrandsPage() {
     setSubmitting(true);
     const res = await apiFetch("/brands", { method: "POST", body: JSON.stringify({ name }) });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      setError(err.message || "Failed to add brand");
+      setError(apiError(await readApiError(res), t("addFailed")));
       setSubmitting(false);
       return;
     }
@@ -35,7 +39,7 @@ export default function AdminBrandsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this brand?")) return;
+    if (!confirm(t("deleteConfirm"))) return;
     setDeletingId(id);
     await apiFetch(`/brands/${id}`, { method: "DELETE" });
     await load();
@@ -44,22 +48,22 @@ export default function AdminBrandsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">Brands</h1>
+      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">{t("title")}</h1>
       <form onSubmit={handleAdd} className="flex gap-2 mb-6">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="New brand name" className="border border-steel-light rounded-lg px-3 py-2 flex-1" required />
-        <button disabled={submitting} className="bg-ink text-white rounded-lg px-4 py-2 disabled:opacity-50">{submitting ? "Adding…" : "Add"}</button>
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("namePlaceholder")} aria-label={t("namePlaceholder")} className="border border-steel-light rounded-lg px-3 py-2 flex-1" required />
+        <button disabled={submitting} className="bg-ink text-white rounded-lg px-4 py-2 disabled:opacity-50">{submitting ? tc("adding") : tc("add")}</button>
       </form>
       {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
       <ul className="bg-white border border-steel-light rounded-lg divide-y divide-steel-light">
         {brands.map((b) => (
           <li key={b.id} className="flex items-center justify-between p-3 text-sm">
-            <span>{b.name} <span className="text-steel">({b._count.products} products)</span></span>
+            <span>{b.name} <span className="text-steel">({t("productCount", { count: b._count.products })})</span></span>
             <button
               onClick={() => handleDelete(b.id)}
               disabled={deletingId === b.id}
               className="border border-red-200 bg-red-50 text-red-600 rounded-lg px-3 py-1.5 text-xs transition-colors duration-200 hover:bg-red-100 disabled:opacity-50"
             >
-              {deletingId === b.id ? "Deleting…" : "Delete"}
+              {deletingId === b.id ? tc("deleting") : tc("delete")}
             </button>
           </li>
         ))}

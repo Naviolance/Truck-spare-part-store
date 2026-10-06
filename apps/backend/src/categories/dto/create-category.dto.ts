@@ -6,6 +6,12 @@ export class CreateCategoryDto {
   @MaxLength(100)
   name!: string;
 
+  // Shown on /fr pages ("Freins" for "Brakes"); falls back to name.
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  nameFr?: string;
+
   @IsOptional()
   @IsString()
   parentId?: string;

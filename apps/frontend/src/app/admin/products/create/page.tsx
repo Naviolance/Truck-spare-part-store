@@ -1,7 +1,10 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch } from "@/lib/api";
+import { parseCrossReferences } from "@/lib/part-numbers";
+import { useTranslations } from "next-intl";
+import { apiFetch, ApiRequestError, readApiError } from "@/lib/api";
+import { useApiError } from "@/lib/use-api-error";
 import { formatMoney } from "@/lib/money";
 import { ConditionTag } from "@/components/ProductCard";
 import { VehicleCompatibilityPicker } from "@/components/VehicleCompatibilityPicker";
@@ -21,6 +24,7 @@ type Details = {
   categoryId: string;
   brandId: string;
   partNumber: string;
+  crossReference: string;
 };
 
 const EMPTY_DETAILS: Details = {
@@ -34,6 +38,7 @@ const EMPTY_DETAILS: Details = {
   categoryId: "",
   brandId: "",
   partNumber: "",
+  crossReference: "",
 };
 
 // Generic "image/*" rather than a narrow MIME list - some mobile browsers'
@@ -66,6 +71,10 @@ function PlusIcon() {
 // in-memory component state.
 export default function CreateProductPage() {
   const router = useRouter();
+  const t = useTranslations("AdminProductForm");
+  const tc = useTranslations("AdminCommon");
+  const tCond = useTranslations("Condition");
+  const apiError = useApiError();
   const [step, setStep] = useState(1);
   const [images, setImages] = useState<PickedImage[]>([]);
   const [details, setDetails] = useState<Details>(EMPTY_DETAILS);
@@ -125,8 +134,7 @@ export default function CreateProductPage() {
       formData.append("file", img.file);
       const res = await apiFetch("/uploads/image", { method: "POST", body: formData, headers: {} });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Image upload failed");
+        throw new ApiRequestError(await readApiError(res), "Image upload failed");
       }
       const data = await res.json();
       urls.push(data.url);
@@ -137,8 +145,10 @@ export default function CreateProductPage() {
   async function handleSave(status: "DRAFT" | "PUBLISHED") {
     setSaving(status);
     setSaveError(null);
+    let fallback = t("errors.imageUploadFailed");
     try {
       const imageUrls = await uploadImages();
+      fallback = t("errors.saveFailed");
       const res = await apiFetch("/products", {
         method: "POST",
         body: JSON.stringify({
@@ -152,19 +162,20 @@ export default function CreateProductPage() {
           categoryId: details.categoryId,
           brandId: details.brandId || undefined,
           partNumber: details.partNumber || undefined,
+          crossReference: parseCrossReferences(details.crossReference),
           imageUrls,
           vehicleIds,
           status,
         }),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Failed to save product");
+        throw new ApiRequestError(await readApiError(res), "Failed to save product");
       }
       images.forEach((img) => URL.revokeObjectURL(img.url));
       router.push("/admin/products");
-    } catch (err: any) {
-      setSaveError(err.message || "Something went wrong");
+    } catch (err) {
+      // ApiRequestError carries the backend's code; otherwise the step's fallback.
+      setSaveError(apiError(err, fallback));
       setSaving(null);
     }
   }
@@ -174,7 +185,7 @@ export default function CreateProductPage() {
       setStep((s) => s - 1);
       return;
     }
-    if (images.length > 0 && !confirm("Discard the images you've picked?")) return;
+    if (images.length > 0 && !confirm(t("discardConfirm"))) return;
     images.forEach((img) => URL.revokeObjectURL(img.url));
     router.push("/admin/products");
   }
@@ -182,16 +193,16 @@ export default function CreateProductPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <header className="flex items-center justify-between px-4 py-3 border-b border-steel-light">
-        <button onClick={handleBack} disabled={!!saving} aria-label="Back" className="text-ink disabled:opacity-40">
+        <button onClick={handleBack} disabled={!!saving} aria-label={t("back")} className="text-ink disabled:opacity-40">
           <BackIcon />
         </button>
-        <p className="text-sm font-medium text-steel">Step {step} of 4</p>
+        <p className="text-sm font-medium text-steel">{t("stepOf", { step, total: 4 })}</p>
       </header>
 
       {step === 1 && (
         <div className="flex-1 p-4">
-          <h1 className="text-lg font-display font-bold text-ink mb-1">Add photos</h1>
-          <p className="text-sm text-steel mb-4">Pick one or more photos of the part. The first one becomes the cover image.</p>
+          <h1 className="text-lg font-display font-bold text-ink mb-1">{t("addPhotos")}</h1>
+          <p className="text-sm text-steel mb-4">{t("addPhotosHint")}</p>
 
           <div className="grid grid-cols-3 gap-2">
             {images.map((img, i) => (
@@ -202,12 +213,12 @@ export default function CreateProductPage() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={img.url} alt="" className="w-full h-full object-cover" />
                 {i === 0 && (
-                  <span className="absolute top-1 left-1 bg-ink/80 text-white text-[10px] px-1.5 py-0.5 rounded">Cover</span>
+                  <span className="absolute top-1 left-1 bg-ink/80 text-white text-[10px] px-1.5 py-0.5 rounded">{t("cover")}</span>
                 )}
                 <button
                   type="button"
                   onClick={() => removeImage(i)}
-                  aria-label="Remove image"
+                  aria-label={t("removeImage")}
                   className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center text-sm leading-none"
                 >
                   ×
@@ -217,7 +228,7 @@ export default function CreateProductPage() {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              aria-label="Add photos"
+              aria-label={t("addPhotos")}
               className="aspect-square rounded-lg border-2 border-dashed border-steel-light flex items-center justify-center text-steel transition-colors duration-200 hover:border-steel hover:text-ink"
             >
               <PlusIcon />
@@ -237,24 +248,24 @@ export default function CreateProductPage() {
 
       {step === 2 && (
         <div className="flex-1 p-4 space-y-4">
-          <h1 className="text-lg font-display font-bold text-ink mb-1">Details</h1>
+          <h1 className="text-lg font-display font-bold text-ink mb-1">{t("details")}</h1>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Name</label>
+            <label className="block text-sm font-medium mb-1">{tc("name")}</label>
             <input value={details.name} onChange={(e) => updateDetails("name", e.target.value)} className={fieldClass} />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Description</label>
+            <label className="block text-sm font-medium mb-1">{t("description")}</label>
             <textarea value={details.description} onChange={(e) => updateDetails("description", e.target.value)} rows={3} className={fieldClass} />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Description (French, optional)</label>
+            <label className="block text-sm font-medium mb-1">{t("descriptionFrOptional")}</label>
             <textarea
               value={details.descriptionFr}
               onChange={(e) => updateDetails("descriptionFr", e.target.value)}
-              placeholder="Include the French product name in here — the name field itself stays untranslated, but this text is searched."
+              placeholder={t("descriptionFrPlaceholder")}
               rows={3}
               className={fieldClass}
             />
@@ -262,31 +273,31 @@ export default function CreateProductPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium mb-1">Price (FCFA)</label>
+              <label className="block text-sm font-medium mb-1">{t("price")}</label>
               <input type="number" min="1" step="1" value={details.price} onChange={(e) => updateDetails("price", e.target.value)} className={fieldClass} />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Quantity</label>
+              <label className="block text-sm font-medium mb-1">{t("quantity")}</label>
               <input type="number" min="0" value={details.quantity} onChange={(e) => updateDetails("quantity", e.target.value)} className={fieldClass} />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Condition</label>
+            <label className="block text-sm font-medium mb-1">{t("condition")}</label>
             <select value={details.condition} onChange={(e) => updateDetails("condition", e.target.value as Details["condition"])} className={fieldClass}>
-              <option value="NEW">New</option>
-              <option value="USED">Used</option>
-              <option value="RECONDITIONED">Reconditioned</option>
+              <option value="NEW">{tCond("NEW")}</option>
+              <option value="USED">{tCond("USED")}</option>
+              <option value="RECONDITIONED">{tCond("RECONDITIONED")}</option>
             </select>
           </div>
 
           {details.condition !== "NEW" && (
             <div>
-              <label className="block text-sm font-medium mb-1">Condition notes</label>
+              <label className="block text-sm font-medium mb-1">{t("conditionNotes")}</label>
               <textarea
                 value={details.conditionNotes}
                 onChange={(e) => updateDetails("conditionNotes", e.target.value)}
-                placeholder="Describe wear, testing, functionality, etc."
+                placeholder={t("conditionNotesPlaceholder")}
                 rows={2}
                 className={fieldClass}
               />
@@ -294,24 +305,34 @@ export default function CreateProductPage() {
           )}
 
           <div>
-            <label className="block text-sm font-medium mb-1">Category</label>
+            <label className="block text-sm font-medium mb-1">{t("category")}</label>
             <select value={details.categoryId} onChange={(e) => updateDetails("categoryId", e.target.value)} className={fieldClass}>
-              <option value="">Select a category</option>
+              <option value="">{t("selectCategory")}</option>
               {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Brand (optional)</label>
+            <label className="block text-sm font-medium mb-1">{t("brandOptional")}</label>
             <select value={details.brandId} onChange={(e) => updateDetails("brandId", e.target.value)} className={fieldClass}>
-              <option value="">No brand</option>
+              <option value="">{t("noBrand")}</option>
               {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Part number (optional)</label>
+            <label className="block text-sm font-medium mb-1">{t("partNumberOptional")}</label>
             <input value={details.partNumber} onChange={(e) => updateDetails("partNumber", e.target.value)} className={fieldClass} />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">{t("crossReferenceOptional")}</label>
+            <input
+              value={details.crossReference}
+              onChange={(e) => updateDetails("crossReference", e.target.value)}
+              placeholder={t("crossReferencePlaceholder")}
+              className={`${fieldClass} font-mono`}
+            />
           </div>
 
           <VehicleCompatibilityPicker selectedIds={vehicleIds} onChange={setVehicleIds} />
@@ -320,8 +341,8 @@ export default function CreateProductPage() {
 
       {step === 3 && (
         <div className="flex-1 p-4">
-          <h1 className="text-lg font-display font-bold text-ink mb-1">Preview</h1>
-          <p className="text-sm text-steel mb-4">This is how the listing will look to customers.</p>
+          <h1 className="text-lg font-display font-bold text-ink mb-1">{t("preview.title")}</h1>
+          <p className="text-sm text-steel mb-4">{t("preview.hint")}</p>
 
           <div className="relative aspect-square rounded-lg overflow-hidden border border-steel-light bg-steel-light">
             {images[previewIndex] && (
@@ -347,9 +368,9 @@ export default function CreateProductPage() {
           )}
 
           <p className="text-sm text-steel mt-4">
-            {brands.find((b) => b.id === details.brandId)?.name ?? "Unbranded"} / {categories.find((c) => c.id === details.categoryId)?.name ?? "—"}
+            {brands.find((b) => b.id === details.brandId)?.name ?? t("unbranded")} / {categories.find((c) => c.id === details.categoryId)?.name ?? "—"}
           </p>
-          <h2 className="font-sans font-bold text-lg mt-1 text-ink leading-snug">{details.name || "Untitled product"}</h2>
+          <h2 className="font-sans font-bold text-lg mt-1 text-ink leading-snug">{details.name || t("preview.untitled")}</h2>
 
           <div className="flex items-center justify-between flex-wrap gap-x-2 gap-y-1 mt-2">
             <p className="font-mono font-semibold text-lg text-ink">
@@ -358,11 +379,11 @@ export default function CreateProductPage() {
             <ConditionTag condition={details.condition} />
           </div>
 
-          <p className="text-sm text-ink/60 mt-1">{details.quantity ? `${details.quantity} in stock` : "0 in stock"}</p>
+          <p className="text-sm text-ink/60 mt-1">{t("preview.inStock", { count: Number(details.quantity) || 0 })}</p>
 
           {details.conditionNotes && (
             <div className="mt-4 bg-amber/10 border-l-4 border-amber p-3 text-sm text-ink">
-              <span className="font-medium">Condition notes: </span>
+              <span className="font-medium">{t("preview.conditionNotesLabel")} </span>
               {details.conditionNotes}
             </div>
           )}
@@ -371,17 +392,19 @@ export default function CreateProductPage() {
 
           {details.descriptionFr && (
             <div className="mt-3">
-              <p className="text-xs font-medium text-steel mb-1">French description</p>
+              <p className="text-xs font-medium text-steel mb-1">{t("preview.frenchDescription")}</p>
               <p className="text-steel whitespace-pre-line leading-relaxed text-sm">{details.descriptionFr}</p>
             </div>
           )}
 
           {(details.partNumber || vehicleIds.length > 0) && (
             <div className="mt-4 text-sm text-steel space-y-1">
-              {details.partNumber && <p>Part number: <span className="font-mono">{details.partNumber}</span></p>}
+              {details.partNumber && <p>{t.rich("preview.partNumber", { number: details.partNumber, mono: (chunks) => <span className="font-mono">{chunks}</span> })}</p>}
               {vehicleIds.length > 0 && (
                 <p>
-                  Fits: {vehicles.filter((v) => vehicleIds.includes(v.id)).map((v) => `${v.manufacturer} ${v.model}`).join(", ")}
+                  {t("preview.fits", {
+                    vehicles: vehicles.filter((v) => vehicleIds.includes(v.id)).map((v) => `${v.manufacturer} ${v.model}`).join(", "),
+                  })}
                 </p>
               )}
             </div>
@@ -391,14 +414,14 @@ export default function CreateProductPage() {
 
       {step === 4 && (
         <div className="flex-1 p-4">
-          <h1 className="text-lg font-display font-bold text-ink mb-1">Ready to go</h1>
+          <h1 className="text-lg font-display font-bold text-ink mb-1">{t("ready.title")}</h1>
           <p className="text-sm text-steel mb-4">
-            Save it as a draft to finish later, or post it now so customers can see it right away.
+            {t("ready.hint")}
           </p>
           {saveError && <p className="text-sm text-red-600 mb-4">{saveError}</p>}
           {saving && (
             <p className="text-sm text-steel mb-4">
-              {saving === "DRAFT" ? "Saving draft…" : "Posting…"} uploading {images.length} photo{images.length !== 1 ? "s" : ""}, please don't close this page.
+              {t(saving === "DRAFT" ? "ready.uploadingDraft" : "ready.uploadingPost", { count: images.length })}
             </p>
           )}
         </div>
@@ -412,7 +435,7 @@ export default function CreateProductPage() {
             onClick={() => setStep((s) => s + 1)}
             className="w-full bg-ink text-white rounded-lg py-3 text-sm font-medium disabled:opacity-40"
           >
-            Next
+            {t("next")}
           </button>
         ) : (
           <div className="flex gap-3">
@@ -422,7 +445,7 @@ export default function CreateProductPage() {
               onClick={() => handleSave("DRAFT")}
               className="flex-1 border border-steel-light rounded-lg py-3 text-sm font-medium disabled:opacity-40"
             >
-              {saving === "DRAFT" ? "Saving…" : "Save draft"}
+              {saving === "DRAFT" ? tc("saving") : t("saveDraft")}
             </button>
             <button
               type="button"
@@ -430,7 +453,7 @@ export default function CreateProductPage() {
               onClick={() => handleSave("PUBLISHED")}
               className="flex-1 bg-ink text-white rounded-lg py-3 text-sm font-medium disabled:opacity-40"
             >
-              {saving === "PUBLISHED" ? "Posting…" : "Post"}
+              {saving === "PUBLISHED" ? t("posting") : t("post")}
             </button>
           </div>
         )}

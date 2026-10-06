@@ -1,4 +1,5 @@
 const createNextIntlPlugin = require("next-intl/plugin");
+const { withSentryConfig } = require("@sentry/nextjs/config");
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 /** @type {import('next').NextConfig} */
@@ -11,6 +12,12 @@ const nextConfig = {
   // login works but silently stops persisting on the very next reload.
   // Routing through Next.js's own server makes the round trip invisible to
   // the browser, so the cookie is scoped to this site's own origin instead.
+  // The admin lives outside the /fr|/en locale segment. Any locale-prefixed
+  // admin URL (e.g. produced by a locale-aware Link or a ?next= redirect)
+  // goes to the real one instead of a 404.
+  async redirects() {
+    return [{ source: "/:locale(fr|en)/admin/:path*", destination: "/admin/:path*", permanent: false }];
+  },
   async rewrites() {
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
     return [{ source: "/api/backend/:path*", destination: `${backendUrl}/:path*` }];
@@ -37,4 +44,16 @@ const nextConfig = {
   },
 };
 
-module.exports = withNextIntl(nextConfig);
+// Sentry: uploads source maps (readable stack traces) only when
+// SENTRY_AUTH_TOKEN is set in the build environment; otherwise it just
+// wires up error reporting. Tracing code is tree-shaken out to keep the
+// browser bundle small.
+module.exports = withSentryConfig(withNextIntl(nextConfig), {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
+  telemetry: false,
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN, deleteSourcemapsAfterUpload: true },
+  webpack: { treeshake: { removeDebugLogging: true, removeTracing: true } },
+});

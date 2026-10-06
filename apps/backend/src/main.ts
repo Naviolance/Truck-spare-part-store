@@ -1,4 +1,7 @@
+// Must be the first import: Sentry instruments modules as they load.
+import "./instrument";
 import { NestFactory } from "@nestjs/core";
+import type { NestExpressApplication } from "@nestjs/platform-express";
 import { ValidationPipe } from "@nestjs/common";
 import helmet from "helmet";
 import * as cookieParser from "cookie-parser";
@@ -8,26 +11,36 @@ import { AppModule } from "./app.module";
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // Default body size limit is too small for image uploads — raise it.
+  // How many proxies sit between the client and this process. Express uses it
+  // to read the real client IP out of X-Forwarded-For — rate limiting
+  // (UserThrottlerGuard) keys anonymous traffic on that IP. Too low and every
+  // visitor looks like the proxy (one shared bucket); too high and clients can
+  // spoof their IP via the header. Check it by opening /health and comparing
+  // "clientIp" with your real IP (see TRUST_PROXY in the README).
+  app.set("trust proxy", parseTrustProxy(process.env.TRUST_PROXY));
+
+  // JSON/form bodies are capped at 1mb: images arrive as multipart (with
+  // their own 5MB limit in UploadsController), so nothing legitimate needs
+  // more, and a big limit lets any client make us parse huge payloads.
   // The `verify` callback stashes the raw bytes for webhook signature checks,
-  // since Notch Pay signs the exact raw payload, not our parsed JSON object.
+  // since payment providers sign the exact raw payload, not our parsed JSON.
   app.use(
     json({
-      limit: "10mb",
+      limit: "1mb",
       verify: (req: IncomingMessage & { rawBody?: string }, _res, buf) => {
         req.rawBody = buf.toString();
       },
     }),
   );
-  app.use(urlencoded({ extended: true, limit: "10mb" }));
+  app.use(urlencoded({ extended: true, limit: "1mb" }));
 
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" },
-  }),
-);
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    }),
+  );
   app.use((cookieParser as unknown as () => RequestHandler)());
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
@@ -59,6 +72,16 @@ app.use(
   await app.listen(port);
   console.log(`🚚 TruckParts backend running on http://localhost:${port}`);
   console.log(`   Health check: http://localhost:${port}/health`);
+}
+
+// "2" -> 2 hops, "true"/"false" -> boolean, anything else (e.g. "loopback")
+// is passed through as Express's named/subnet form. Unset: trust only
+// loopback, which is right for local dev and wrong behind any real proxy.
+function parseTrustProxy(raw: string | undefined): boolean | number | string {
+  if (!raw) return "loopback";
+  if (/^\d+$/.test(raw)) return Number(raw);
+  if (raw === "true" || raw === "false") return raw === "true";
+  return raw;
 }
 
 bootstrap();

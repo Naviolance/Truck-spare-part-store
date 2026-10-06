@@ -1,12 +1,11 @@
-import { Module, forwardRef } from "@nestjs/common";
-import { PaymentsController } from "./payments.controller";
-import { PaymentsService } from "./payments.service";
-import { OrdersModule } from "../orders/orders.module";
+import { Module } from "@nestjs/common";
+import { PaymentGatewayService } from "./payment-gateway.service";
 
+// Provider adapters only — no knowledge of orders. Order/payment state lives
+// in orders/ (OrderPaymentsService), which depends on this module and not the
+// other way round, so there's no circular import any more.
 @Module({
-  imports: [forwardRef(() => OrdersModule)],
-  controllers: [PaymentsController],
-  providers: [PaymentsService],
-  exports: [PaymentsService],
+  providers: [PaymentGatewayService],
+  exports: [PaymentGatewayService],
 })
 export class PaymentsModule {}

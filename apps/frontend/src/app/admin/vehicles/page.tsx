@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { useTranslations } from "next-intl";
+import { apiFetch, readApiError } from "@/lib/api";
+import { useApiError } from "@/lib/use-api-error";
 
 type Vehicle = {
   id: string; manufacturer: string; model: string; yearStart: number; yearEnd: number | null; engine: string | null;
@@ -8,6 +10,9 @@ type Vehicle = {
 };
 
 export default function AdminVehiclesPage() {
+  const t = useTranslations("AdminVehicles");
+  const tc = useTranslations("AdminCommon");
+  const apiError = useApiError();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [form, setForm] = useState({ manufacturer: "", model: "", yearStart: "", yearEnd: "", engine: "" });
   const [error, setError] = useState<string | null>(null);
@@ -40,8 +45,7 @@ export default function AdminVehiclesPage() {
       }),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      setError(err.message || "Failed to add vehicle");
+      setError(apiError(await readApiError(res), t("addFailed")));
       setSubmitting(false);
       return;
     }
@@ -51,7 +55,7 @@ export default function AdminVehiclesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this vehicle configuration?")) return;
+    if (!confirm(t("deleteConfirm"))) return;
     setDeletingId(id);
     await apiFetch(`/vehicles/${id}`, { method: "DELETE" });
     await load();
@@ -60,31 +64,31 @@ export default function AdminVehiclesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">Vehicles</h1>
+      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">{t("title")}</h1>
 
       <form onSubmit={handleAdd} className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 bg-white border border-steel-light rounded-lg p-4">
         <div>
-          <label className="block text-xs font-medium mb-1">Manufacturer</label>
+          <label className="block text-xs font-medium mb-1">{t("manufacturer")}</label>
           <input required value={form.manufacturer} onChange={(e) => update("manufacturer", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
         </div>
         <div>
-          <label className="block text-xs font-medium mb-1">Model</label>
+          <label className="block text-xs font-medium mb-1">{t("model")}</label>
           <input required value={form.model} onChange={(e) => update("model", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
         </div>
         <div>
-          <label className="block text-xs font-medium mb-1">Year start</label>
+          <label className="block text-xs font-medium mb-1">{t("yearStart")}</label>
           <input required type="number" value={form.yearStart} onChange={(e) => update("yearStart", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
         </div>
         <div>
-          <label className="block text-xs font-medium mb-1">Year end (optional)</label>
+          <label className="block text-xs font-medium mb-1">{t("yearEnd")}</label>
           <input type="number" value={form.yearEnd} onChange={(e) => update("yearEnd", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
         </div>
         <div className="sm:col-span-2">
-          <label className="block text-xs font-medium mb-1">Engine (optional)</label>
+          <label className="block text-xs font-medium mb-1">{t("engine")}</label>
           <input value={form.engine} onChange={(e) => update("engine", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
         </div>
         {error && <p className="sm:col-span-2 text-red-600 text-sm">{error}</p>}
-        <button disabled={submitting} className="sm:col-span-2 bg-ink text-white rounded-lg py-2 text-sm disabled:opacity-50">{submitting ? "Adding…" : "Add vehicle"}</button>
+        <button disabled={submitting} className="sm:col-span-2 bg-ink text-white rounded-lg py-2 text-sm disabled:opacity-50">{submitting ? tc("adding") : t("addVehicle")}</button>
       </form>
 
       <ul className="bg-white border border-steel-light rounded-lg divide-y divide-steel-light">
@@ -93,14 +97,14 @@ export default function AdminVehiclesPage() {
             <span>
               {v.manufacturer} {v.model} ({v.yearStart}{v.yearEnd ? `–${v.yearEnd}` : "+"})
               {v.engine && ` · ${v.engine}`}
-              <span className="text-steel"> — {v._count.compatibilities} products</span>
+              <span className="text-steel"> — {t("productCount", { count: v._count.compatibilities })}</span>
             </span>
             <button
               onClick={() => handleDelete(v.id)}
               disabled={deletingId === v.id}
               className="shrink-0 border border-red-200 bg-red-50 text-red-600 rounded-lg px-3 py-1.5 text-xs transition-colors duration-200 hover:bg-red-100 disabled:opacity-50"
             >
-              {deletingId === v.id ? "Deleting…" : "Delete"}
+              {deletingId === v.id ? tc("deleting") : tc("delete")}
             </button>
           </li>
         ))}

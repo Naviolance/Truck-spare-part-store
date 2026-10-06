@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { useLocale, useTranslations } from "next-intl";
+import { apiFetch, readApiError } from "@/lib/api";
+import { useApiError } from "@/lib/use-api-error";
 import { formatMoney } from "@/lib/money";
 
 type Coupon = {
@@ -16,6 +18,12 @@ type Coupon = {
 };
 
 export default function AdminCouponsPage() {
+  const t = useTranslations("AdminCoupons");
+  const tc = useTranslations("AdminCommon");
+  const locale = useLocale();
+  const apiError = useApiError();
+  const uses = (c: Coupon) => `${c.usedCount.toLocaleString(locale)}${c.maxUses ? ` / ${c.maxUses.toLocaleString(locale)}` : ""}`;
+  const expires = (c: Coupon) => (c.expiresAt ? new Date(c.expiresAt).toLocaleDateString(locale) : "—");
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,8 +59,7 @@ export default function AdminCouponsPage() {
       }),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      setError(err.message || "Failed to create coupon");
+      setError(apiError(await readApiError(res), t("createFailed")));
       setSubmitting(false);
       return;
     }
@@ -69,53 +76,53 @@ export default function AdminCouponsPage() {
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this coupon?")) return;
+    if (!confirm(t("deleteConfirm"))) return;
     setPendingId(id);
     await apiFetch(`/coupons/${id}`, { method: "DELETE" });
     await load();
     setPendingId(null);
   }
 
-  if (loading) return <p className="text-steel">Loading…</p>;
+  if (loading) return <p className="text-steel">{tc("loading")}</p>;
 
   return (
     <div>
-      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">Coupons</h1>
+      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">{t("title")}</h1>
 
       <form onSubmit={handleCreate} className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 bg-white border border-steel-light rounded-lg p-4">
         <div>
-          <label className="block text-xs font-medium mb-1">Code</label>
+          <label className="block text-xs font-medium mb-1">{t("code")}</label>
           <input required value={form.code} onChange={(e) => update("code", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
         </div>
         <div>
-          <label className="block text-xs font-medium mb-1">Type</label>
+          <label className="block text-xs font-medium mb-1">{t("type")}</label>
           <select value={form.type} onChange={(e) => update("type", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm">
-            <option value="PERCENTAGE">Percentage off</option>
-            <option value="FIXED">Fixed amount off (FCFA)</option>
+            <option value="PERCENTAGE">{t("typePercentage")}</option>
+            <option value="FIXED">{t("typeFixed")}</option>
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium mb-1">Value</label>
+          <label className="block text-xs font-medium mb-1">{t("value")}</label>
           <input required type="number" min="0" value={form.value} onChange={(e) => update("value", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
         </div>
         <div>
-          <label className="block text-xs font-medium mb-1">Min. order total (optional)</label>
+          <label className="block text-xs font-medium mb-1">{t("minOrderTotal")}</label>
           <input type="number" min="0" value={form.minOrderTotal} onChange={(e) => update("minOrderTotal", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
         </div>
         <div>
-          <label className="block text-xs font-medium mb-1">Max uses (optional)</label>
+          <label className="block text-xs font-medium mb-1">{t("maxUses")}</label>
           <input type="number" min="1" value={form.maxUses} onChange={(e) => update("maxUses", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
         </div>
         <div>
-          <label className="block text-xs font-medium mb-1">Expires (optional)</label>
+          <label className="block text-xs font-medium mb-1">{t("expiresAt")}</label>
           <input type="date" value={form.expiresAt} onChange={(e) => update("expiresAt", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
         </div>
         {error && <p className="sm:col-span-2 text-red-600 text-sm">{error}</p>}
-        <button disabled={submitting} className="sm:col-span-2 bg-ink text-white rounded-lg py-2 text-sm disabled:opacity-50">{submitting ? "Creating…" : "Create coupon"}</button>
+        <button disabled={submitting} className="sm:col-span-2 bg-ink text-white rounded-lg py-2 text-sm disabled:opacity-50">{submitting ? t("creating") : t("create")}</button>
       </form>
 
       {coupons.length === 0 ? (
-        <p className="text-steel">No coupons yet.</p>
+        <p className="text-steel">{t("empty")}</p>
       ) : (
         <>
         <div className="sm:hidden space-y-3">
@@ -125,21 +132,21 @@ export default function AdminCouponsPage() {
                 <p className="font-mono font-medium text-ink">{c.code}</p>
                 <button onClick={() => toggleActive(c)} disabled={pendingId === c.id}
                   className={`shrink-0 text-xs px-2 py-1 rounded-full disabled:opacity-50 ${c.active ? "bg-green-100 text-green-700" : "bg-steel-light text-steel"}`}>
-                  {pendingId === c.id ? "…" : c.active ? "ACTIVE" : "INACTIVE"}
+                  {pendingId === c.id ? "…" : c.active ? t("active") : t("inactive")}
                 </button>
               </div>
-              <p className="text-sm text-ink mt-2">{c.type === "PERCENTAGE" ? `${c.value}% off` : `${formatMoney(c.value)} off`}</p>
+              <p className="text-sm text-ink mt-2">{t("off", { amount: c.type === "PERCENTAGE" ? `${c.value}%` : formatMoney(c.value) })}</p>
               <div className="mt-2 text-xs text-steel space-y-0.5">
-                <p>Min. order: {c.minOrderTotal ? formatMoney(c.minOrderTotal) : "—"}</p>
-                <p>Uses: {c.usedCount}{c.maxUses ? ` / ${c.maxUses}` : ""}</p>
-                <p>Expires: {c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : "—"}</p>
+                <p>{t("minOrderLine", { value: c.minOrderTotal ? formatMoney(c.minOrderTotal) : "—" })}</p>
+                <p>{t("usesLine", { value: uses(c) })}</p>
+                <p>{t("expiresLine", { value: expires(c) })}</p>
               </div>
               <button
                 onClick={() => remove(c.id)}
                 disabled={pendingId === c.id}
                 className="w-full mt-3 border border-red-200 bg-red-50 text-red-600 rounded-lg py-2 text-sm disabled:opacity-50"
               >
-                {pendingId === c.id ? "Deleting…" : "Delete"}
+                {pendingId === c.id ? tc("deleting") : tc("delete")}
               </button>
             </div>
           ))}
@@ -148,12 +155,12 @@ export default function AdminCouponsPage() {
         <table className="w-full text-sm bg-white border border-steel-light rounded-lg overflow-hidden">
           <thead className="bg-paper text-left">
             <tr>
-              <th className="p-3">Code</th>
-              <th className="p-3">Discount</th>
-              <th className="p-3">Min. order</th>
-              <th className="p-3">Uses</th>
-              <th className="p-3">Expires</th>
-              <th className="p-3">Status</th>
+              <th className="p-3">{t("code")}</th>
+              <th className="p-3">{t("colDiscount")}</th>
+              <th className="p-3">{t("colMinOrder")}</th>
+              <th className="p-3">{t("colUses")}</th>
+              <th className="p-3">{t("colExpires")}</th>
+              <th className="p-3">{tc("status")}</th>
               <th className="p-3"></th>
             </tr>
           </thead>
@@ -163,12 +170,12 @@ export default function AdminCouponsPage() {
                 <td className="p-3 font-mono">{c.code}</td>
                 <td className="p-3">{c.type === "PERCENTAGE" ? `${c.value}%` : formatMoney(c.value)}</td>
                 <td className="p-3">{c.minOrderTotal ? formatMoney(c.minOrderTotal) : "—"}</td>
-                <td className="p-3">{c.usedCount}{c.maxUses ? ` / ${c.maxUses}` : ""}</td>
-                <td className="p-3">{c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : "—"}</td>
+                <td className="p-3">{uses(c)}</td>
+                <td className="p-3">{expires(c)}</td>
                 <td className="p-3">
                   <button onClick={() => toggleActive(c)} disabled={pendingId === c.id}
                     className={`text-xs px-2 py-1 rounded-full disabled:opacity-50 ${c.active ? "bg-green-100 text-green-700" : "bg-steel-light text-steel"}`}>
-                    {pendingId === c.id ? "…" : c.active ? "ACTIVE" : "INACTIVE"}
+                    {pendingId === c.id ? "…" : c.active ? t("active") : t("inactive")}
                   </button>
                 </td>
                 <td className="p-3 text-right">
@@ -177,7 +184,7 @@ export default function AdminCouponsPage() {
                     disabled={pendingId === c.id}
                     className="border border-red-200 bg-red-50 text-red-600 rounded-lg px-3 py-1.5 text-xs transition-colors duration-200 hover:bg-red-100 disabled:opacity-50"
                   >
-                    {pendingId === c.id ? "Deleting…" : "Delete"}
+                    {pendingId === c.id ? tc("deleting") : tc("delete")}
                   </button>
                 </td>
               </tr>

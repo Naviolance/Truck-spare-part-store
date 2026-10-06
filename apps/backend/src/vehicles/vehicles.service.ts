@@ -1,7 +1,7 @@
-import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { slugify } from "../common/utils/slugify";
 import { CreateVehicleDto } from "./dto/create-vehicle.dto";
-import { ProductStatus, Prisma } from "@truckparts/prisma";
 
 @Injectable()
 export class VehiclesService {
@@ -35,48 +35,26 @@ export class VehiclesService {
     });
   }
 
-  // Progressive Find-My-Part search: results narrow as more of manufacturer
-  // / model / vehicleId are picked, instead of showing nothing until a
-  // single exact vehicle config is fully selected. vehicleId (the most
-  // specific filter) takes priority alone when present — manufacturer/model
-  // are still sent by the frontend at that point, but they'd only narrow a
-  // set that's already down to one exact vehicle.
-  async getProductsForFilter(filter: { manufacturer?: string; model?: string; vehicleId?: string }) {
-    if (!filter.manufacturer && !filter.model && !filter.vehicleId) {
-      throw new BadRequestException("At least one of manufacturer, model, or vehicleId is required");
+  // Every make and model with how many published products fit it, plus URL
+  // slugs — feeds the /trucks landing pages and the sitemap in one call.
+  // Counts let the frontend skip (noindex) truck pages with nothing to show.
+  async catalog() {
+    const rows = await this.prisma.$queryRaw<{ manufacturer: string; model: string; products: number }[]>`
+      SELECT v.manufacturer, v.model, count(DISTINCT p.id)::int AS products
+      FROM vehicles v
+      LEFT JOIN product_compatibility pc ON pc."vehicleId" = v.id
+      LEFT JOIN products p ON p.id = pc."productId" AND p.status = 'PUBLISHED'
+      GROUP BY v.manufacturer, v.model
+      ORDER BY v.manufacturer, v.model`;
+
+    const makes = new Map<string, { manufacturer: string; slug: string; products: number; models: { model: string; slug: string; products: number }[] }>();
+    for (const row of rows) {
+      const make = makes.get(row.manufacturer) ?? { manufacturer: row.manufacturer, slug: slugify(row.manufacturer), products: 0, models: [] };
+      make.models.push({ model: row.model, slug: slugify(row.model), products: row.products });
+      make.products += row.products;
+      makes.set(row.manufacturer, make);
     }
-
-    const vehicleWhere: Prisma.VehicleWhereInput = filter.vehicleId
-      ? { id: filter.vehicleId }
-      : {
-          ...(filter.manufacturer ? { manufacturer: filter.manufacturer } : {}),
-          ...(filter.model ? { model: filter.model } : {}),
-        };
-
-    return this.prisma.product.findMany({
-      where: {
-        status: ProductStatus.PUBLISHED,
-        quantity: { gt: 0 },
-        compatibility: { some: { vehicle: vehicleWhere } },
-      },
-      include: { category: true, brand: true, images: { orderBy: { position: "asc" }, take: 1 } },
-      orderBy: { createdAt: "desc" },
-    });
-  }
-
-  async getProductsForVehicle(vehicleId: string) {
-    const vehicle = await this.prisma.vehicle.findUnique({ where: { id: vehicleId } });
-    if (!vehicle) throw new NotFoundException("Vehicle not found");
-
-    return this.prisma.product.findMany({
-      where: {
-        status: ProductStatus.PUBLISHED,
-        quantity: { gt: 0 },
-        compatibility: { some: { vehicleId } },
-      },
-      include: { category: true, brand: true, images: { orderBy: { position: "asc" }, take: 1 } },
-      orderBy: { createdAt: "desc" },
-    });
+    return [...makes.values()];
   }
 
   // --- Admin management ---

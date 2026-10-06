@@ -1,3 +1,4 @@
+import { apiError } from "../common/errors";
 import {
   Injectable,
   BadRequestException,
@@ -6,17 +7,21 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
-import { PaymentsService } from "../payments/payments.service";
 import { CouponsService } from "../coupons/coupons.service";
 import { MailService } from "../mail/mail.service";
-import { OrderStatus, PaymentStatus } from "@truckparts/prisma";
+import { Order, OrderStatus, PaymentStatus, Prisma } from "@truckparts/prisma";
 import { CreateOrderDto } from "./dto/create-order.dto";
+import { AdminOrdersQueryDto } from "./dto/admin-orders-query.dto";
+import { paginate, searchTerm } from "../common/utils/paginate";
 import { generateOrderNumber } from "../common/utils/order-number";
+import { escapeHtml } from "../common/utils/escape-html";
+import { formatXaf } from "../common/utils/money";
+import { Actor, canTransition, nextStatusesForAdmin, releasesCoupon, releasesStock, reservesStock } from "./order-status";
 
 const STATUS_EMAIL_CONTENT: Partial<Record<OrderStatus, { subject: string; body: string }>> = {
   [OrderStatus.PAID]: {
     subject: "confirmed",
-    body: "We've received your payment. We'll email you again once it ships.",
+    body: "We've received your payment. We'll let you know when your order is ready.",
   },
   [OrderStatus.PROCESSING]: {
     subject: "is being processed",
@@ -34,6 +39,10 @@ const STATUS_EMAIL_CONTENT: Partial<Record<OrderStatus, { subject: string; body:
     subject: "payment failed",
     body: "We couldn't process payment for this order. The items have been released back to stock — feel free to try again.",
   },
+  [OrderStatus.EXPIRED]: {
+    subject: "has expired",
+    body: "We didn't receive payment for this order in time, so the items were released back to stock. You're welcome to order again.",
+  },
   [OrderStatus.CANCELLED]: {
     subject: "was cancelled",
     body: "This order has been cancelled.",
@@ -48,35 +57,118 @@ const STATUS_EMAIL_CONTENT: Partial<Record<OrderStatus, { subject: string; body:
   },
 };
 
+const ORDER_DETAIL_INCLUDE = {
+  items: true,
+  payments: true,
+  user: { select: { firstName: true, lastName: true, email: true } },
+} satisfies Prisma.OrderInclude;
+
+// Thrown inside a transition's transaction when a late payment tries to
+// revive an EXPIRED order but its units have since been sold to someone else.
+export class StockUnavailableError extends Error {}
+
+type TransitionOptions = {
+  // Extra writes that must commit atomically with the status change (e.g.
+  // marking the cash payment SUCCEEDED together with the order becoming PAID).
+  inTransaction?: (tx: Prisma.TransactionClient, order: Order) => Promise<void>;
+};
+
 @Injectable()
 export class OrdersService {
   constructor(
     private prisma: PrismaService,
-    private paymentsService: PaymentsService,
     private couponsService: CouponsService,
     private mailService: MailService,
   ) {}
 
-  // Best-effort — a flaky mail server shouldn't ever block a real state
-  // change like a payment confirming or stock being restored. DISPUTED,
-  // CART, and PAYMENT_PENDING have no entry above, so this is a no-op for
-  // those on purpose.
-  private async notifyStatusChange(orderId: string, status: OrderStatus) {
+  // The ONLY place an existing order's status changes. Enforces the state
+  // machine in order-status.ts and applies its stock/coupon side effects.
+  //
+  // Why it can't double-restock: the status change is a conditional
+  // `UPDATE ... WHERE id = ? AND status = <the status we read>`. If two
+  // callers race (a webhook and the expiry job, two admin clicks...), both
+  // may read PAYMENT_PENDING, but Postgres row-locks the first UPDATE; the
+  // second re-checks `status = PAYMENT_PENDING` after the lock is released,
+  // matches 0 rows, and stops BEFORE touching stock. Same idea as checkout().
+  //
+  // Returns the order with its previous status, or null when nothing changed
+  // (already in that status, a concurrent caller won, or — for the system
+  // actor — the move isn't allowed). Admin requests for illegal moves throw.
+  async transition(orderId: string, to: OrderStatus, actor: Actor, options: TransitionOptions = {}) {
+    const result = await this.prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({ where: { id: orderId }, include: { items: true } });
+      if (!order) throw new NotFoundException(apiError("ORDER_NOT_FOUND", "Order not found"));
+      const from = order.status;
+      if (from === to) return null;
+
+      if (!canTransition(actor, from, to)) {
+        if (actor === "admin") throw new BadRequestException(apiError("ORDER_TRANSITION_INVALID", `An order can't go from ${from} to ${to}`, { from, to }));
+        return null;
+      }
+
+      const claimed = await tx.order.updateMany({ where: { id: orderId, status: from }, data: { status: to } });
+      if (claimed.count === 0) return null;
+
+      if (releasesStock(from, to)) {
+        for (const item of order.items) {
+          await tx.product.update({ where: { id: item.productId }, data: { quantity: { increment: item.quantity } } });
+        }
+      }
+
+      if (reservesStock(from, to)) {
+        for (const item of order.items) {
+          const reserved = await tx.product.updateMany({
+            where: { id: item.productId, quantity: { gte: item.quantity } },
+            data: { quantity: { decrement: item.quantity } },
+          });
+          if (reserved.count === 0) throw new StockUnavailableError(item.productName);
+        }
+      }
+
+      if (releasesCoupon(from, to) && order.couponId) {
+        await tx.coupon.updateMany({
+          where: { id: order.couponId, usedCount: { gt: 0 } },
+          data: { usedCount: { decrement: 1 } },
+        });
+      }
+
+      if (to === OrderStatus.REFUNDED) {
+        await tx.payment.updateMany({
+          where: { orderId, status: PaymentStatus.SUCCEEDED },
+          data: { status: PaymentStatus.REFUNDED },
+        });
+      } else if (to === OrderStatus.EXPIRED || to === OrderStatus.CANCELLED || to === OrderStatus.PAYMENT_FAILED) {
+        await tx.payment.updateMany({
+          where: { orderId, status: PaymentStatus.PENDING },
+          data: { status: PaymentStatus.FAILED },
+        });
+      }
+
+      await options.inTransaction?.(tx, order);
+      return { ...order, status: to, previousStatus: from };
+    });
+
+    if (result) this.notifyStatusChange(orderId, to);
+    return result;
+  }
+
+  // Fire-and-forget (see MailService.sendQuietly). DISPUTED, CART and
+  // PAYMENT_PENDING have no entry, so they don't email the customer.
+  private notifyStatusChange(orderId: string, status: OrderStatus) {
     const entry = STATUS_EMAIL_CONTENT[status];
     if (!entry) return;
 
-    try {
-      const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { user: true } });
-      if (!order) return;
-
-      await this.mailService.sendMail(
-        order.user.email,
-        `Order ${order.orderNumber} ${entry.subject}`,
-        `<p>Hi ${order.user.firstName},</p><p>${entry.body}</p><p>Order: ${order.orderNumber}</p>`,
-      );
-    } catch (err) {
-      console.error("Failed to send order status email:", err);
-    }
+    this.prisma.order
+      .findUnique({ where: { id: orderId }, include: { user: true } })
+      .then((order) => {
+        if (!order) return;
+        this.mailService.sendQuietly(
+          order.user.email,
+          `Order ${order.orderNumber} ${entry.subject}`,
+          `<p>Hi ${escapeHtml(order.user.firstName)},</p><p>${entry.body}</p><p>Order: ${order.orderNumber}</p>`,
+        );
+      })
+      .catch((err) => console.error("Failed to load order for status email:", err));
   }
 
   // Checkout without overselling.
@@ -96,17 +188,20 @@ export class OrdersService {
   // each request first "claims" the cart by deleting its items. Only one
   // request can delete them; the other deletes fewer rows than it read and
   // stops before touching stock or coupons.
+  //
+  // The order is PAYMENT_PENDING until paid (online or cash). If it never is,
+  // OrderExpiryService releases the stock after the time limit.
   async checkout(userId: string, dto: CreateOrderDto) {
     const cart = await this.prisma.cart.findUnique({ where: { userId } });
-    if (!cart) throw new BadRequestException("Cart is empty");
+    if (!cart) throw new BadRequestException(apiError("CART_EMPTY", "Cart is empty"));
 
-    return this.prisma.$transaction(async (tx) => {
+    const order = await this.prisma.$transaction(async (tx) => {
       const cartItems = await tx.cartItem.findMany({
         where: { cartId: cart.id },
         include: { product: true },
       });
 
-      if (cartItems.length === 0) throw new BadRequestException("Cart is empty");
+      if (cartItems.length === 0) throw new BadRequestException(apiError("CART_EMPTY", "Cart is empty"));
 
       // Claim the cart. A concurrent checkout of the same cart waits on these
       // row locks, then finds the rows already gone.
@@ -115,15 +210,12 @@ export class OrdersService {
       });
 
       if (claimed.count !== cartItems.length) {
-        throw new ConflictException("This cart is already being checked out");
+        throw new ConflictException(apiError("CHECKOUT_IN_PROGRESS", "This cart is already being checked out"));
       }
 
       let subtotal = 0;
 
       for (const item of cartItems) {
-        // Atomic conditional update: only succeeds if enough stock is STILL
-        // available at this exact instant, regardless of what the cart said
-        // when the page loaded. This is what makes concurrent checkouts safe.
         const result = await tx.product.updateMany({
           where: { id: item.productId, quantity: { gte: item.quantity } },
           data: { quantity: { decrement: item.quantity } },
@@ -131,7 +223,7 @@ export class OrdersService {
 
         if (result.count === 0) {
           throw new BadRequestException(
-            `"${item.product.name}" no longer has enough stock available`,
+            apiError("STOCK_CHANGED", `"${item.product.name}" no longer has enough stock available`, { product: item.product.name }),
           );
         }
 
@@ -146,10 +238,7 @@ export class OrdersService {
         couponId = applied.couponId;
       }
 
-      // Order stays PAYMENT_PENDING — the webhook is what confirms payment
-      // and finalizes things. Stock is already reserved above via the
-      // atomic decrement, so no one else can buy these units in the meantime.
-      const order = await tx.order.create({
+      return tx.order.create({
         data: {
           orderNumber: generateOrderNumber(),
           userId,
@@ -173,180 +262,72 @@ export class OrdersService {
         },
         include: { items: true },
       });
-
-      return order;
-    });
-  }
-
-  // Called right after order creation — starts the actual payment with
-  // Notch Pay and returns the hosted checkout URL to redirect the customer to.
-  async initiatePayment(userId: string, orderId: string) {
-    const order = await this.prisma.order.findFirst({ where: { id: orderId, userId } });
-    if (!order) throw new NotFoundException("Order not found");
-    if (order.status !== OrderStatus.PAYMENT_PENDING) {
-      throw new BadRequestException("This order has already been processed");
-    }
-
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-
-    const payment = await this.paymentsService.initializePayment({
-      amount: Number(order.total),
-      reference: order.orderNumber,
-      email: user!.email,
-      name: `${user!.firstName} ${user!.lastName}`,
-      callbackUrl: `${process.env.FRONTEND_URL}/orders/${order.id}`,
     });
 
-    await this.prisma.payment.create({
-      data: {
-        orderId: order.id,
-        provider: "notchpay",
-        providerTransactionId: payment.transaction?.reference || order.orderNumber,
-        amount: order.total,
-        status: PaymentStatus.PENDING,
-      },
-    });
-
-    return { checkoutUrl: payment.authorization_url };
-  }
-
-  // Customer chose to pay cash at pickup instead of online — no gateway
-  // involved, so there's no checkoutUrl to redirect to. The order stays
-  // PAYMENT_PENDING (stock is already reserved from checkout()) until an
-  // admin confirms cash was actually received, via confirmCashPayment below.
-  async selectCashPayment(userId: string, orderId: string) {
-    const order = await this.prisma.order.findFirst({ where: { id: orderId, userId } });
-    if (!order) throw new NotFoundException("Order not found");
-    if (order.status !== OrderStatus.PAYMENT_PENDING) {
-      throw new BadRequestException("This order has already been processed");
-    }
-
-    await this.prisma.payment.create({
-      data: {
-        orderId: order.id,
-        provider: "cash",
-        amount: order.total,
-        status: PaymentStatus.PENDING,
-      },
-    });
+    this.mailService.notifyAdmin(
+      `New order ${order.orderNumber} — ${formatXaf(order.total)}`,
+      `<p>A new order was placed.</p>
+       <ul>${order.items.map((i) => `<li>${i.quantity} × ${escapeHtml(i.productName)}</li>`).join("")}</ul>
+       <p>Total: ${formatXaf(order.total)}<br>City: ${escapeHtml(order.shippingCity)}<br>Phone: ${escapeHtml(order.shippingPhone)}</p>
+       <p>It is awaiting payment; see the admin orders page.</p>`,
+    );
 
     return order;
   }
 
-  // Admin-triggered — the counterpart to confirmPayment() for orders paid in
-  // person rather than through the webhook. Only usable on an order that
-  // actually has a pending cash payment, so a normal online order can't be
-  // marked paid through this shortcut.
-  async confirmCashPayment(orderId: string) {
-    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
-    if (!order) throw new NotFoundException("Order not found");
+  // Customer chose to pay cash at pickup — no gateway involved. The order
+  // stays PAYMENT_PENDING (stock already reserved) until an admin confirms
+  // the cash was received. Idempotent: a double click records one payment.
+  async selectCashPayment(userId: string, orderId: string) {
+    const order = await this.prisma.order.findFirst({ where: { id: orderId, userId }, include: { payments: true } });
+    if (!order) throw new NotFoundException(apiError("ORDER_NOT_FOUND", "Order not found"));
     if (order.status !== OrderStatus.PAYMENT_PENDING) {
-      throw new BadRequestException("This order has already been processed");
+      throw new BadRequestException(apiError("ORDER_ALREADY_PROCESSED", "This order has already been processed"));
     }
 
+    const hasPendingCash = order.payments.some((p) => p.provider === "cash" && p.status === PaymentStatus.PENDING);
+    if (!hasPendingCash) {
+      await this.prisma.payment.create({
+        data: { orderId: order.id, provider: "cash", amount: order.total, status: PaymentStatus.PENDING },
+      });
+    }
+
+    return order;
+  }
+
+  // Admin confirms cash was received. The order becoming PAID and the cash
+  // payment becoming SUCCEEDED commit together, or neither does.
+  async confirmCashPayment(orderId: string) {
     const cashPayment = await this.prisma.payment.findFirst({
       where: { orderId, provider: "cash", status: PaymentStatus.PENDING },
     });
-    if (!cashPayment) throw new BadRequestException("This order has no pending cash payment");
+    if (!cashPayment) throw new BadRequestException(apiError("NO_PENDING_CASH_PAYMENT", "This order has no pending cash payment"));
 
-    await this.prisma.$transaction([
-      this.prisma.order.update({ where: { id: order.id }, data: { status: OrderStatus.PAID } }),
-      this.prisma.payment.update({ where: { id: cashPayment.id }, data: { status: PaymentStatus.SUCCEEDED } }),
-    ]);
-
-    // Fire-and-forget: a slow or failing mail provider must never block the
-    // caller — this can now run from a customer's browser polling
-    // GET /orders/:id, not just the webhook or an admin action.
-    void this.notifyStatusChange(order.id, OrderStatus.PAID);
-  }
-
-  // Called by the webhook handler once Notch Pay confirms payment success.
-  // This is where the order actually becomes final — atomically, since stock
-  // was already safely reserved at checkout time.
-  async confirmPayment(orderNumber: string, providerTransactionId: string) {
-    const order = await this.prisma.order.findUnique({ where: { orderNumber } });
-    if (!order) return; // unknown order — ignore silently, don't error on webhook
-
-    // Idempotency: if we've already processed this (webhook retried, or
-    // arrived twice), don't double-process.
-    if (order.status !== OrderStatus.PAYMENT_PENDING) return;
-
-    await this.prisma.$transaction([
-      this.prisma.order.update({ where: { id: order.id }, data: { status: OrderStatus.PAID } }),
-      this.prisma.payment.updateMany({
-        where: { orderId: order.id },
-        data: { status: PaymentStatus.SUCCEEDED, providerTransactionId },
-      }),
-    ]);
-
-    // Fire-and-forget: a slow or failing mail provider must never block the
-    // caller — this can now run from a customer's browser polling
-    // GET /orders/:id, not just the webhook or an admin action.
-    void this.notifyStatusChange(order.id, OrderStatus.PAID);
-  }
-
-  async failPayment(orderNumber: string) {
-    const order = await this.prisma.order.findUnique({ where: { orderNumber } });
-    if (!order || order.status !== OrderStatus.PAYMENT_PENDING) return;
-
-    // Restore the stock we reserved at checkout, since the payment didn't go through.
-    const items = await this.prisma.orderItem.findMany({ where: { orderId: order.id } });
-
-    await this.prisma.$transaction([
-      this.prisma.order.update({ where: { id: order.id }, data: { status: OrderStatus.PAYMENT_FAILED } }),
-      this.prisma.payment.updateMany({ where: { orderId: order.id }, data: { status: PaymentStatus.FAILED } }),
-      ...items.map((item) =>
-        this.prisma.product.update({
-          where: { id: item.productId },
-          data: { quantity: { increment: item.quantity } },
-        }),
-      ),
-    ]);
-
-    void this.notifyStatusChange(order.id, OrderStatus.PAYMENT_FAILED);
-  }
-
-  // Admin-triggered cancel/refund. Picks CANCELLED vs REFUNDED automatically
-  // based on whether the order was ever actually paid — stock is always
-  // restored either way, since checkout reserved it regardless of outcome.
-  // Actually returning money to the customer via Notch Pay is a manual step
-  // for now (payment-gateway integration for refunds isn't wired up yet).
-  async cancelOrder(orderId: string) {
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
-      include: { items: true },
+    const result = await this.transition(orderId, OrderStatus.PAID, "system", {
+      inTransaction: async (tx) => {
+        await tx.payment.update({ where: { id: cashPayment.id }, data: { status: PaymentStatus.SUCCEEDED } });
+      },
     });
-    if (!order) throw new NotFoundException("Order not found");
+    if (!result) throw new BadRequestException(apiError("ORDER_ALREADY_PROCESSED", "This order has already been processed"));
+  }
 
-    const alreadyFinal: OrderStatus[] = [
-      OrderStatus.CANCELLED,
-      OrderStatus.REFUNDED,
-      OrderStatus.PARTIALLY_REFUNDED,
-    ];
-    if (alreadyFinal.includes(order.status)) {
-      throw new BadRequestException("This order has already been cancelled or refunded");
-    }
+  // Admin "cancel" button: a never-paid order is CANCELLED, a paid one is
+  // REFUNDED. Actually sending the money back is manual for now.
+  async cancelOrder(orderId: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException(apiError("ORDER_NOT_FOUND", "Order not found"));
 
-    const wasPaid = order.status !== OrderStatus.PAYMENT_PENDING && order.status !== OrderStatus.PAYMENT_FAILED;
-    const newStatus = wasPaid ? OrderStatus.REFUNDED : OrderStatus.CANCELLED;
+    const to = order.status === OrderStatus.PAYMENT_PENDING ? OrderStatus.CANCELLED : OrderStatus.REFUNDED;
+    const result = await this.transition(orderId, to, "admin");
+    if (!result) throw new ConflictException(apiError("ORDER_CHANGED", "This order was changed by someone else — refresh and try again"));
 
-    await this.prisma.$transaction([
-      this.prisma.order.update({ where: { id: order.id }, data: { status: newStatus } }),
-      this.prisma.payment.updateMany({
-        where: { orderId: order.id, status: PaymentStatus.SUCCEEDED },
-        data: { status: PaymentStatus.REFUNDED },
-      }),
-      ...order.items.map((item) =>
-        this.prisma.product.update({
-          where: { id: item.productId },
-          data: { quantity: { increment: item.quantity } },
-        }),
-      ),
-    ]);
+    return this.prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
+  }
 
-    void this.notifyStatusChange(order.id, newStatus);
-
-    return this.prisma.order.findUnique({ where: { id: order.id }, include: { items: true } });
+  async updateStatus(orderId: string, status: OrderStatus) {
+    const result = await this.transition(orderId, status, "admin");
+    if (!result) throw new ConflictException(apiError("ORDER_CHANGED", "This order was changed by someone else — refresh and try again"));
+    return this.prisma.order.findUnique({ where: { id: orderId } });
   }
 
   async findMyOrders(userId: string) {
@@ -358,56 +339,35 @@ export class OrdersService {
   }
 
   async findOne(userId: string, orderId: string, isAdmin: boolean) {
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
-      include: { items: true, payments: true, user: { select: { firstName: true, lastName: true, email: true } } },
-    });
+    const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: ORDER_DETAIL_INCLUDE });
 
-    if (!order) throw new NotFoundException("Order not found");
+    if (!order) throw new NotFoundException(apiError("ORDER_NOT_FOUND", "Order not found"));
     if (!isAdmin && order.userId !== userId) {
-      throw new ForbiddenException("You do not have access to this order");
+      throw new ForbiddenException(apiError("ORDER_FORBIDDEN", "You do not have access to this order"));
     }
-
-    // The webhook that normally confirms payment can be delayed — or, if
-    // Notch Pay can't reach this backend at all (e.g. it's running on
-    // localhost), never arrive. So whenever someone checks a still-pending
-    // online order, also ask Notch Pay directly whether it actually went
-    // through, and self-heal instead of relying on the webhook alone.
-    const notchPayment = order.payments.find((p) => p.provider === "notchpay");
-    if (order.status === OrderStatus.PAYMENT_PENDING && notchPayment?.providerTransactionId) {
-      try {
-        const { transaction } = await this.paymentsService.verifyPayment(notchPayment.providerTransactionId);
-        if (transaction?.status === "complete") {
-          await this.confirmPayment(order.orderNumber, transaction.reference);
-        } else if (["failed", "expired", "canceled", "declined"].includes(transaction?.status)) {
-          await this.failPayment(order.orderNumber);
-        }
-      } catch {
-        // Notch Pay lookup failed (network blip, unknown reference) — fall
-        // back to what we already have rather than blocking the page on it.
-      }
-      return this.prisma.order.findUnique({
-        where: { id: orderId },
-        include: { items: true, payments: true, user: { select: { firstName: true, lastName: true, email: true } } },
-      });
-    }
-
     return order;
   }
 
-  async findAllAdmin() {
-    return this.prisma.order.findMany({
-      include: { items: true, payments: true, user: { select: { firstName: true, lastName: true, email: true } } },
-      orderBy: { createdAt: "desc" },
-    });
-  }
-
-  async updateStatus(orderId: string, status: OrderStatus) {
-    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
-    if (!order) throw new NotFoundException("Order not found");
-
-    const updated = await this.prisma.order.update({ where: { id: orderId }, data: { status } });
-    void this.notifyStatusChange(orderId, status);
-    return updated;
+  // nextStatuses: what the admin dropdown may offer for each order, straight
+  // from the state machine, so the UI can never propose an illegal move.
+  // One page at a time; search by order number, customer or phone.
+  async findAllAdmin(query: AdminOrdersQueryDto) {
+    const search = searchTerm(query.search);
+    const where: Prisma.OrderWhereInput = {
+      ...(query.status && { status: query.status }),
+      ...(search && {
+        OR: [
+          { orderNumber: { contains: search, mode: "insensitive" as const } },
+          { shippingPhone: { contains: search, mode: "insensitive" as const } },
+          { user: { OR: [{ email: { contains: search, mode: "insensitive" as const } }, { firstName: { contains: search, mode: "insensitive" as const } }, { lastName: { contains: search, mode: "insensitive" as const } }] } },
+        ],
+      }),
+    };
+    const page = await paginate(
+      query,
+      (args) => this.prisma.order.findMany({ where, include: ORDER_DETAIL_INCLUDE, orderBy: [{ createdAt: "desc" }, { id: "asc" }], ...args }),
+      () => this.prisma.order.count({ where }),
+    );
+    return { ...page, items: page.items.map((order) => ({ ...order, nextStatuses: nextStatusesForAdmin(order.status) })) };
   }
 }

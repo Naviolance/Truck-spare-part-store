@@ -1,8 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, readApiError } from "@/lib/api";
+import { useApiError } from "@/lib/use-api-error";
+import { useAdminList } from "@/lib/admin-list";
 import { formatMoney } from "@/lib/money";
+import { FilterSelect, Pager, SearchBox } from "@/components/admin/ListControls";
 
 type Product = {
   id: string; name: string; price: string; status: string; quantity: number; createdAt: string;
@@ -10,6 +14,7 @@ type Product = {
 };
 
 function StatusToggle({ status, pending, onSet }: { status: string; pending: boolean; onSet: (status: "DRAFT" | "PUBLISHED") => void }) {
+  const tc = useTranslations("AdminCommon");
   return (
     <div className="inline-flex rounded-full border border-steel-light overflow-hidden text-xs">
       <button
@@ -18,7 +23,7 @@ function StatusToggle({ status, pending, onSet }: { status: string; pending: boo
         onClick={() => onSet("DRAFT")}
         className={`px-2 py-1 disabled:opacity-50 ${status === "DRAFT" ? "bg-steel-light text-ink font-medium" : "text-steel"}`}
       >
-        Draft
+        {tc("productStatus.DRAFT")}
       </button>
       <button
         type="button"
@@ -26,24 +31,22 @@ function StatusToggle({ status, pending, onSet }: { status: string; pending: boo
         onClick={() => onSet("PUBLISHED")}
         className={`px-2 py-1 disabled:opacity-50 ${status === "PUBLISHED" ? "bg-green-100 text-green-700 font-medium" : "text-steel"}`}
       >
-        Published
+        {tc("productStatus.PUBLISHED")}
       </button>
     </div>
   );
 }
 
 export default function AdminProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const t = useTranslations("AdminProducts");
+  const tc = useTranslations("AdminCommon");
+  const locale = useLocale();
+  const apiError = useApiError();
+  const [status, setStatusFilter] = useState("");
+  const [stock, setStock] = useState("");
+  const list = useAdminList<Product, { outOfStock: number }>("/products/admin/all", { status, stock });
+  const { items: products, data, reload: load } = list;
   const [pendingId, setPendingId] = useState<string | null>(null);
-
-  async function load() {
-    const res = await apiFetch("/products/admin/all");
-    if (res.ok) setProducts(await res.json());
-    setLoading(false);
-  }
-
-  useEffect(() => { load(); }, []);
 
   async function setStatus(product: Product, status: "DRAFT" | "PUBLISHED") {
     if (status === product.status) return;
@@ -54,30 +57,65 @@ export default function AdminProductsPage() {
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this product? This cannot be undone.")) return;
+    if (!confirm(t("deleteConfirm"))) return;
     setPendingId(id);
-    await apiFetch(`/products/${id}`, { method: "DELETE" });
+    const res = await apiFetch(`/products/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      alert(apiError(await readApiError(res), t("deleteFailed")));
+    } else if ((await res.json().catch(() => ({}))).archived) {
+      alert(t("archivedInstead"));
+    }
     await load();
     setPendingId(null);
   }
 
-  if (loading) return <p className="text-steel">Loading…</p>;
+  if (list.loading) return <p className="text-steel">{tc("loading")}</p>;
 
-  const outOfStock = products.filter((p) => p.quantity === 0);
+  const outOfStock = data?.outOfStock ?? 0;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6 gap-2 flex-wrap">
-        <h1 className="text-2xl font-display font-bold">Products</h1>
+        <h1 className="text-2xl font-display font-bold">{t("title")}</h1>
         <div className="flex gap-2">
-          <Link href="/admin/products/create" className="bg-ink text-white text-sm px-4 py-2 rounded-lg">+ New product</Link>
+          <div className="flex gap-2">
+            <Link href="/admin/import" className="border border-steel-light text-sm px-4 py-2 rounded-lg hover:border-ink">{t("importSpreadsheet")}</Link>
+            <Link href="/admin/products/create" className="bg-ink text-white text-sm px-4 py-2 rounded-lg">{t("newProduct")}</Link>
+          </div>
         </div>
       </div>
-      {outOfStock.length > 0 && (
+      {outOfStock > 0 && stock !== "out" && (
         <div className="bg-amber/10 border-l-4 border-amber p-3 mb-4 text-sm text-ink">
-          <span className="font-medium">{outOfStock.length} product{outOfStock.length !== 1 ? "s" : ""} out of stock</span>
-          {" "}— hidden from the storefront until restocked: {outOfStock.map((p) => p.name).join(", ")}
+          <span className="font-medium">{t("outOfStockBanner", { count: outOfStock })}</span>
+          {" "}{t("outOfStockExplain")}{" "}
+          <button type="button" onClick={() => setStock("out")} className="underline">{t("showThem")}</button>
         </div>
+      )}
+      <div className="flex flex-col sm:flex-row gap-2 mb-4">
+        <SearchBox value={list.search} onChange={list.setSearch} placeholder={t("searchPlaceholder")} />
+        <FilterSelect
+          label={tc("status")}
+          value={status}
+          onChange={setStatusFilter}
+          options={[
+            { value: "", label: tc("allStatuses") },
+            { value: "PUBLISHED", label: tc("productStatus.PUBLISHED") },
+            { value: "DRAFT", label: tc("productStatus.DRAFT") },
+            { value: "ARCHIVED", label: tc("productStatus.ARCHIVED") },
+          ]}
+        />
+        <FilterSelect
+          label={t("stock")}
+          value={stock}
+          onChange={setStock}
+          options={[
+            { value: "", label: t("anyStock") },
+            { value: "out", label: t("outOfStock") },
+          ]}
+        />
+      </div>
+      {products.length === 0 && (
+        <p className="text-steel">{list.searching || status || stock ? t("noMatch") : t("empty")}</p>
       )}
       <div className="sm:hidden space-y-3">
         {products.map((p) => (
@@ -92,17 +130,17 @@ export default function AdminProductsPage() {
             <div className="mt-3 flex items-center justify-between text-sm">
               <span className="font-semibold text-ink">{formatMoney(p.price)}</span>
               <span className={p.quantity === 0 ? "text-red-600 font-medium" : "text-steel"}>
-                {p.quantity === 0 ? "Out of stock" : `${p.quantity} in stock`}
+                {p.quantity === 0 ? t("outOfStock") : t("inStock", { count: p.quantity })}
               </span>
             </div>
-            <p className="text-xs text-steel mt-1">Added {new Date(p.createdAt).toLocaleDateString()}</p>
+            <p className="text-xs text-steel mt-1">{t("addedOn", { date: new Date(p.createdAt).toLocaleDateString(locale) })}</p>
             <div className="mt-3 flex gap-2">
               <Link href={`/admin/products/${p.id}/edit`} className="flex-1 text-center border border-steel-light rounded-lg py-2 text-sm">
-                Edit
+                {tc("edit")}
               </Link>
               <button onClick={() => remove(p.id)} disabled={pendingId === p.id}
                 className="flex-1 text-center border border-red-200 bg-red-50 text-red-600 rounded-lg py-2 text-sm disabled:opacity-50">
-                {pendingId === p.id ? "Deleting…" : "Delete"}
+                {pendingId === p.id ? tc("deleting") : tc("delete")}
               </button>
             </div>
           </div>
@@ -111,7 +149,7 @@ export default function AdminProductsPage() {
       <div className="hidden sm:block overflow-x-auto">
       <table className="w-full text-sm bg-white border border-steel-light rounded-lg overflow-hidden">
         <thead className="bg-paper text-left">
-          <tr><th className="p-3">Name</th><th className="p-3">Category</th><th className="p-3">Price</th><th className="p-3">Stock</th><th className="p-3">Added</th><th className="p-3">Status</th><th className="p-3"><span className="sr-only">Actions</span></th></tr>
+          <tr><th className="p-3">{tc("name")}</th><th className="p-3">{t("category")}</th><th className="p-3">{t("price")}</th><th className="p-3">{t("stock")}</th><th className="p-3">{t("added")}</th><th className="p-3">{tc("status")}</th><th className="p-3"><span className="sr-only">{tc("actions")}</span></th></tr>
         </thead>
         <tbody>
           {products.map((p) => (
@@ -120,8 +158,8 @@ export default function AdminProductsPage() {
               <td className="p-3">{p.category.name}</td>
               <td className="p-3">{formatMoney(p.price)}</td>
               <td className={`p-3 ${p.quantity === 0 ? "text-red-600 font-medium" : ""}`}>{p.quantity}</td>
-              <td className="p-3 text-steel" title={new Date(p.createdAt).toLocaleString()}>
-                {new Date(p.createdAt).toLocaleDateString()}
+              <td className="p-3 text-steel" title={new Date(p.createdAt).toLocaleString(locale)}>
+                {new Date(p.createdAt).toLocaleDateString(locale)}
               </td>
               <td className="p-3">
                 <StatusToggle status={p.status} pending={pendingId === p.id} onSet={(status) => setStatus(p, status)} />
@@ -132,14 +170,14 @@ export default function AdminProductsPage() {
                     href={`/admin/products/${p.id}/edit`}
                     className="border border-steel-light rounded-lg px-3 py-1.5 text-xs transition-colors duration-200 hover:border-ink"
                   >
-                    Edit
+                    {tc("edit")}
                   </Link>
                   <button
                     onClick={() => remove(p.id)}
                     disabled={pendingId === p.id}
                     className="border border-red-200 bg-red-50 text-red-600 rounded-lg px-3 py-1.5 text-xs transition-colors duration-200 hover:bg-red-100 disabled:opacity-50"
                   >
-                    {pendingId === p.id ? "Deleting…" : "Delete"}
+                    {pendingId === p.id ? tc("deleting") : tc("delete")}
                   </button>
                 </div>
               </td>
@@ -148,6 +186,7 @@ export default function AdminProductsPage() {
         </tbody>
       </table>
       </div>
+      {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} limit={data.limit} onPage={list.setPage} />}
     </div>
   );
 }

@@ -11,9 +11,21 @@
     "prisma:studio": "pnpm --filter @truckparts/prisma studio",
     "prisma:seed": "pnpm --filter @truckparts/prisma seed",
     "docker:up": "docker compose up -d",
-    "docker:down": "docker compose down"
+    "docker:down": "docker compose down",
+    "admin:promote": "pnpm --filter @truckparts/prisma admin:promote",
+    "launch:reset": "pnpm --filter @truckparts/prisma launch:reset",
+    "prisma:deploy": "pnpm --filter @truckparts/prisma migrate:deploy"
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "proxy-addr": "^2.0.8",
+      "multer": "^2.4.0",
+      "lodash": "^4.18.1",
+      "postcss": "^8.5.29",
+      "source-map-js": "^1.2.2"
+    }
   }
 }

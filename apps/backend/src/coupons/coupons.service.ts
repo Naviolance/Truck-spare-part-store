@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException, NotFoundException, ConflictException } from "@nestjs/common";
+import { apiError } from "../common/errors";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { CouponType, Prisma } from "@truckparts/prisma";
 import { CreateCouponDto } from "./dto/create-coupon.dto";
@@ -11,7 +12,7 @@ export class CouponsService {
   async create(dto: CreateCouponDto) {
     const code = dto.code.trim().toUpperCase();
     const existing = await this.prisma.coupon.findUnique({ where: { code } });
-    if (existing) throw new ConflictException("A coupon with this code already exists");
+    if (existing) throw new ConflictException(apiError("COUPON_EXISTS", "A coupon with this code already exists"));
 
     return this.prisma.coupon.create({
       data: {
@@ -68,7 +69,7 @@ export class CouponsService {
         where: { id: coupon.id, usedCount: { lt: coupon.maxUses } },
         data: { usedCount: { increment: 1 } },
       });
-      if (result.count === 0) throw new BadRequestException("This coupon has reached its usage limit");
+      if (result.count === 0) throw new BadRequestException(apiError("COUPON_USED_UP", "This coupon has reached its usage limit"));
     } else {
       await tx.coupon.update({ where: { id: coupon.id }, data: { usedCount: { increment: 1 } } });
     }
@@ -84,15 +85,15 @@ export class CouponsService {
     const code = rawCode.trim().toUpperCase();
     const coupon = await client.coupon.findUnique({ where: { code } });
 
-    if (!coupon || !coupon.active) throw new BadRequestException("Invalid coupon code");
+    if (!coupon || !coupon.active) throw new BadRequestException(apiError("COUPON_INVALID", "Invalid coupon code"));
     if (coupon.expiresAt && coupon.expiresAt < new Date()) {
-      throw new BadRequestException("This coupon has expired");
+      throw new BadRequestException(apiError("COUPON_EXPIRED", "This coupon has expired"));
     }
     if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses) {
-      throw new BadRequestException("This coupon has reached its usage limit");
+      throw new BadRequestException(apiError("COUPON_USED_UP", "This coupon has reached its usage limit"));
     }
     if (coupon.minOrderTotal && subtotal < Number(coupon.minOrderTotal)) {
-      throw new BadRequestException(`This coupon requires a minimum order of ${coupon.minOrderTotal}`);
+      throw new BadRequestException(apiError("COUPON_MIN_ORDER", `This coupon requires a minimum order of ${coupon.minOrderTotal}`, { amount: Number(coupon.minOrderTotal) }));
     }
 
     const rawDiscount =

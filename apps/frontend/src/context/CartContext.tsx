@@ -1,8 +1,10 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
-import { apiFetch } from "@/lib/api";
+import { useTranslations } from "next-intl";
+import { apiFetch, readApiError } from "@/lib/api";
 import { useAuth } from "./AuthContext";
+import { useApiError } from "@/lib/use-api-error";
 
 type CartItem = {
   id: string;
@@ -31,6 +33,8 @@ type CartContextType = {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const t = useTranslations("Cart");
+  const apiError = useApiError();
   const { user } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
   const [subtotal, setSubtotal] = useState(0);
@@ -61,10 +65,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       method: "POST",
       body: JSON.stringify({ productId, quantity }),
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      return { ok: false, error: err.message || "Could not add to cart" };
-    }
+    if (!res.ok) return { ok: false, error: apiError(await readApiError(res), t("addError")) };
     await refresh();
     return { ok: true };
   }

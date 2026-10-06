@@ -1,27 +1,29 @@
-import Link from "next/link";
+import "./globals.css";
 
-export default function NotFound() {
+// Paths outside any locale (e.g. a mistyped /admin/xyz). Localized 404s
+// come from app/[locale]/not-found.tsx.
+//
+// Kept deliberately tiny — no AppShell, no providers, no translation
+// messages: Next embeds this component in EVERY page's payload as the
+// not-found fallback, so anything heavy here is shipped to every visitor
+// (it was sending the whole English message catalog with every French page).
+// For the same reason it must not call setRequestLocale.
+export default function GlobalNotFound() {
   return (
-    <main className="flex-1 flex items-center justify-center px-4 py-20 text-center">
-      <div>
-        <p className="text-sm font-semibold uppercase tracking-wide text-steel mb-2">404</p>
-        <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-2">Page not found</h1>
-        <p className="text-steel mb-8">The page you're looking for doesn't exist or may have moved.</p>
-        <div className="flex flex-wrap justify-center gap-3">
-          <Link
-            href="/"
-            className="bg-amber text-ink px-5 py-2.5 text-sm font-semibold transition-colors duration-150 hover:bg-amber-dark"
-          >
-            Back to home
-          </Link>
-          <Link
-            href="/products"
-            className="rounded-lg border border-steel-light px-5 py-2.5 text-sm font-semibold text-steel transition-colors duration-200 hover:border-steel hover:text-ink"
-          >
-            Browse all parts
-          </Link>
-        </div>
-      </div>
-    </main>
+    <html lang="fr">
+      <body className="min-h-screen bg-paper text-ink flex items-center justify-center px-4 text-center font-sans">
+        <main>
+          <p className="text-sm font-semibold uppercase tracking-wide text-steel mb-2">404</p>
+          <h1 className="text-2xl font-bold mb-2">Page introuvable · Page not found</h1>
+          {/* Plain links on purpose: this page renders outside the locale tree
+              (and inside the admin), so a full load into /fr or /en is the
+              reliable way back. */}
+          <p className="text-steel mb-6">
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+            <a href="/fr" className="underline">Retour à l&apos;accueil</a> · <a href="/en" className="underline">Back to home</a>
+          </p>
+        </main>
+      </body>
+    </html>
   );
 }

@@ -9,18 +9,20 @@
     "migrate": "dotenv -e ../../.env -- prisma migrate dev",
     "migrate:deploy": "dotenv -e ../../.env -- prisma migrate deploy",
     "studio": "dotenv -e ../../.env -- prisma studio",
-    "seed": "dotenv -e ../../.env -- tsx seed.ts"
+    "seed": "dotenv -e ../../.env -- tsx seed.ts",
+    "admin:promote": "dotenv -e ../../.env -- tsx scripts/promote-admin.ts",
+    "launch:reset": "dotenv -e ../../.env -- tsx scripts/launch-reset.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",
-    "bcrypt": "^5.1.1"
+    "bcrypt": "^6.0.0"
   },
   "devDependencies": {
-    "prisma": "^5.20.0",
-    "tsx": "^4.19.0",
-    "typescript": "^5.6.0",
     "@faker-js/faker": "^9.0.0",
     "@types/bcrypt": "^5.0.2",
-    "dotenv-cli": "^7.4.2"
+    "dotenv-cli": "^7.4.2",
+    "prisma": "^5.20.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
   }
 }

@@ -41,14 +41,22 @@ async function main() {
   });
 
   // --- Categories ---
-  const categoryNames = ["Engine Parts", "Brakes", "Suspension", "Electrical", "Filters", "Transmission"];
+  const categoryNames: [string, string][] = [
+    ["Engine Parts", "Pièces moteur"],
+    ["Brakes", "Freinage"],
+    ["Suspension", "Suspension"],
+    ["Electrical", "Électricité"],
+    ["Filters", "Filtres"],
+    ["Transmission", "Transmission"],
+  ];
   const categories = [];
-  for (const name of categoryNames) {
+  for (const [name, nameFr] of categoryNames) {
     const category = await prisma.category.upsert({
       where: { slug: faker.helpers.slugify(name).toLowerCase() },
-      update: {},
+      update: { nameFr },
       create: {
         name,
+        nameFr,
         slug: faker.helpers.slugify(name).toLowerCase(),
       },
     });

@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Delete, Body, Param, UseGuards } from "@nestjs/common";
+import { RevalidatesCatalog } from "../common/catalog-cache/revalidates-catalog.decorator";
 import { BrandsService } from "./brands.service";
 import { CreateBrandDto } from "./dto/create-brand.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
@@ -18,6 +19,7 @@ export class BrandsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Post()
+  @RevalidatesCatalog()
   create(@Body() dto: CreateBrandDto) {
     return this.brandsService.create(dto);
   }
@@ -25,6 +27,7 @@ export class BrandsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Delete(":id")
+  @RevalidatesCatalog()
   remove(@Param("id") id: string) {
     return this.brandsService.remove(id);
   }

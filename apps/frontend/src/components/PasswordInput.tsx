@@ -1,9 +1,10 @@
 "use client";
 import { useState, InputHTMLAttributes } from "react";
+import { useTranslations } from "next-intl";
 
 function LockIcon() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5" aria-hidden="true">
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -14,6 +15,7 @@ function LockIcon() {
 }
 
 export function PasswordInput({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
+  const t = useTranslations("Auth");
   const [visible, setVisible] = useState(false);
 
   return (
@@ -24,15 +26,17 @@ export function PasswordInput({ className, ...props }: InputHTMLAttributes<HTMLI
       <input
         {...props}
         type={visible ? "text" : "password"}
-        className={`${className ?? ""} pl-10 pr-14`}
+        className={`${className ?? ""} pl-10 pr-16`}
       />
+      {/* Reachable by keyboard and announced to screen readers. */}
       <button
         type="button"
         onClick={() => setVisible((v) => !v)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-steel hover:text-steel transition-colors duration-200"
-        tabIndex={-1}
+        aria-label={visible ? t("hidePassword") : t("showPassword")}
+        aria-pressed={visible}
+        className="absolute right-2 top-1/2 -translate-y-1/2 px-1 text-xs text-steel hover:text-ink transition-colors duration-200"
       >
-        {visible ? "Hide" : "Show"}
+        {visible ? t("hide") : t("show")}
       </button>
     </div>
   );

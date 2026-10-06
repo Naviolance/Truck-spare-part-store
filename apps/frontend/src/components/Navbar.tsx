@@ -1,7 +1,7 @@
 "use client";
-import Link from "next/link";
+import NextLink from "next/link";
+import { Link as LocaleLink, usePathname } from "@/i18n/navigation";
 import { useState } from "react";
-import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
@@ -56,6 +56,13 @@ function MenuIcon({ open }: { open: boolean }) {
   );
 }
 
+// The admin is outside the /fr|/en segment: a locale-aware link would
+// produce /en/admin (a 404). Everything else gets the locale prefix.
+type LinkProps = Omit<React.ComponentProps<"a">, "href"> & { href: string };
+function Link({ href, ...props }: LinkProps) {
+  return href.startsWith("/admin") ? <NextLink href={href} {...props} /> : <LocaleLink href={href} {...props} />;
+}
+
 function NavLink({ href, children, onClick }: { href: string; children: React.ReactNode; onClick?: () => void }) {
   const pathname = usePathname();
   const active = pathname === href;
@@ -81,7 +88,7 @@ export function Navbar() {
   const t = useTranslations("Navbar");
 
   return (
-    <nav aria-label="Main" className="sticky top-0 z-40 bg-ink border-b-2 border-amber">
+    <nav aria-label={t("mainNav")} className="sticky top-0 z-40 bg-ink border-b-2 border-amber">
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex items-center justify-between py-3">
           <Link href="/" className="font-display font-black text-2xl text-paper tracking-tight transition-colors hover:text-amber">
@@ -92,6 +99,7 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-6">
             <NavLink href="/find-my-part">{t("findMyPart")}</NavLink>
             <NavLink href="/products">{t("allParts")}</NavLink>
+            <NavLink href="/trucks">{t("trucks")}</NavLink>
             <NavLink href="/about">{t("about")}</NavLink>
           </div>
 
@@ -172,6 +180,7 @@ export function Navbar() {
         <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col gap-4 text-sm">
           <NavLink href="/find-my-part" onClick={closeMenu}>{t("findMyPart")}</NavLink>
           <NavLink href="/products" onClick={closeMenu}>{t("allParts")}</NavLink>
+          <NavLink href="/trucks" onClick={closeMenu}>{t("trucks")}</NavLink>
           <NavLink href="/about" onClick={closeMenu}>{t("about")}</NavLink>
 
           {loading ? null : user ? (

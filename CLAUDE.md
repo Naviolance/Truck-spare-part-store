@@ -32,12 +32,13 @@ Backend (`apps/backend`):
 pnpm --filter backend lint
 pnpm --filter backend test                 # jest
 pnpm --filter backend test -- <pattern>    # single test file/name
+pnpm --filter backend test:db              # real-Postgres tests (order transitions, races)
 pnpm --filter backend build                # nest build
 ```
 
 Frontend (`apps/frontend`):
 ```bash
-pnpm --filter frontend lint    # next lint
+pnpm --filter frontend lint    # eslint (flat config, next/core-web-vitals + next/typescript)
 pnpm --filter frontend build   # next build (also type-checks)
 ```
 Note: running `tsc --noEmit` directly via `npx` in `apps/frontend` fails with a `--ignoreDeprecations`
@@ -47,9 +48,16 @@ error from a version mismatch between the global `npx` tsc and the project's pin
 Prisma (`packages/prisma`):
 ```bash
 pnpm prisma:generate
-pnpm prisma:migrate    # prompts for a migration name
+pnpm prisma:migrate    # prompts for a migration name (interactive)
+pnpm prisma:deploy     # apply pending migrations (production / CI / non-interactive)
 pnpm prisma:studio     # DB GUI at generated local URL
-pnpm prisma:seed
+pnpm prisma:seed       # local only — never against production
+```
+
+Launch / operations:
+```bash
+pnpm admin:promote <email>                       # make a registered account an admin
+pnpm launch:reset --keep <email> [--wipe-catalog]  # dry run; add --yes to delete test data
 ```
 
 Docker infra:
@@ -67,6 +75,9 @@ Mailhog `http://localhost:8025`, Prisma Studio via `pnpm prisma:studio`.
 
 Seeded test accounts: `admin@truckparts.local` / `admin123` (admin), `customer@truckparts.local` /
 `customer123` (customer). Seed password hashes are placeholders for local testing only.
+
+CI (`.github/workflows/ci.yml`) runs on every PR: backend lint + unit tests + `test:db` against a fresh
+Postgres (all migrations applied from scratch) + build, and frontend lint + build. Keep it green.
 
 ## Architecture
 
@@ -92,20 +103,72 @@ interceptor, not a global guard, because global guards run before `JwtAuthGuard`
 (from `/auth/refresh` and `/users/me`) to show a banner in `app/admin/layout.tsx`. New routes are
 covered automatically; don't add per-controller demo checks.
 
-**Orders → Payments flow**: checkout is two steps, not one. `POST /orders` creates the order as
-`PAYMENT_PENDING` and atomically decrements product stock (reserving it) inside a transaction —
-`orders.service.ts`. `POST /orders/:id/pay` then calls `payments.service.ts`, which talks to **Notch
-Pay** and returns a hosted `checkoutUrl` the frontend redirects to. Order state only becomes final via
-the `POST /payments/webhooks/notchpay` webhook: `payment.complete` → `confirmPayment()` (marks
-`PAID`), `payment.failed` → `failPayment()` (marks `PAYMENT_FAILED` and restores the reserved stock).
-Webhook signature verification is HMAC-SHA256 over the **raw** request body (`main.ts` stashes
-`req.rawBody` in the `json()` middleware's `verify` callback specifically for this — don't remove it).
-`OrdersModule` and `PaymentsModule` import each other via `forwardRef()`. Test the webhook flow
-locally with `./webhook-check.sh <order-number> [payment.complete|payment.failed]` (reads the signing
-secret from `.env`, don't hardcode it in scripts).
+**Orders → Payments flow**: `POST /orders` creates the order as `PAYMENT_PENDING` and atomically
+reserves stock (conditional `UPDATE ... WHERE quantity >= n` in a transaction — `orders.service.ts`).
+Every later status change goes through `OrdersService.transition()`, which enforces the state machine in
+`orders/order-status.ts` (who may move an order where, and what that does to stock/coupons) with a
+conditional `UPDATE ... WHERE status = <current>` so concurrent callers can't double-restock. Never
+update `Order.status` directly. Only the "system" actor (payments, cash confirmation, expiry) can mark
+an order `PAID`; the admin dropdown only shows `nextStatuses` the backend returns.
+
+Payments are provider-agnostic: `payments/providers/payment-provider.ts` is the adapter interface,
+`PaymentGatewayService` picks the adapter from `PAYMENT_PROVIDER` (unset = cash only; Notch Pay is the
+reference adapter). `orders/order-payments.service.ts` owns attempts: one `Payment` row per attempt with a
+unique `reference` (`<orderNumber>-<n>`), so `POST /orders/:id/pay` can be retried; results (webhook at
+`POST /payments/webhooks/:provider` or `reconcilePending()` polling) are applied idempotently and the
+payment SUCCEEDED + order PAID commit in one transaction. Webhook signatures are verified over the
+**raw** body (`main.ts` stashes `req.rawBody` — don't remove it). `OrderExpiryService` (cron, every
+5 min) expires unpaid orders after `ORDER_PAYMENT_TTL_MINUTES` / `CASH_PICKUP_TTL_HOURS` and releases
+their stock. To add a provider: one adapter file + one `case` in `PaymentGatewayService`.
+
+**Errors shown to users**: throw with a code — `new BadRequestException(apiError("NOT_ENOUGH_STOCK", "English
+message", params?))` (`common/errors.ts`); `AllExceptionsFilter` gives every error `{ statusCode, code, message,
+params? }`. Frontend: `readApiError(res)` + `useApiError()` translate `code` from `messages/*.json`
+"ApiErrors" (French users never see the English `message`). A new code needs an entry in `ERROR_CODES` and in
+both message files — `common/errors.spec.ts` fails otherwise.
 
 **Money formatting**: use `formatMoney()` from `apps/frontend/src/lib/money.ts` for every price
-display — it handles the XAF whole-number formatting. Don't hand-roll `$`/`toFixed(2)` formatting.
+display (backend emails: `formatXaf()` in `common/utils/money.ts`). Don't hand-roll `$`/`toFixed(2)`.
+
+**i18n / URLs**: public pages live under `app/[locale]/` (`/fr/...`, `/en/...`, French default; next-intl
+routing in `i18n/routing.ts`, middleware redirects `/`). Use `Link`/`useRouter` from `@/i18n/navigation`,
+never `next/link`, in public pages. Every user-facing string is in `messages/{en,fr}.json` (add both).
+The admin (`app/admin`, noindex) has its own root layout; both share `components/AppShell.tsx`. The admin is
+FR/EN too, but its language comes from the `admin_locale` cookie (EN/FR switch in `AdminShell`; default = browser
+language), not the URL; its strings are the `Admin*` namespaces (shared words in `AdminCommon`; order statuses
+and conditions reuse the storefront's `OrderStatus` / `Condition`).
+Don't call `setRequestLocale` in `app/not-found.tsx` (it's rendered inside every page's tree).
+
+**Bulk import**: `products/import/` — `product-import.parser.ts` is pure (decode UTF-8/Windows-1252,
+detect `;`/`,`, EN/FR headers, row validation; unit-tested); `product-import.service.ts` plans
+(`preview`, writes nothing) and `commit`s in one transaction, re-validating the file. Rows match
+existing products by normalized part number + brand (update) else create. Admin UI:
+`app/admin/import/page.tsx`. Excel files must be saved as CSV (xlsx is rejected on purpose).
+
+**Catalog & SEO**: one listing query (`products/product-listing.ts`) serves `/products`, search, Find My
+Part and the category/brand/truck landing pages — out-of-stock products stay listed (sorted last).
+Public pages are server-rendered via `CatalogView` and `lib/server-api.ts` (`serverFetch`, sends
+`INTERNAL_API_KEY`, ISR caching). Each indexable page sets its own `alternates` via `lib/seo.ts`
+(canonical + hreflang); private pages are noindex. JSON-LD helpers are in `lib/seo.ts`.
+Sitemaps: `/sitemap.xml` is an index (route handler) over `/sitemaps/pages.xml` and
+`/sitemaps/products-<n>.xml` (20k products each) — built per request in `lib/sitemap.ts`, so a growing
+catalog needs no redeploy.
+
+**Search**: matches `products."searchText"` — one lower-case, accent-free string (name, descriptions,
+brand, category EN/FR, trucks, part/cross-reference numbers) with a GIN trigram index. It is written
+**only by database triggers** (migration `*_product_search_text`): never set it from code, and if you
+rename a column that feeds it, update `product_search_text()` in a new migration (the DB tests in
+`products/search-text.db.spec.ts` catch drift). It's `@ignore`d in `schema.prisma`, so it isn't in Prisma
+Client; the `@@index` there is what stops Prisma migrations dropping the index. Measured at 100k
+products: ~10–40 ms per search (was ~0.8 s scanning every row).
+
+**Admin lists** (products, orders, requests, reviews) are paginated server-side: `AdminListQueryDto`
+(`page`, `limit` ≤ 100, `search`) + `paginate()` in `common/`, `useAdminList` + `ListControls` on the
+frontend. Don't return unbounded `findMany` lists from admin endpoints; vehicles and coupons are the
+deliberate exceptions (small by nature).
+
+**Rate limiting**: `UserThrottlerGuard` buckets by verified user id, else client IP (needs correct
+`TRUST_PROXY`; check `/health`'s `clientIp`), and skips requests carrying `INTERNAL_API_KEY`.
 
 **Prisma**: single `PrismaService` (`common/prisma/`) injected everywhere; no per-module clients.
 Core models: `User`, `Product`/`ProductImage`/`ProductCompatibility`, `Vehicle` (for Find-My-Part

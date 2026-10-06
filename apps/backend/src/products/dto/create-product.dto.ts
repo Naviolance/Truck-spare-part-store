@@ -1,4 +1,5 @@
-import { IsString, IsEnum, IsNumber, IsOptional, Min, MinLength, MaxLength, IsArray } from "class-validator";
+import { IsString, IsEnum, IsNumber, IsOptional, Min, MinLength, MaxLength, IsArray, ArrayMaxSize } from "class-validator";
+import { Transform } from "class-transformer";
 import { ProductCondition, ProductStatus } from "@truckparts/prisma";
 
 export class CreateProductDto {
@@ -42,7 +43,20 @@ export class CreateProductDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(64)
   partNumber?: string;
+
+  // Other numbers the same part is sold under (OEM refs, competitor
+  // equivalents). Searchable, with spaces/dashes ignored.
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(30)
+  @IsString({ each: true })
+  @MaxLength(64, { each: true })
+  @Transform(({ value }) =>
+    Array.isArray(value) ? value.map((v) => String(v).trim()).filter(Boolean) : value,
+  )
+  crossReference?: string[];
 
   @IsOptional()
   @IsArray()

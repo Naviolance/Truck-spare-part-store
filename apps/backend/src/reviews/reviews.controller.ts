@@ -1,7 +1,9 @@
-import { Controller, Post, Patch, Delete, Get, Body, Param, UseGuards } from "@nestjs/common";
+import { Controller, Post, Patch, Delete, Get, Body, Param, Query, UseGuards } from "@nestjs/common";
+import { RevalidatesCatalog } from "../common/catalog-cache/revalidates-catalog.decorator";
 import { ReviewsService } from "./reviews.service";
 import { CreateReviewDto } from "./dto/create-review.dto";
 import { UpdateReviewDto } from "./dto/update-review.dto";
+import { AdminListQueryDto } from "../common/dto/admin-list-query.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -31,13 +33,14 @@ export class ReviewsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
   @Get("admin/all")
-  findAllAdmin() {
-    return this.reviewsService.findAllAdmin();
+  findAllAdmin(@Query() query: AdminListQueryDto) {
+    return this.reviewsService.findAllAdmin(query);
   }
 
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
   @Delete("admin/:id")
+  @RevalidatesCatalog()
   removeAdmin(@Param("id") id: string) {
     return this.reviewsService.removeAdmin(id);
   }

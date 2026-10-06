@@ -1,7 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { apiFetch } from "@/lib/api";
+import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { apiFetch, readApiError } from "@/lib/api";
+import { useApiError } from "@/lib/use-api-error";
+import { useAdminList } from "@/lib/admin-list";
+import { FilterSelect, Pager, SearchBox } from "@/components/admin/ListControls";
 import { formatMoney } from "@/lib/money";
 
 type Order = {
@@ -12,24 +15,22 @@ type Order = {
   createdAt: string;
   user: { firstName: string; lastName: string; email: string };
   payments: { provider: string; status: string }[];
+  // From the backend's state machine (orders/order-status.ts): the only
+  // statuses this order may move to. The UI never offers anything else.
+  nextStatuses: string[];
 };
 
-// CANCELLED and REFUNDED aren't in this list on purpose — those only happen
-// through the dedicated "Cancel & refund" button, which also restores stock
-// and marks the payment refunded. Setting them from this raw dropdown would
-// skip both of those.
-const STATUS_OPTIONS = [
-  "PAYMENT_PENDING",
-  "PAID",
-  "PROCESSING",
-  "SHIPPED",
-  "DELIVERED",
-  "PAYMENT_FAILED",
-  "PARTIALLY_REFUNDED",
-  "DISPUTED",
-];
+// CANCELLED and REFUNDED go through the t("cancelRefund") button (with a
+// confirmation), not the dropdown.
+const BUTTON_ONLY = ["CANCELLED", "REFUNDED"];
 
-const TERMINAL_STATUSES = ["CANCELLED", "REFUNDED", "PARTIALLY_REFUNDED"];
+function dropdownOptions(o: Order) {
+  return [o.status, ...o.nextStatuses.filter((s) => !BUTTON_ONLY.includes(s))];
+}
+
+function canCancel(o: Order) {
+  return o.nextStatuses.some((s) => BUTTON_ONLY.includes(s));
+}
 
 const STATUS_COLORS: Record<string, string> = {
   PAID: "bg-blue-100 text-blue-700",
@@ -38,6 +39,7 @@ const STATUS_COLORS: Record<string, string> = {
   DELIVERED: "bg-green-100 text-green-700",
   CANCELLED: "bg-steel-light text-steel",
   PAYMENT_FAILED: "bg-red-100 text-red-700",
+  EXPIRED: "bg-steel-light text-steel",
   REFUNDED: "bg-red-100 text-red-700",
   PARTIALLY_REFUNDED: "bg-orange-100 text-orange-700",
   DISPUTED: "bg-red-100 text-red-700",
@@ -45,32 +47,32 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const t = useTranslations("AdminOrders");
+  const tc = useTranslations("AdminCommon");
+  const ts = useTranslations("OrderStatus");
+  const locale = useLocale();
+  const apiError = useApiError();
+  const statusLabel = (s: string) => (ts.has(s) ? ts(s as "PAID") : s);
+  const [status, setStatus] = useState("");
+  const list = useAdminList<Order>("/orders/admin/all", { status });
+  const { items: orders, data, reload: load } = list;
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-
-  async function load() {
-    const res = await apiFetch("/orders/admin/all");
-    if (res.ok) setOrders(await res.json());
-    setLoading(false);
-  }
-
-  useEffect(() => {
-    load();
-  }, []);
 
   async function handleStatusChange(orderId: string, status: string) {
     setUpdatingId(orderId);
-    await apiFetch(`/orders/${orderId}/status`, {
+    const res = await apiFetch(`/orders/${orderId}/status`, {
       method: "PATCH",
       body: JSON.stringify({ status }),
     });
+    if (!res.ok) {
+      alert(apiError(await readApiError(res), t("updateFailed")));
+    }
     await load();
     setUpdatingId(null);
   }
 
   async function handleConfirmCash(order: Order) {
-    if (!confirm(`Mark order #${order.orderNumber} as paid in cash?`)) return;
+    if (!confirm(t("markPaidConfirm", { number: order.orderNumber }))) return;
     setUpdatingId(order.id);
     await apiFetch(`/orders/${order.id}/confirm-cash`, { method: "POST" });
     await load();
@@ -78,16 +80,24 @@ export default function AdminOrdersPage() {
   }
 
   async function handleCancel(order: Order) {
-    if (!confirm(`Cancel order #${order.orderNumber}? This restores stock for its items${order.status === "PAID" || order.status === "PROCESSING" || order.status === "SHIPPED" || order.status === "DELIVERED" ? " and marks the payment as refunded (you still need to actually send the refund via Notch Pay)" : ""}.`)) {
-      return;
-    }
+    // Mirrors releasesStock() in the backend's order-status.ts: units come
+    // back automatically only while they're still in the store.
+    const unpaid = order.status === "PAYMENT_PENDING";
+    const stillInStore = ["PAYMENT_PENDING", "PAID", "PROCESSING"].includes(order.status);
+    const message = [
+      unpaid ? t("cancelConfirm.cancel", { number: order.orderNumber }) : t("cancelConfirm.refund", { number: order.orderNumber }),
+      stillInStore ? t("cancelConfirm.restock") : t("cancelConfirm.noRestock"),
+      unpaid ? "" : t("cancelConfirm.refundNote"),
+    ].join(" ");
+    if (!confirm(message)) return;
     setUpdatingId(order.id);
-    await apiFetch(`/orders/${order.id}/cancel`, { method: "POST" });
+    const res = await apiFetch(`/orders/${order.id}/cancel`, { method: "POST" });
+    if (!res.ok) alert(apiError(await readApiError(res), t("cancelFailed")));
     await load();
     setUpdatingId(null);
   }
 
-  if (loading) return <p className="text-steel">Loading…</p>;
+  if (list.loading) return <p className="text-steel">{tc("loading")}</p>;
 
   const rows = orders.map((o) => ({
     ...o,
@@ -96,10 +106,19 @@ export default function AdminOrdersPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">Orders</h1>
+      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">{t("title")}</h1>
+      <div className="flex flex-col sm:flex-row gap-2 mb-4">
+        <SearchBox value={list.search} onChange={list.setSearch} placeholder={t("searchPlaceholder")} />
+        <FilterSelect
+          label={tc("status")}
+          value={status}
+          onChange={setStatus}
+          options={[{ value: "", label: tc("allStatuses") }, ...Object.keys(STATUS_COLORS).map((s) => ({ value: s, label: statusLabel(s) }))]}
+        />
+      </div>
 
       {orders.length === 0 ? (
-        <p className="text-steel">No orders yet.</p>
+        <p className="text-steel">{list.searching || status ? t("noMatch") : t("empty")}</p>
       ) : (
         <>
         <div className="sm:hidden space-y-3">
@@ -113,24 +132,24 @@ export default function AdminOrdersPage() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="font-semibold text-ink">{formatMoney(o.total)}</p>
-                  <p className="text-xs text-steel">{new Date(o.createdAt).toLocaleDateString()}</p>
+                  <p className="text-xs text-steel">{new Date(o.createdAt).toLocaleDateString(locale)}</p>
                 </div>
               </div>
               <div className="mt-3 flex items-center gap-2">
                 <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[o.status] || "bg-steel-light"}`}>
-                  {o.status}
+                  {statusLabel(o.status)}
                 </span>
-                {o.pendingCash && <span className="text-xs text-amber-dark">Cash — awaiting pickup</span>}
+                {o.pendingCash && <span className="text-xs text-amber-dark">{t("cashAwaitingPickup")}</span>}
               </div>
               <div className="mt-3 flex flex-col gap-2">
                 <select
                   value={o.status}
-                  disabled={updatingId === o.id || TERMINAL_STATUSES.includes(o.status)}
+                  disabled={updatingId === o.id || dropdownOptions(o).length === 1}
                   onChange={(e) => handleStatusChange(o.id, e.target.value)}
                   className="w-full border border-steel-light rounded-lg px-3 py-2.5 text-sm"
                 >
-                  {STATUS_OPTIONS.map((s) => (
-                    <option key={s} value={s}>{s}</option>
+                  {dropdownOptions(o).map((s) => (
+                    <option key={s} value={s}>{statusLabel(s)}</option>
                   ))}
                 </select>
                 {o.pendingCash && (
@@ -139,16 +158,16 @@ export default function AdminOrdersPage() {
                     disabled={updatingId === o.id}
                     className="w-full text-sm font-medium text-emerald-700 border border-emerald-200 bg-emerald-50 rounded-lg py-2.5 transition-colors duration-200 hover:bg-emerald-100 disabled:opacity-50 disabled:hover:bg-emerald-50"
                   >
-                    {updatingId === o.id ? "…" : "Mark paid (cash)"}
+                    {updatingId === o.id ? "…" : t("markPaidCash")}
                   </button>
                 )}
-                {!TERMINAL_STATUSES.includes(o.status) && (
+                {canCancel(o) && (
                   <button
                     onClick={() => handleCancel(o)}
                     disabled={updatingId === o.id}
                     className="w-full text-sm font-medium text-red-600 border border-red-200 bg-red-50 rounded-lg py-2.5 transition-colors duration-200 hover:bg-red-100 disabled:opacity-50 disabled:hover:bg-red-50"
                   >
-                    {updatingId === o.id ? "…" : "Cancel & refund"}
+                    {updatingId === o.id ? "…" : t("cancelRefund")}
                   </button>
                 )}
               </div>
@@ -159,11 +178,11 @@ export default function AdminOrdersPage() {
         <table className="w-full text-sm bg-white border border-steel-light rounded-lg overflow-hidden">
           <thead className="bg-paper text-left">
             <tr>
-              <th className="p-3">Order</th>
-              <th className="p-3">Customer</th>
-              <th className="p-3">Date</th>
-              <th className="p-3">Total</th>
-              <th className="p-3">Status</th>
+              <th className="p-3">{t("colOrder")}</th>
+              <th className="p-3">{t("colCustomer")}</th>
+              <th className="p-3">{t("colDate")}</th>
+              <th className="p-3">{t("colTotal")}</th>
+              <th className="p-3">{tc("status")}</th>
               <th className="p-3"></th>
             </tr>
           </thead>
@@ -175,26 +194,26 @@ export default function AdminOrdersPage() {
                   {o.user.firstName} {o.user.lastName}
                   <div className="text-xs text-steel">{o.user.email}</div>
                 </td>
-                <td className="p-3 text-steel">{new Date(o.createdAt).toLocaleDateString()}</td>
+                <td className="p-3 text-steel">{new Date(o.createdAt).toLocaleDateString(locale)}</td>
                 <td className="p-3 font-medium">{formatMoney(o.total)}</td>
                 <td className="p-3">
                   <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[o.status] || "bg-steel-light"}`}>
-                    {o.status}
+                    {statusLabel(o.status)}
                   </span>
                   {o.pendingCash && (
-                    <span className="block text-xs text-amber-dark mt-1">Cash — awaiting pickup</span>
+                    <span className="block text-xs text-amber-dark mt-1">{t("cashAwaitingPickup")}</span>
                   )}
                 </td>
                 <td className="p-3">
                   <div className="flex items-center gap-2">
                     <select
                       value={o.status}
-                      disabled={updatingId === o.id || TERMINAL_STATUSES.includes(o.status)}
+                      disabled={updatingId === o.id || dropdownOptions(o).length === 1}
                       onChange={(e) => handleStatusChange(o.id, e.target.value)}
                       className="border border-steel-light rounded-lg px-2 py-1 text-xs"
                     >
-                      {STATUS_OPTIONS.map((s) => (
-                        <option key={s} value={s}>{s}</option>
+                      {dropdownOptions(o).map((s) => (
+                        <option key={s} value={s}>{statusLabel(s)}</option>
                       ))}
                     </select>
                     {o.pendingCash && (
@@ -203,16 +222,16 @@ export default function AdminOrdersPage() {
                         disabled={updatingId === o.id}
                         className="text-xs font-medium text-emerald-700 border border-emerald-200 bg-emerald-50 rounded-lg px-2.5 py-1 transition-colors duration-200 hover:bg-emerald-100 disabled:opacity-50 disabled:hover:bg-emerald-50"
                       >
-                        {updatingId === o.id ? "…" : "Mark paid (cash)"}
+                        {updatingId === o.id ? "…" : t("markPaidCash")}
                       </button>
                     )}
-                    {!TERMINAL_STATUSES.includes(o.status) && (
+                    {canCancel(o) && (
                       <button
                         onClick={() => handleCancel(o)}
                         disabled={updatingId === o.id}
                         className="text-xs font-medium text-red-600 border border-red-200 bg-red-50 rounded-lg px-2.5 py-1 transition-colors duration-200 hover:bg-red-100 disabled:opacity-50 disabled:hover:bg-red-50"
                       >
-                        {updatingId === o.id ? "…" : "Cancel & refund"}
+                        {updatingId === o.id ? "…" : t("cancelRefund")}
                       </button>
                     )}
                   </div>
@@ -224,6 +243,7 @@ export default function AdminOrdersPage() {
         </div>
         </>
       )}
+      {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} limit={data.limit} onPage={list.setPage} />}
     </div>
   );
 }
