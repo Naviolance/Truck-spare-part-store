@@ -214,5 +214,29 @@
     "error": "Impossible d'envoyer votre demande. Réessayez ou écrivez-nous sur WhatsApp.",
     "orWhatsapp": "Vous préférez discuter ? Écrivez-nous sur WhatsApp",
     "whatsappMessage": "Bonjour TruckParts, je cherche : {part}"
+  },
+  "Landing": {
+    "home": "Accueil",
+    "parts": "Pièces",
+    "productCount": "{count, plural, =0 {aucune pièce pour l'instant} one {# pièce} other {# pièces}}",
+    "categoriesTitle": "Pièces camion par catégorie",
+    "categoriesIntro": "Trouvez vos pièces par fonction — freinage, filtration, moteur, transmission et plus. Chaque pièce indique son état et les camions compatibles.",
+    "categoryHeading": "{name} pour camions",
+    "categoryIntro": "Pièces {name} neuves, d'occasion et reconditionnées pour camions. Vérifiez les modèles compatibles sur chaque pièce, ou demandez-nous sur WhatsApp en cas de doute.",
+    "brandsTitle": "Pièces camion par marque",
+    "brandsIntro": "Des pièces des fabricants auxquels les mécaniciens font confiance. Choisissez une marque pour voir tout ce que nous avons.",
+    "brandHeading": "Pièces camion {name}",
+    "brandIntro": "Pièces détachées {name} pour camions, neuves, d'occasion et reconditionnées. Chaque annonce indique la référence et les camions compatibles.",
+    "trucksTitle": "Pièces détachées par camion",
+    "trucksIntro": "Choisissez la marque et le modèle de votre camion pour ne voir que les pièces compatibles.",
+    "makeHeading": "Pièces pour camions {make}",
+    "makeIntro": "Pièces détachées compatibles avec les camions {make}. Choisissez votre modèle ci-dessous, ou utilisez Trouver ma pièce pour une année et un moteur précis.",
+    "modelHeading": "Pièces détachées {make} {model}",
+    "modelIntro": "Pièces compatibles avec le {make} {model}. Pour une année ou un moteur précis, utilisez Trouver ma pièce — ou envoyez-nous les détails de votre châssis sur WhatsApp.",
+    "models": "Modèles",
+    "trucks": "Camions",
+    "categories": "Catégories",
+    "brands": "Marques",
+    "findMyPart": "Trouver les pièces pour mon camion"
   }
 }

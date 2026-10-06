@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { categoryName } from "@/lib/catalog";
 import { Link } from "@/i18n/navigation";
 import { formatMoney } from "@/lib/money";
 import { isUnoptimizableImage } from "@/lib/image";
@@ -12,7 +13,7 @@ export type ProductCardData = {
   condition: string;
   quantity?: number;
   images: { url: string; altText?: string | null }[];
-  category: { name: string };
+  category: { name: string; nameFr?: string | null };
   brand: { name: string } | null;
 };
 
@@ -49,6 +50,7 @@ export function StockBadge({ quantity }: { quantity: number | undefined }) {
 
 export function ProductCard({ product, eager = false }: { product: ProductCardData; eager?: boolean }) {
   const t = useTranslations("Catalog");
+  const locale = useLocale();
   const soldOut = product.quantity !== undefined && product.quantity <= 0;
   const image = product.images[0];
 
@@ -84,7 +86,7 @@ export function ProductCard({ product, eager = false }: { product: ProductCardDa
       </div>
       <div className="p-3">
         <p className="text-xs text-steel">
-          {product.brand?.name ?? t("unbranded")} / {product.category.name}
+          {product.brand?.name ?? t("unbranded")} / {categoryName(product.category, locale)}
         </p>
         <h2 className="font-sans font-bold mt-1 text-sm text-ink leading-snug">{product.name}</h2>
         <div className="flex items-center justify-between flex-wrap gap-x-2 gap-y-1 mt-2">

@@ -10,6 +10,11 @@ import { UserRole } from "@truckparts/prisma";
 export class VehiclesController {
   constructor(private vehiclesService: VehiclesService) {}
 
+  @Get("catalog")
+  catalog() {
+    return this.vehiclesService.catalog();
+  }
+
   @Get("manufacturers")
   getManufacturers() {
     return this.vehiclesService.getManufacturers();

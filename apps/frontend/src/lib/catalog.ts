@@ -29,7 +29,13 @@ export type ProductList = {
   fuzzy?: boolean;
 };
 
-export type CatalogOption = { id: string; name: string; slug: string; _count?: { products: number } };
+export type CatalogOption = { id: string; name: string; nameFr?: string | null; slug: string; _count?: { products: number } };
+
+// A category's name in the page's language (categories have an optional
+// French name; brands are proper nouns and don't).
+export function categoryName(category: { name: string; nameFr?: string | null }, locale: string): string {
+  return locale === "fr" && category.nameFr ? category.nameFr : category.name;
+}
 
 type RawParams = Record<string, string | string[] | undefined>;
 

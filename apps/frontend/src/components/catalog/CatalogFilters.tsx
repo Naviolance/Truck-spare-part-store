@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { catalogHref, type CatalogOption, type CatalogQuery } from "@/lib/catalog";
+import { catalogHref, categoryName, type CatalogOption, type CatalogQuery } from "@/lib/catalog";
 
 const fieldClass =
   "w-full border border-steel-light px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:border-ink bg-white";
@@ -84,7 +84,7 @@ export function CatalogFilters({ basePath, query, categories, brands, hide = [] 
             <select id="f-category" name="categoryId" defaultValue={query.categoryId ?? ""} onChange={autoSubmit} className={fieldClass}>
               <option value="">{t("allCategories")}</option>
               {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+                <option key={c.id} value={c.id}>{categoryName(c, locale)}</option>
               ))}
             </select>
           </div>

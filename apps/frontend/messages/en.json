@@ -214,5 +214,29 @@
     "error": "Couldn't send your request. Please try again, or message us on WhatsApp.",
     "orWhatsapp": "Prefer to chat? Message us on WhatsApp",
     "whatsappMessage": "Hello TruckParts, I'm looking for: {part}"
+  },
+  "Landing": {
+    "home": "Home",
+    "parts": "Parts",
+    "productCount": "{count, plural, =0 {no parts yet} one {# part} other {# parts}}",
+    "categoriesTitle": "Truck parts by category",
+    "categoriesIntro": "Find spare parts by what they do — brakes, filters, engine, transmission and more. Every part lists its condition and the trucks it fits.",
+    "categoryHeading": "{name} for trucks",
+    "categoryIntro": "New, used and reconditioned {name} parts for trucks. Check the compatible models on each part, or ask us on WhatsApp if you're not sure it fits.",
+    "brandsTitle": "Truck parts by brand",
+    "brandsIntro": "Parts from the manufacturers mechanics trust. Choose a brand to see everything we have from it.",
+    "brandHeading": "{name} truck parts",
+    "brandIntro": "{name} spare parts for trucks, new, used and reconditioned. Each listing shows the part number and compatible trucks.",
+    "trucksTitle": "Spare parts by truck",
+    "trucksIntro": "Choose your truck's make and model to see only the parts that fit it.",
+    "makeHeading": "{make} truck parts",
+    "makeIntro": "Spare parts that fit {make} trucks. Pick your model below to narrow it down, or use Find My Part for a specific year and engine.",
+    "modelHeading": "{make} {model} spare parts",
+    "modelIntro": "Parts that fit the {make} {model}. For a specific year or engine, use Find My Part — or send us your chassis details on WhatsApp.",
+    "models": "Models",
+    "trucks": "Trucks",
+    "categories": "Categories",
+    "brands": "Brands",
+    "findMyPart": "Find parts for my exact truck"
   }
 }

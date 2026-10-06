@@ -57,3 +57,28 @@ export function breadcrumbJsonLd(items: { name: string; path: string }[]) {
 export function jsonLdScript(data: unknown): { __html: string } {
   return { __html: JSON.stringify(data).replace(/</g, "\\u003c") };
 }
+
+// Metadata for a category/brand/truck landing page. An empty landing page is
+// thin content: it stays reachable (with the part-request form) but is kept
+// out of the index until it has parts.
+export function landingMetadata({
+  locale,
+  path,
+  title,
+  description,
+  productCount,
+}: {
+  locale: Locale;
+  path: string;
+  title: string;
+  description: string;
+  productCount: number;
+}): Metadata {
+  return {
+    title,
+    description,
+    alternates: localeAlternates(path, locale),
+    openGraph: { title, description, url: `/${locale}${path}` },
+    ...(productCount === 0 && { robots: { index: false, follow: true } }),
+  };
+}

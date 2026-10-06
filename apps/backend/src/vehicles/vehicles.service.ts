@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { slugify } from "../common/utils/slugify";
 import { CreateVehicleDto } from "./dto/create-vehicle.dto";
 
 @Injectable()
@@ -32,6 +33,28 @@ export class VehiclesService {
       where: { manufacturer, model },
       orderBy: { yearStart: "desc" },
     });
+  }
+
+  // Every make and model with how many published products fit it, plus URL
+  // slugs — feeds the /trucks landing pages and the sitemap in one call.
+  // Counts let the frontend skip (noindex) truck pages with nothing to show.
+  async catalog() {
+    const rows = await this.prisma.$queryRaw<{ manufacturer: string; model: string; products: number }[]>`
+      SELECT v.manufacturer, v.model, count(DISTINCT p.id)::int AS products
+      FROM vehicles v
+      LEFT JOIN product_compatibility pc ON pc."vehicleId" = v.id
+      LEFT JOIN products p ON p.id = pc."productId" AND p.status = 'PUBLISHED'
+      GROUP BY v.manufacturer, v.model
+      ORDER BY v.manufacturer, v.model`;
+
+    const makes = new Map<string, { manufacturer: string; slug: string; products: number; models: { model: string; slug: string; products: number }[] }>();
+    for (const row of rows) {
+      const make = makes.get(row.manufacturer) ?? { manufacturer: row.manufacturer, slug: slugify(row.manufacturer), products: 0, models: [] };
+      make.models.push({ model: row.model, slug: slugify(row.model), products: row.products });
+      make.products += row.products;
+      makes.set(row.manufacturer, make);
+    }
+    return [...makes.values()];
   }
 
   // --- Admin management ---

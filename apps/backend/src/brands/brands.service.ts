@@ -27,6 +27,12 @@ export class BrandsService {
   async remove(id: string) {
     const brand = await this.prisma.brand.findUnique({ where: { id } });
     if (!brand) throw new NotFoundException("Brand not found");
+    // Products reference it; deleting would fail on the foreign key (a 500).
+    // Say what to do instead.
+    const products = await this.prisma.product.count({ where: { brandId: id } });
+    if (products > 0) {
+      throw new ConflictException(`This brand still has ${products} product(s). Move them to another brand first.`);
+    }
     return this.prisma.brand.delete({ where: { id } });
   }
 }

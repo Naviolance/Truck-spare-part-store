@@ -127,6 +127,7 @@ model PasswordResetToken {
 model Category {
   id        String     @id @default(uuid())
   name      String     @unique
+  nameFr    String? // French name for /fr pages; falls back to `name` when unset
   slug      String     @unique
   parentId  String?
   parent    Category?  @relation("CategoryToCategory", fields: [parentId], references: [id])
