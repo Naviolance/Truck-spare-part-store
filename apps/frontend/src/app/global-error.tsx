@@ -19,6 +19,8 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
           <p className="text-steel mb-6">Réessayez dans un instant. · Please try again in a moment.</p>
           <div className="flex justify-center gap-3">
             <button onClick={reset} className="bg-amber text-ink px-5 py-2.5 text-sm font-semibold">Réessayer · Try again</button>
+            {/* A full page load on purpose: the app crashed, so leave its state behind. */}
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a href="/fr" className="border border-steel-light px-5 py-2.5 text-sm font-semibold">Accueil · Home</a>
           </div>
         </main>

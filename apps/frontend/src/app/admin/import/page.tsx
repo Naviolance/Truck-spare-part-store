@@ -1,7 +1,9 @@
 "use client";
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { apiFetch, readError } from "@/lib/api";
+import { apiFetch, readApiError } from "@/lib/api";
+import { useApiError } from "@/lib/use-api-error";
 import { formatMoney } from "@/lib/money";
 
 type Issue = { line: number; field?: string; message: string };
@@ -17,24 +19,27 @@ type Plan = {
 
 const PREVIEW_ROWS = 50;
 
+// [CSV column name (never translated — it's what the importer accepts), help key in AdminImport.columns]
 const COLUMNS: [string, string][] = [
-  ["name *", "Product name"],
-  ["category *", "e.g. Brakes — created if new (French names of existing categories work too)"],
-  ["condition *", "NEW / USED / RECONDITIONED (or Neuf / Occasion / Reconditionné)"],
-  ["price *", "In FCFA, whole number: 45000 or 45 000"],
-  ["quantity *", "Units in stock (0 = listed as out of stock)"],
-  ["brand", "e.g. Bosch — created if new"],
-  ["partNumber", "Re-uploading a row with the same part number + brand UPDATES that product"],
-  ["crossReference", "Other part numbers, separated by |"],
-  ["vehicles", "Make / Model / 2012-2024 / engine — several separated by |"],
-  ["description, descriptionFr", "Optional. Empty cells keep the current text when updating"],
-  ["conditionNotes", "Recommended for used parts"],
-  ["status", "Published or Draft (empty: the choice below)"],
+  ["name *", "name"],
+  ["category *", "category"],
+  ["condition *", "condition"],
+  ["price *", "price"],
+  ["quantity *", "quantity"],
+  ["brand", "brand"],
+  ["partNumber", "partNumber"],
+  ["crossReference", "crossReference"],
+  ["vehicles", "vehicles"],
+  ["description, descriptionFr", "description"],
+  ["conditionNotes", "conditionNotes"],
+  ["status", "status"],
 ];
 
 // Spreadsheet import: choose a file -> see exactly what will happen ->
 // confirm. The backend applies all rows or none (one transaction).
 export default function AdminImportPage() {
+  const t = useTranslations("AdminImport");
+  const apiError = useApiError();
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
@@ -45,7 +50,7 @@ export default function AdminImportPage() {
 
   async function downloadTemplate() {
     const res = await apiFetch("/products/import/template");
-    if (!res.ok) return setError(await readError(res, "Couldn't download the template"));
+    if (!res.ok) return setError(apiError(await readApiError(res), t("templateFailed")));
     const url = URL.createObjectURL(await res.blob());
     const a = Object.assign(document.createElement("a"), { href: url, download: "truckparts-import-template.csv" });
     a.click();
@@ -67,7 +72,7 @@ export default function AdminImportPage() {
     setBusy("preview");
     const res = await send("preview", chosen);
     setBusy(null);
-    if (!res.ok) return setError(await readError(res, "Couldn't read this file"));
+    if (!res.ok) return setError(apiError(await readApiError(res), t("readFailed")));
     setPlan(await res.json());
   }
 
@@ -78,9 +83,9 @@ export default function AdminImportPage() {
     const res = await send("commit", file);
     setBusy(null);
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
+      const body = await res.clone().json().catch(() => ({}));
       if (body?.plan) setPlan(body.plan); // the data changed since the preview
-      return setError(typeof body?.message === "string" ? body.message : "Import failed — nothing was imported");
+      return setError(apiError(await readApiError(res), t("importFailed")));
     }
     setDone((await res.json()).summary);
     setPlan(null);
@@ -92,89 +97,91 @@ export default function AdminImportPage() {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-1">Import products</h1>
+      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-1">{t("title")}</h1>
       <p className="text-sm text-steel mb-6">
-        Add or update many products at once from a spreadsheet. You&apos;ll see exactly what will happen before anything is saved,
-        and the import is all-or-nothing: if any row has a problem, nothing changes.
+        {t("intro")}
       </p>
 
       <section className="bg-white border border-steel-light rounded-lg p-4 mb-6">
-        <h2 className="font-semibold text-ink mb-2">1. Prepare your spreadsheet</h2>
+        <h2 className="font-semibold text-ink mb-2">{t("step1Title")}</h2>
         <ol className="text-sm text-steel list-decimal pl-5 space-y-1 mb-3">
-          <li>Download the template and open it in Excel (or Google Sheets / LibreOffice).</li>
-          <li>Keep the first line (column titles), replace the example rows with your parts.</li>
-          <li>Save as <strong>CSV</strong> (File &gt; Save as &gt; CSV). Any CSV option works, including French Excel&apos;s default.</li>
+          <li>{t("step1Download")}</li>
+          <li>{t("step1Fill")}</li>
+          <li>{t.rich("step1Save", { strong: (chunks) => <strong>{chunks}</strong> })}</li>
         </ol>
-        <button onClick={downloadTemplate} className="bg-ink text-white text-sm px-4 py-2 rounded-lg">Download template</button>
+        <button onClick={downloadTemplate} className="bg-ink text-white text-sm px-4 py-2 rounded-lg">{t("downloadTemplate")}</button>
         <details className="mt-4 text-sm">
-          <summary className="cursor-pointer text-ink font-medium">Columns explained</summary>
+          <summary className="cursor-pointer text-ink font-medium">{t("columnsExplained")}</summary>
           <table className="mt-2 w-full text-left">
             <tbody className="divide-y divide-steel-light">
               {COLUMNS.map(([col, help]) => (
                 <tr key={col}>
                   <td className="py-1.5 pr-4 font-mono text-xs text-ink whitespace-nowrap align-top">{col}</td>
-                  <td className="py-1.5 text-steel">{help}</td>
+                  <td className="py-1.5 text-steel">{t(`columns.${help}`)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <p className="text-xs text-steel mt-2">* required. Photos are added afterwards from each product&apos;s Edit page.</p>
+          <p className="text-xs text-steel mt-2">{t("columnsFootnote")}</p>
         </details>
       </section>
 
       <section className="bg-white border border-steel-light rounded-lg p-4 mb-6">
-        <h2 className="font-semibold text-ink mb-2">2. Check the file</h2>
+        <h2 className="font-semibold text-ink mb-2">{t("step2Title")}</h2>
         <input
           ref={inputRef}
           type="file"
           accept=".csv,text/csv"
-          aria-label="Spreadsheet (CSV)"
+          aria-label={t("fileLabel")}
           onChange={(e) => e.target.files?.[0] && preview(e.target.files[0])}
           className="text-sm"
         />
-        {busy === "preview" && <p className="text-sm text-steel mt-2">Checking…</p>}
+        {busy === "preview" && <p className="text-sm text-steel mt-2">{t("checking")}</p>}
       </section>
 
       {error && <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3 mb-6">{error}</p>}
 
       {done && (
         <div role="status" className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-6 text-sm text-emerald-800">
-          Imported: {done.create} new product{done.create === 1 ? "" : "s"}, {done.update} updated.{" "}
-          <Link href="/admin/products" className="underline">See products</Link>. The public site shows the changes within about 5 minutes.
+          {t.rich("done", {
+            create: done.create,
+            update: done.update,
+            link: (chunks) => <Link href="/admin/products" className="underline">{chunks}</Link>,
+          })}
         </div>
       )}
 
       {plan && (
         <section className="bg-white border border-steel-light rounded-lg p-4 space-y-4">
           <div className="flex flex-wrap gap-2 text-sm">
-            <span className="px-2 py-1 rounded-full bg-emerald-100 text-emerald-800">{plan.summary.create} new</span>
-            <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800">{plan.summary.update} updated</span>
+            <span className="px-2 py-1 rounded-full bg-emerald-100 text-emerald-800">{t("summaryNew", { count: plan.summary.create })}</span>
+            <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800">{t("summaryUpdated", { count: plan.summary.update })}</span>
             <span className={`px-2 py-1 rounded-full ${plan.errors.length ? "bg-red-100 text-red-800" : "bg-steel-light text-steel"}`}>
-              {plan.errors.length} error{plan.errors.length === 1 ? "" : "s"}
+              {t("summaryErrors", { count: plan.errors.length })}
             </span>
-            {plan.warnings.length > 0 && <span className="px-2 py-1 rounded-full bg-amber/20 text-ink">{plan.warnings.length} warning{plan.warnings.length === 1 ? "" : "s"}</span>}
+            {plan.warnings.length > 0 && <span className="px-2 py-1 rounded-full bg-amber/20 text-ink">{t("summaryWarnings", { count: plan.warnings.length })}</span>}
           </div>
 
           {plan.errors.length > 0 && (
             <div>
-              <h3 className="font-semibold text-red-800 mb-1">Fix these, then choose the file again</h3>
+              <h3 className="font-semibold text-red-800 mb-1">{t("errorsTitle")}</h3>
               <IssueTable issues={plan.errors} tone="error" />
             </div>
           )}
 
           {(plan.newCategories.length > 0 || plan.newBrands.length > 0 || plan.newVehicles.length > 0) && (
             <div className="text-sm">
-              <h3 className="font-semibold text-ink mb-1">Will also be created</h3>
-              {plan.newCategories.length > 0 && <p className="text-steel">Categories: {plan.newCategories.join(", ")}</p>}
-              {plan.newBrands.length > 0 && <p className="text-steel">Brands: {plan.newBrands.join(", ")}</p>}
-              {plan.newVehicles.length > 0 && <p className="text-steel">Trucks: {plan.newVehicles.join(", ")}</p>}
-              <p className="text-xs text-steel mt-1">Check the spelling — a typo here creates a duplicate category or brand.</p>
+              <h3 className="font-semibold text-ink mb-1">{t("alsoCreated")}</h3>
+              {plan.newCategories.length > 0 && <p className="text-steel">{t("newCategories", { list: plan.newCategories.join(", ") })}</p>}
+              {plan.newBrands.length > 0 && <p className="text-steel">{t("newBrands", { list: plan.newBrands.join(", ") })}</p>}
+              {plan.newVehicles.length > 0 && <p className="text-steel">{t("newVehicles", { list: plan.newVehicles.join(", ") })}</p>}
+              <p className="text-xs text-steel mt-1">{t("checkSpelling")}</p>
             </div>
           )}
 
           {plan.warnings.length > 0 && (
             <details>
-              <summary className="cursor-pointer text-sm font-semibold text-ink">Warnings (imported anyway)</summary>
+              <summary className="cursor-pointer text-sm font-semibold text-ink">{t("warningsTitle")}</summary>
               <IssueTable issues={plan.warnings} tone="warning" />
             </details>
           )}
@@ -184,13 +191,13 @@ export default function AdminImportPage() {
               <table className="w-full text-sm text-left">
                 <thead className="text-xs text-steel">
                   <tr>
-                    <th className="py-1 pr-3">Line</th>
-                    <th className="py-1 pr-3">Action</th>
-                    <th className="py-1 pr-3">Name</th>
-                    <th className="py-1 pr-3">Part no.</th>
-                    <th className="py-1 pr-3">Category</th>
-                    <th className="py-1 pr-3 text-right">Price</th>
-                    <th className="py-1 text-right">Qty</th>
+                    <th className="py-1 pr-3">{t("colLine")}</th>
+                    <th className="py-1 pr-3">{t("colAction")}</th>
+                    <th className="py-1 pr-3">{t("colName")}</th>
+                    <th className="py-1 pr-3">{t("colPartNumber")}</th>
+                    <th className="py-1 pr-3">{t("colCategory")}</th>
+                    <th className="py-1 pr-3 text-right">{t("colPrice")}</th>
+                    <th className="py-1 text-right">{t("colQuantity")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-steel-light">
@@ -199,7 +206,7 @@ export default function AdminImportPage() {
                       <td className="py-1 pr-3 text-steel">{r.line}</td>
                       <td className="py-1 pr-3">
                         <span className={`text-xs px-1.5 py-0.5 rounded ${r.action === "create" ? "bg-emerald-100 text-emerald-800" : "bg-blue-100 text-blue-800"}`}>
-                          {r.action === "create" ? "new" : "update"}
+                          {r.action === "create" ? t("actionCreate") : t("actionUpdate")}
                         </span>
                       </td>
                       <td className="py-1 pr-3 text-ink">{r.name}</td>
@@ -211,16 +218,16 @@ export default function AdminImportPage() {
                   ))}
                 </tbody>
               </table>
-              {plan.rows.length > PREVIEW_ROWS && <p className="text-xs text-steel mt-1">…and {plan.rows.length - PREVIEW_ROWS} more rows.</p>}
+              {plan.rows.length > PREVIEW_ROWS && <p className="text-xs text-steel mt-1">{t("moreRows", { count: plan.rows.length - PREVIEW_ROWS })}</p>}
             </div>
           )}
 
           <div className="border-t border-steel-light pt-4 flex flex-col sm:flex-row sm:items-center gap-3">
             <label className="text-sm text-steel flex items-center gap-2">
-              New products without a status:
+              {t("defaultStatusLabel")}
               <select value={defaultStatus} onChange={(e) => setDefaultStatus(e.target.value as "PUBLISHED" | "DRAFT")} className="border border-steel-light rounded-lg px-2 py-1">
-                <option value="PUBLISHED">publish immediately</option>
-                <option value="DRAFT">save as drafts</option>
+                <option value="PUBLISHED">{t("publishNow")}</option>
+                <option value="DRAFT">{t("saveAsDrafts")}</option>
               </select>
             </label>
             <button
@@ -228,7 +235,7 @@ export default function AdminImportPage() {
               disabled={!canImport || busy !== null}
               className="sm:ml-auto bg-amber text-ink px-5 py-2 text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {busy === "commit" ? "Importing…" : `Import ${plan.rows.length} product${plan.rows.length === 1 ? "" : "s"}`}
+              {busy === "commit" ? t("importing") : t("importButton", { count: plan.rows.length })}
             </button>
           </div>
         </section>
@@ -238,12 +245,13 @@ export default function AdminImportPage() {
 }
 
 function IssueTable({ issues, tone }: { issues: Issue[]; tone: "error" | "warning" }) {
+  const t = useTranslations("AdminImport");
   return (
     <table className="w-full text-sm text-left mt-1">
       <tbody className="divide-y divide-steel-light">
         {issues.slice(0, 200).map((issue, i) => (
           <tr key={i}>
-            <td className="py-1 pr-3 text-steel whitespace-nowrap align-top">{issue.line > 0 ? `Line ${issue.line}` : "File"}</td>
+            <td className="py-1 pr-3 text-steel whitespace-nowrap align-top">{issue.line > 0 ? t("issueLine", { line: issue.line }) : t("issueFile")}</td>
             <td className="py-1 pr-3 font-mono text-xs text-steel align-top">{issue.field ?? ""}</td>
             <td className={`py-1 ${tone === "error" ? "text-red-700" : "text-ink"}`}>{issue.message}</td>
           </tr>

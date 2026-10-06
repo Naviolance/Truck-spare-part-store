@@ -38,7 +38,7 @@ pnpm --filter backend build                # nest build
 
 Frontend (`apps/frontend`):
 ```bash
-pnpm --filter frontend lint    # next lint
+pnpm --filter frontend lint    # eslint (flat config, next/core-web-vitals + next/typescript)
 pnpm --filter frontend build   # next build (also type-checks)
 ```
 Note: running `tsc --noEmit` directly via `npx` in `apps/frontend` fails with a `--ignoreDeprecations`
@@ -75,6 +75,9 @@ Mailhog `http://localhost:8025`, Prisma Studio via `pnpm prisma:studio`.
 
 Seeded test accounts: `admin@truckparts.local` / `admin123` (admin), `customer@truckparts.local` /
 `customer123` (customer). Seed password hashes are placeholders for local testing only.
+
+CI (`.github/workflows/ci.yml`) runs on every PR: backend lint + unit tests + `test:db` against a fresh
+Postgres (all migrations applied from scratch) + build, and frontend lint + build. Keep it green.
 
 ## Architecture
 
@@ -130,7 +133,10 @@ display (backend emails: `formatXaf()` in `common/utils/money.ts`). Don't hand-r
 **i18n / URLs**: public pages live under `app/[locale]/` (`/fr/...`, `/en/...`, French default; next-intl
 routing in `i18n/routing.ts`, middleware redirects `/`). Use `Link`/`useRouter` from `@/i18n/navigation`,
 never `next/link`, in public pages. Every user-facing string is in `messages/{en,fr}.json` (add both).
-The admin (`app/admin`, English, noindex) has its own root layout; both share `components/AppShell.tsx`.
+The admin (`app/admin`, noindex) has its own root layout; both share `components/AppShell.tsx`. The admin is
+FR/EN too, but its language comes from the `admin_locale` cookie (EN/FR switch in `AdminShell`; default = browser
+language), not the URL; its strings are the `Admin*` namespaces (shared words in `AdminCommon`; order statuses
+and conditions reuse the storefront's `OrderStatus` / `Condition`).
 Don't call `setRequestLocale` in `app/not-found.tsx` (it's rendered inside every page's tree).
 
 **Bulk import**: `products/import/` — `product-import.parser.ts` is pure (decode UTF-8/Windows-1252,

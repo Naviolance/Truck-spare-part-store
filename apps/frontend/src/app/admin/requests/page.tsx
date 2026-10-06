@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api";
 import { useAdminList } from "@/lib/admin-list";
 import { FilterSelect, Pager, SearchBox } from "@/components/admin/ListControls";
@@ -32,6 +33,10 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function AdminRequestsPage() {
+  const t = useTranslations("AdminRequests");
+  const tc = useTranslations("AdminCommon");
+  const locale = useLocale();
+  const statusLabel = (s: string) => (tc.has(`requestStatus.${s}`) ? tc(`requestStatus.${s}` as "requestStatus.OPEN") : s);
   const [status, setStatus] = useState("");
   const list = useAdminList<ProductRequest>("/product-requests/admin/all", { status });
   const { items: requests, data, reload: load } = list;
@@ -48,23 +53,23 @@ export default function AdminRequestsPage() {
     await apiFetch(`/product-requests/admin/${id}`, { method: "PATCH", body: JSON.stringify({ adminNote }) });
   }
 
-  if (list.loading) return <p className="text-steel">Loading…</p>;
+  if (list.loading) return <p className="text-steel">{tc("loading")}</p>;
 
   return (
     <div>
-      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">Product requests</h1>
+      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">{t("title")}</h1>
       <div className="flex flex-col sm:flex-row gap-2 mb-4">
-        <SearchBox value={list.search} onChange={list.setSearch} placeholder="Part, name, phone or email" />
+        <SearchBox value={list.search} onChange={list.setSearch} placeholder={t("searchPlaceholder")} />
         <FilterSelect
-          label="Status"
+          label={tc("status")}
           value={status}
           onChange={setStatus}
-          options={[{ value: "", label: "All statuses" }, ...STATUS_OPTIONS.map((s) => ({ value: s, label: s.replace(/_/g, " ").toLowerCase() }))]}
+          options={[{ value: "", label: tc("allStatuses") }, ...STATUS_OPTIONS.map((s) => ({ value: s, label: statusLabel(s) }))]}
         />
       </div>
 
       {requests.length === 0 ? (
-        <p className="text-steel">{list.searching || status ? "No requests match." : "No requests yet."}</p>
+        <p className="text-steel">{list.searching || status ? t("noMatch") : t("empty")}</p>
       ) : (
         <div className="space-y-3">
           {requests.map((r) => (
@@ -72,31 +77,31 @@ export default function AdminRequestsPage() {
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                 <div className="min-w-0">
                   <p className="text-sm text-ink">{r.description}</p>
-                  {r.partNumber && <p className="text-xs text-steel mt-1">Part number: {r.partNumber}</p>}
-                  {r.vehicleInfo && <p className="text-xs text-steel">Vehicle: {r.vehicleInfo}</p>}
+                  {r.partNumber && <p className="text-xs text-steel mt-1">{t("partNumber", { partNumber: r.partNumber })}</p>}
+                  {r.vehicleInfo && <p className="text-xs text-steel">{t("vehicle", { vehicle: r.vehicleInfo })}</p>}
                   <p className="text-xs text-steel mt-1">
                     {r.contactName ?? (r.user ? `${r.user.firstName} ${r.user.lastName}` : "—")}
-                    {!r.user && " (guest)"}
-                    {(r.contactEmail ?? r.user?.email) && ` · ${r.contactEmail ?? r.user?.email}`} · {new Date(r.createdAt).toLocaleDateString()}
+                    {!r.user && ` (${t("guest")})`}
+                    {(r.contactEmail ?? r.user?.email) && ` · ${r.contactEmail ?? r.user?.email}`} · {new Date(r.createdAt).toLocaleDateString(locale)}
                   </p>
                   {r.contactPhone && (
                     <div className="flex flex-wrap items-center gap-2 mt-2">
                       <span className="text-sm font-mono text-ink">{r.contactPhone}</span>
-                      <a href={`tel:${r.contactPhone}`} className="text-xs border border-steel-light rounded-lg px-2 py-1 hover:border-ink">Call</a>
+                      <a href={`tel:${r.contactPhone}`} className="text-xs border border-steel-light rounded-lg px-2 py-1 hover:border-ink">{t("call")}</a>
                       <a
-                        href={`https://wa.me/${digits(r.contactPhone)}?text=${encodeURIComponent(`Hello ${r.contactName ?? ""}, about your TruckParts part request: ${r.description.slice(0, 80)}`)}`}
+                        href={`https://wa.me/${digits(r.contactPhone)}?text=${encodeURIComponent(t("whatsappMessage", { name: r.contactName ?? "", description: r.description.slice(0, 80) }))}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className={`text-xs rounded-lg px-2 py-1 ${r.contactViaWhatsApp ? "bg-[#25D366] text-ink font-semibold" : "border border-steel-light hover:border-ink"}`}
                       >
-                        WhatsApp{r.contactViaWhatsApp ? " (preferred)" : ""}
+                        {r.contactViaWhatsApp ? t("whatsappPreferred") : "WhatsApp"}
                       </a>
                     </div>
                   )}
                 </div>
                 <div className="shrink-0 flex sm:flex-col items-center sm:items-end gap-2">
                   <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[r.status] || "bg-steel-light"}`}>
-                    {r.status.replace("_", " ")}
+                    {statusLabel(r.status)}
                   </span>
                   <select
                     value={r.status}
@@ -105,7 +110,7 @@ export default function AdminRequestsPage() {
                     className="border border-steel-light rounded-lg px-2 py-1 text-xs"
                   >
                     {STATUS_OPTIONS.map((s) => (
-                      <option key={s} value={s}>{s.replace("_", " ")}</option>
+                      <option key={s} value={s}>{statusLabel(s)}</option>
                     ))}
                   </select>
                 </div>
@@ -113,7 +118,8 @@ export default function AdminRequestsPage() {
               <textarea
                 defaultValue={r.adminNote ?? ""}
                 onBlur={(e) => handleNoteBlur(r.id, e.target.value)}
-                placeholder="Internal note…"
+                placeholder={t("notePlaceholder")}
+                aria-label={t("noteLabel")}
                 rows={2}
                 className="w-full mt-3 border border-steel-light rounded-lg px-3 py-2 text-sm text-steel transition-colors duration-200 focus:outline-none focus:border-steel"
               />

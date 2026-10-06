@@ -15,7 +15,11 @@ export default function GlobalNotFound() {
         <main>
           <p className="text-sm font-semibold uppercase tracking-wide text-steel mb-2">404</p>
           <h1 className="text-2xl font-bold mb-2">Page introuvable · Page not found</h1>
+          {/* Plain links on purpose: this page renders outside the locale tree
+              (and inside the admin), so a full load into /fr or /en is the
+              reliable way back. */}
           <p className="text-steel mb-6">
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a href="/fr" className="underline">Retour à l&apos;accueil</a> · <a href="/en" className="underline">Back to home</a>
           </p>
         </main>

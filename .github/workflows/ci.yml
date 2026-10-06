@@ -56,7 +56,7 @@ jobs:
       - run: pnpm --filter backend build
 
   frontend:
-    name: Frontend (build + type-check)
+    name: Frontend (lint, build + type-check)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -70,6 +70,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm prisma:generate
+      - run: pnpm --filter frontend lint
       # No backend runs here: server-rendered pages degrade gracefully when
       # the API is unreachable, so the build still compiles and type-checks
       # every page.
