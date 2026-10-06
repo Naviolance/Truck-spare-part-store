@@ -1,5 +1,6 @@
 "use client";
-import { Link, usePathname } from "@/i18n/navigation";
+import NextLink from "next/link";
+import { Link as LocaleLink, usePathname } from "@/i18n/navigation";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
@@ -53,6 +54,13 @@ function MenuIcon({ open }: { open: boolean }) {
       )}
     </svg>
   );
+}
+
+// The admin is outside the /fr|/en segment: a locale-aware link would
+// produce /en/admin (a 404). Everything else gets the locale prefix.
+type LinkProps = Omit<React.ComponentProps<"a">, "href"> & { href: string };
+function Link({ href, ...props }: LinkProps) {
+  return href.startsWith("/admin") ? <NextLink href={href} {...props} /> : <LocaleLink href={href} {...props} />;
 }
 
 function NavLink({ href, children, onClick }: { href: string; children: React.ReactNode; onClick?: () => void }) {

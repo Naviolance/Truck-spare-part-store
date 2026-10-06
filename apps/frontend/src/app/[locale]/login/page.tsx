@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
@@ -23,10 +23,16 @@ function LoginPageInner() {
   const next = safeNext(useSearchParams().get("next"));
   const [demoFill, setDemoFill] = useState(false);
 
+  // The admin isn't under /fr|/en, so it can't go through the locale-aware router.
+  const goNext = useCallback(() => {
+    if (next?.startsWith("/admin")) window.location.assign(next);
+    else router.replace(next ?? "/");
+  }, [next, router]);
+
   // Already logged in (or just logged in): go on.
   useEffect(() => {
-    if (!loading && user) router.replace(next ?? "/");
-  }, [loading, user, next, router]);
+    if (!loading && user) goNext();
+  }, [loading, user, goNext]);
 
   return (
     <AuthLayout mode="login" next={next}>
@@ -36,7 +42,7 @@ function LoginPageInner() {
         key={demoFill ? "demo" : "blank"}
         initialEmail={demoFill ? DEMO_EMAIL : ""}
         initialPassword={demoFill ? DEMO_PASSWORD : ""}
-        onSuccess={() => router.replace(next ?? "/")}
+        onSuccess={goNext}
       />
 
       {DEMO_EMAIL && DEMO_PASSWORD && (
