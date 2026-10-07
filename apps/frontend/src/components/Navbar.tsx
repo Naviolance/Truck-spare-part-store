@@ -205,7 +205,7 @@ export function Navbar({ categories = [] }: { categories?: NavCategory[] }) {
   );
 
   return (
-    // data-site-header: found by StickyBuyBar (product page), which must know
+    // data-site-header: found by StickyActionBar (product page, cart), which must know
     // how much of the screen this pinned bar covers.
     <nav data-site-header aria-label={t("mainNav")} className="sticky top-0 z-40 bg-ink border-b-[3px] border-amber">
       <div className="max-w-6xl mx-auto px-4">

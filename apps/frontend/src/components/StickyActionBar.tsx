@@ -1,11 +1,12 @@
 "use client";
 import { useEffect, useState, type ReactNode } from "react";
 
-// Phones only: price + actions pinned to the bottom of the screen while the
-// page's own buy buttons (#targetId) are out of view, so "add to cart" is always
-// one tap away without showing two of them at once. Without JavaScript it
-// never shows — the buy box in the page still works.
-export function StickyBuyBar({ targetId, children }: { targetId: string; children: ReactNode }) {
+// Phones only: a page's main action pinned to the bottom of the screen while
+// the page's own copy of it (#targetId) is out of view — "add to cart" on a
+// product, "place order" on the cart — so it's always one tap away without
+// showing two at once. Without JavaScript it never shows; the in-page
+// buttons still work.
+export function StickyActionBar({ targetId, children }: { targetId: string; children: ReactNode }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {

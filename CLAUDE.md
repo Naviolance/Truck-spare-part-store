@@ -173,8 +173,14 @@ Product page (step 3, option B; mockups: the "TruckParts product page" canvas): 
 (`#buy-box`, sticky below the pinned Navbar — `lg:top-[136px]` = its 119px + gap; change both together). `FitChecker`
 answers "does it fit my truck?" client-side from the product's own compatibility list (all makes from
 `/vehicles/catalog` are selectable; unlisted → "not in our list, ask on WhatsApp", never "doesn't fit").
-`StickyBuyBar` (phones) shows price + actions while `#buy-actions` is off screen or under the Navbar
+`StickyActionBar` (`components/`, phones) shows price + actions while `#buy-actions` is off screen or under the Navbar
 (`data-site-header`). `ProductPageSkeleton` mirrors this grid.
+Cart = checkout (step 4, option B; "TruckParts cart & checkout" canvas): `/cart` reviews items, asks phone + city
+(address optional, folded — `CreateOrderDto.shippingAddress` is optional, stored as ""), picks payment and places the
+order; `/checkout` only redirects there. Order logic lives in `cart/use-checkout.ts` (re-checks an applied coupon when
+the subtotal changes). One `<form>`; the summary and phone-bar buttons submit it via `form=`. Translations used by
+client components must be in a namespace that reaches the browser (`SERVER_ONLY_NAMESPACES` in `AppShell` — e.g.
+`Footer` doesn't).
 
 **Search**: matches `products."searchText"` — one lower-case, accent-free string (name, descriptions,
 brand, category EN/FR, trucks, part/cross-reference numbers) with a GIN trigram index. It is written
