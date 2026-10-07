@@ -16,7 +16,7 @@ import { paginate, searchTerm } from "../common/utils/paginate";
 import { generateOrderNumber } from "../common/utils/order-number";
 import { escapeHtml } from "../common/utils/escape-html";
 import { formatXaf } from "../common/utils/money";
-import { Actor, canTransition, nextStatusesForAdmin, releasesCoupon, releasesStock, reservesStock } from "./order-status";
+import { Actor, ORDER_GROUPS, canTransition, nextStatusesForAdmin, releasesCoupon, releasesStock, reservesStock } from "./order-status";
 
 const STATUS_EMAIL_CONTENT: Partial<Record<OrderStatus, { subject: string; body: string }>> = {
   [OrderStatus.PAID]: {
@@ -354,7 +354,7 @@ export class OrdersService {
   async findAllAdmin(query: AdminOrdersQueryDto) {
     const search = searchTerm(query.search);
     const where: Prisma.OrderWhereInput = {
-      ...(query.status && { status: query.status }),
+      ...(query.status ? { status: query.status } : query.group && { status: { in: ORDER_GROUPS[query.group] } }),
       ...(search && {
         OR: [
           { orderNumber: { contains: search, mode: "insensitive" as const } },

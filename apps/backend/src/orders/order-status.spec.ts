@@ -1,5 +1,5 @@
 import { OrderStatus as S } from "@truckparts/prisma";
-import { canTransition, nextStatusesForAdmin, releasesCoupon, releasesStock, reservesStock } from "./order-status";
+import { ORDER_GROUPS, canTransition, nextStatusesForAdmin, releasesCoupon, releasesStock, reservesStock } from "./order-status";
 
 describe("order state machine", () => {
   it("only the system can mark an order PAID", () => {
@@ -35,5 +35,12 @@ describe("order state machine", () => {
   it("gives the coupon use back only for never-paid orders", () => {
     expect(releasesCoupon(S.PAYMENT_PENDING, S.EXPIRED)).toBe(true);
     expect(releasesCoupon(S.PAID, S.REFUNDED)).toBe(false);
+  });
+
+  it("puts every order status in exactly one admin tab", () => {
+    // CART is a cart, never a placed order.
+    const placed = Object.values(S).filter((s) => s !== "CART");
+    const grouped = Object.values(ORDER_GROUPS).flat();
+    expect([...grouped].sort()).toEqual([...placed].sort());
   });
 });

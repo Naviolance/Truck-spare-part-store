@@ -191,6 +191,12 @@ own message instead (step mapping: `trackerStep()` in `lib/order-status.ts`). "M
 orders (active ones with a progress bar) / details / password via `?section=`; `/orders` redirects there. Logging
 out sets `loggedOut` in `AuthContext` so `useRequireAuth` lets `logout()` take the user home instead of to login.
 Mockups from now on: two versions per screen, never bundles of screens.
+Admin (step 6, option B; "TruckParts admin" canvas): `AdminShell` = tabs under the site header (Aujourd'hui, Commandes,
+Demandes with count badges from `/admin/stats`, Produits, Importer, Catalogue ▾, Promo et avis ▾). Dashboard opens on
+"to do today" cards (`orderGroups.todo`, `openRequests`, out of stock) + numbers + demand insights (WhatsApp clicks as
+bars). Orders: tabs = backend `ORDER_GROUPS` (`orders/order-status.ts`, every status in exactly one — tested;
+`?group=` on `/orders/admin/all` and the page URL), cards with call/WhatsApp and the next legal status as the main
+button. Products: list + quick-edit panel (price/stock/status via the same PATCH) beside it; the full form is unchanged.
 
 **Search**: matches `products."searchText"` — one lower-case, accent-free string (name, descriptions,
 brand, category EN/FR, trucks, part/cross-reference numbers) with a GIN trigram index. It is written

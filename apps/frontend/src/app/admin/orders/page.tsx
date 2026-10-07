@@ -1,10 +1,11 @@
 "use client";
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { apiFetch, readApiError } from "@/lib/api";
 import { useApiError } from "@/lib/use-api-error";
 import { useAdminList } from "@/lib/admin-list";
-import { FilterSelect, Pager, SearchBox } from "@/components/admin/ListControls";
+import { Pager, SearchBox } from "@/components/admin/ListControls";
 import { formatMoney } from "@/lib/money";
 
 type Order = {
@@ -13,7 +14,9 @@ type Order = {
   status: string;
   total: string;
   createdAt: string;
+  shippingPhone: string;
   user: { firstName: string; lastName: string; email: string };
+  items: { id: string; productName: string; quantity: number }[];
   payments: { provider: string; status: string }[];
   // From the backend's state machine (orders/order-status.ts): the only
   // statuses this order may move to. The UI never offers anything else.
@@ -24,39 +27,64 @@ type Order = {
 // confirmation), not the dropdown.
 const BUTTON_ONLY = ["CANCELLED", "REFUNDED"];
 
-function dropdownOptions(o: Order) {
-  return [o.status, ...o.nextStatuses.filter((s) => !BUTTON_ONLY.includes(s))];
-}
-
 function canCancel(o: Order) {
   return o.nextStatuses.some((s) => BUTTON_ONLY.includes(s));
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  PAID: "bg-blue-100 text-blue-700",
-  PROCESSING: "bg-yellow-100 text-yellow-700",
-  SHIPPED: "bg-purple-100 text-purple-700",
-  DELIVERED: "bg-green-100 text-green-700",
-  CANCELLED: "bg-steel-light text-steel",
-  PAYMENT_FAILED: "bg-red-100 text-red-700",
-  EXPIRED: "bg-steel-light text-steel",
-  REFUNDED: "bg-red-100 text-red-700",
-  PARTIALLY_REFUNDED: "bg-orange-100 text-orange-700",
-  DISPUTED: "bg-red-100 text-red-700",
-  PAYMENT_PENDING: "bg-steel-light text-steel",
+// The four tabs (backend ORDER_GROUPS): what needs the owner, under way,
+// finished, ended without a sale.
+const GROUPS = ["todo", "doing", "done", "closed"] as const;
+type Group = (typeof GROUPS)[number];
+const PILL: Record<Group, string> = {
+  todo: "bg-[#F6E6C8] text-amber-dark",
+  doing: "bg-[#E1E4E7] text-ink",
+  done: "bg-stock-bg text-stock",
+  closed: "bg-[#E1E4E7] text-steel",
 };
+const groupOf = (status: string): Group =>
+  ["PAYMENT_PENDING", "DISPUTED"].includes(status) ? "todo"
+  : ["PAID", "PROCESSING", "SHIPPED"].includes(status) ? "doing"
+  : status === "DELIVERED" ? "done" : "closed";
+const digits = (phone: string) => phone.replace(/\D/g, "");
 
+// Orders (redesign step 6, option B): status tabs with counts, one card per
+// order with the customer's phone (call / WhatsApp) and the next step as one
+// button. The backend's state machine still decides every allowed move.
 export default function AdminOrdersPage() {
+  return (
+    <Suspense fallback={null}>
+      <OrdersBoard />
+    </Suspense>
+  );
+}
+
+function OrdersBoard() {
   const t = useTranslations("AdminOrders");
   const tc = useTranslations("AdminCommon");
   const ts = useTranslations("OrderStatus");
   const locale = useLocale();
   const apiError = useApiError();
+  const router = useRouter();
+  const pathname = usePathname();
   const statusLabel = (s: string) => (ts.has(s) ? ts(s as "PAID") : s);
-  const [status, setStatus] = useState("");
-  const list = useAdminList<Order>("/orders/admin/all", { status });
-  const { items: orders, data, reload: load } = list;
+  const requested = useSearchParams().get("group");
+  const group: Group = GROUPS.find((g) => g === requested) ?? "todo";
+  const list = useAdminList<Order>("/orders/admin/all", { group });
+  const { items: orders, data, reload } = list;
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [counts, setCounts] = useState<Record<Group, number> | null>(null);
+
+  // Tab counts; refreshed whenever an order moves.
+  const loadCounts = () =>
+    apiFetch("/admin/stats").then(async (res) => {
+      if (res.ok) setCounts((await res.json()).orderGroups);
+    });
+  useEffect(() => {
+    loadCounts();
+  }, []);
+  async function load() {
+    await Promise.all([reload(), loadCounts()]);
+  }
 
   async function handleStatusChange(orderId: string, status: string) {
     setUpdatingId(orderId);
@@ -97,151 +125,121 @@ export default function AdminOrdersPage() {
     setUpdatingId(null);
   }
 
-  if (list.loading) return <p className="text-steel">{tc("loading")}</p>;
-
   const rows = orders.map((o) => ({
     ...o,
     pendingCash: o.status === "PAYMENT_PENDING" && o.payments.some((p) => p.provider === "cash" && p.status === "PENDING"),
+    next: o.nextStatuses.filter((s) => !BUTTON_ONLY.includes(s)),
   }));
+  const tabClass = (on: boolean) =>
+    `inline-flex h-11 items-center gap-1.5 rounded-full px-4 font-bold ${on ? "bg-ink text-paper" : "border border-[#BDB5A6] bg-card text-ink hover:border-ink"}`;
 
   return (
-    <div>
-      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">{t("title")}</h1>
-      <div className="flex flex-col sm:flex-row gap-2 mb-4">
-        <SearchBox value={list.search} onChange={list.setSearch} placeholder={t("searchPlaceholder")} />
-        <FilterSelect
-          label={tc("status")}
-          value={status}
-          onChange={setStatus}
-          options={[{ value: "", label: tc("allStatuses") }, ...Object.keys(STATUS_COLORS).map((s) => ({ value: s, label: statusLabel(s) }))]}
-        />
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-display text-3xl sm:text-[38px] font-bold text-ink">{t("title")}</h1>
+        <div className="w-full sm:w-80">
+          <SearchBox value={list.search} onChange={list.setSearch} placeholder={t("searchPlaceholder")} />
+        </div>
       </div>
 
-      {orders.length === 0 ? (
-        <p className="text-steel">{list.searching || status ? t("noMatch") : t("empty")}</p>
+      <div role="tablist" aria-label={tc("status")} className="flex flex-wrap gap-2">
+        {GROUPS.map((g) => (
+          <button
+            key={g}
+            type="button"
+            role="tab"
+            aria-selected={g === group}
+            onClick={() => router.replace(`${pathname}?group=${g}`, { scroll: false })}
+            className={tabClass(g === group)}
+          >
+            {t(`groups.${g}`)}
+            {counts && (
+              <span className={`rounded-full px-1.5 text-[13px] leading-5 ${g === group ? "bg-amber text-ink" : "bg-sand text-ink"}`}>
+                {counts[g].toLocaleString(locale)}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {list.loading ? (
+        <p className="text-steel">{tc("loading")}</p>
+      ) : orders.length === 0 ? (
+        <p className="rounded-[14px] border border-dashed border-line bg-card p-6 text-center text-steel">
+          {list.searching ? t("noMatch") : t(`groupEmpty.${group}`)}
+        </p>
       ) : (
-        <>
-        <div className="sm:hidden space-y-3">
-          {rows.map((o) => (
-            <div key={o.id} className="bg-white border border-steel-light rounded-lg p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-medium text-ink">#{o.orderNumber}</p>
-                  <p className="text-xs text-steel truncate">{o.user.firstName} {o.user.lastName}</p>
-                  <p className="text-xs text-steel truncate">{o.user.email}</p>
+        <ul className="flex flex-col gap-3">
+          {rows.map((o) => {
+            const busy = updatingId === o.id;
+            const [primary, ...others] = o.next;
+            return (
+              <li key={o.id} className="flex flex-col gap-3.5 rounded-[14px] border border-line bg-card p-4 sm:p-5">
+                <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
+                  <div className="flex min-w-0 flex-col gap-1">
+                    <span className="text-lg font-bold text-ink">{o.user.firstName} {o.user.lastName}</span>
+                    <span className="text-sm text-steel">
+                      <span className="font-mono">{o.orderNumber}</span> ·{" "}
+                      {new Date(o.createdAt).toLocaleString(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                    <span className="text-ink">{o.items.map((i) => `${i.productName} × ${i.quantity}`).join(" · ")}</span>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-xl font-bold text-ink">{formatMoney(o.total)}</span>
+                    <span className={`rounded-full px-2.5 py-0.5 text-[13px] font-bold ${PILL[groupOf(o.status)]}`}>
+                      {o.pendingCash ? t("cashAwaitingPickup") : statusLabel(o.status)}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <p className="font-semibold text-ink">{formatMoney(o.total)}</p>
-                  <p className="text-xs text-steel">{new Date(o.createdAt).toLocaleDateString(locale)}</p>
-                </div>
-              </div>
-              <div className="mt-3 flex items-center gap-2">
-                <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[o.status] || "bg-steel-light"}`}>
-                  {statusLabel(o.status)}
-                </span>
-                {o.pendingCash && <span className="text-xs text-amber-dark">{t("cashAwaitingPickup")}</span>}
-              </div>
-              <div className="mt-3 flex flex-col gap-2">
-                <select
-                  value={o.status}
-                  disabled={updatingId === o.id || dropdownOptions(o).length === 1}
-                  onChange={(e) => handleStatusChange(o.id, e.target.value)}
-                  className="w-full border border-steel-light rounded-lg px-3 py-2.5 text-sm"
-                >
-                  {dropdownOptions(o).map((s) => (
-                    <option key={s} value={s}>{statusLabel(s)}</option>
-                  ))}
-                </select>
-                {o.pendingCash && (
-                  <button
-                    onClick={() => handleConfirmCash(o)}
-                    disabled={updatingId === o.id}
-                    className="w-full text-sm font-medium text-emerald-700 border border-emerald-200 bg-emerald-50 rounded-lg py-2.5 transition-colors duration-200 hover:bg-emerald-100 disabled:opacity-50 disabled:hover:bg-emerald-50"
+                <div className="flex flex-wrap items-center gap-2 border-t border-sand pt-3.5">
+                  <a href={`tel:${o.shippingPhone}`} className="inline-flex h-11 items-center rounded-[10px] border border-[#BDB5A6] px-3.5 font-bold text-ink hover:border-ink">
+                    {t("call", { phone: o.shippingPhone })}
+                  </a>
+                  <a
+                    href={`https://wa.me/${digits(o.shippingPhone)}?text=${encodeURIComponent(t("whatsappMessage", { name: o.user.firstName, number: o.orderNumber }))}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex h-11 items-center rounded-[10px] border-2 border-[#1E7B45] px-3.5 font-bold text-[#1E7B45] hover:bg-emerald-50"
                   >
-                    {updatingId === o.id ? "…" : t("markPaidCash")}
-                  </button>
-                )}
-                {canCancel(o) && (
-                  <button
-                    onClick={() => handleCancel(o)}
-                    disabled={updatingId === o.id}
-                    className="w-full text-sm font-medium text-red-600 border border-red-200 bg-red-50 rounded-lg py-2.5 transition-colors duration-200 hover:bg-red-100 disabled:opacity-50 disabled:hover:bg-red-50"
-                  >
-                    {updatingId === o.id ? "…" : t("cancelRefund")}
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="hidden sm:block overflow-x-auto">
-        <table className="w-full text-sm bg-white border border-steel-light rounded-lg overflow-hidden">
-          <thead className="bg-paper text-left">
-            <tr>
-              <th className="p-3">{t("colOrder")}</th>
-              <th className="p-3">{t("colCustomer")}</th>
-              <th className="p-3">{t("colDate")}</th>
-              <th className="p-3">{t("colTotal")}</th>
-              <th className="p-3">{tc("status")}</th>
-              <th className="p-3"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((o) => (
-              <tr key={o.id} className="border-t border-steel-light">
-                <td className="p-3 font-medium">#{o.orderNumber}</td>
-                <td className="p-3">
-                  {o.user.firstName} {o.user.lastName}
-                  <div className="text-xs text-steel">{o.user.email}</div>
-                </td>
-                <td className="p-3 text-steel">{new Date(o.createdAt).toLocaleDateString(locale)}</td>
-                <td className="p-3 font-medium">{formatMoney(o.total)}</td>
-                <td className="p-3">
-                  <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[o.status] || "bg-steel-light"}`}>
-                    {statusLabel(o.status)}
-                  </span>
-                  {o.pendingCash && (
-                    <span className="block text-xs text-amber-dark mt-1">{t("cashAwaitingPickup")}</span>
+                    WhatsApp
+                  </a>
+                  {canCancel(o) && (
+                    <button type="button" onClick={() => handleCancel(o)} disabled={busy} className="px-2 text-sm font-semibold text-[#8A3821] underline underline-offset-2 disabled:opacity-50">
+                      {t("cancelRefund")}
+                    </button>
                   )}
-                </td>
-                <td className="p-3">
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={o.status}
-                      disabled={updatingId === o.id || dropdownOptions(o).length === 1}
-                      onChange={(e) => handleStatusChange(o.id, e.target.value)}
-                      className="border border-steel-light rounded-lg px-2 py-1 text-xs"
-                    >
-                      {dropdownOptions(o).map((s) => (
-                        <option key={s} value={s}>{statusLabel(s)}</option>
-                      ))}
-                    </select>
-                    {o.pendingCash && (
-                      <button
-                        onClick={() => handleConfirmCash(o)}
-                        disabled={updatingId === o.id}
-                        className="text-xs font-medium text-emerald-700 border border-emerald-200 bg-emerald-50 rounded-lg px-2.5 py-1 transition-colors duration-200 hover:bg-emerald-100 disabled:opacity-50 disabled:hover:bg-emerald-50"
+                  <div className="ml-auto flex flex-wrap items-center gap-2">
+                    {others.length > 0 && (
+                      <select
+                        aria-label={t("otherStatus")}
+                        value=""
+                        disabled={busy}
+                        onChange={(e) => e.target.value && handleStatusChange(o.id, e.target.value)}
+                        className="h-11 rounded-[10px] border border-[#BDB5A6] bg-white px-2 text-sm"
                       >
-                        {updatingId === o.id ? "…" : t("markPaidCash")}
-                      </button>
+                        <option value="">{t("otherStatus")}</option>
+                        {others.map((s) => (
+                          <option key={s} value={s}>{statusLabel(s)}</option>
+                        ))}
+                      </select>
                     )}
-                    {canCancel(o) && (
-                      <button
-                        onClick={() => handleCancel(o)}
-                        disabled={updatingId === o.id}
-                        className="text-xs font-medium text-red-600 border border-red-200 bg-red-50 rounded-lg px-2.5 py-1 transition-colors duration-200 hover:bg-red-100 disabled:opacity-50 disabled:hover:bg-red-50"
-                      >
-                        {updatingId === o.id ? "…" : t("cancelRefund")}
+                    {o.pendingCash ? (
+                      <button type="button" onClick={() => handleConfirmCash(o)} disabled={busy} className="h-11 rounded-[10px] bg-amber px-4 font-bold text-ink hover:bg-amber-dark disabled:opacity-50">
+                        {busy ? "…" : t("markPaidCash")}
                       </button>
+                    ) : (
+                      primary && (
+                        <button type="button" onClick={() => handleStatusChange(o.id, primary)} disabled={busy} className="h-11 rounded-[10px] bg-amber px-4 font-bold text-ink hover:bg-amber-dark disabled:opacity-50">
+                          {busy ? "…" : t("moveTo", { status: statusLabel(primary) })}
+                        </button>
+                      )
                     )}
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </div>
-        </>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
       {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} limit={data.limit} onPage={list.setPage} />}
     </div>

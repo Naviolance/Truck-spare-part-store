@@ -1,24 +1,41 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
 import { ADMIN_LOCALE_COOKIE, ADMIN_LOCALES } from "@/lib/admin-locale";
+import { apiFetch } from "@/lib/api";
 
-const links = [
+type NavKey = "dashboard" | "orders" | "requests" | "products" | "import" | "categories" | "brands" | "vehicles" | "coupons" | "reviews" | "account";
+const tabs: { href: string; key: NavKey }[] = [
   { href: "/admin", key: "dashboard" },
-  { href: "/admin/products", key: "products" },
-  { href: "/admin/import", key: "import" },
-  { href: "/admin/categories", key: "categories" },
-  { href: "/admin/brands", key: "brands" },
-  { href: "/admin/vehicles", key: "vehicles" },
   { href: "/admin/orders", key: "orders" },
   { href: "/admin/requests", key: "requests" },
-  { href: "/admin/coupons", key: "coupons" },
-  { href: "/admin/reviews", key: "reviews" },
-  { href: "/admin/account", key: "account" },
-] as const;
+  { href: "/admin/products", key: "products" },
+  { href: "/admin/import", key: "import" },
+];
+// Less frequent pages, folded into two menus.
+const menus: { key: "catalog" | "more"; links: { href: string; key: NavKey }[] }[] = [
+  { key: "catalog", links: [{ href: "/admin/categories", key: "categories" }, { href: "/admin/brands", key: "brands" }, { href: "/admin/vehicles", key: "vehicles" }] },
+  { key: "more", links: [{ href: "/admin/coupons", key: "coupons" }, { href: "/admin/reviews", key: "reviews" }] },
+];
+
+// Badge counts on the tabs: orders still needing the owner and open part
+// requests (from /admin/stats), refreshed on every admin page change.
+function useNavCounts(pathname: string) {
+  const [counts, setCounts] = useState<{ orders: number; requests: number }>({ orders: 0, requests: 0 });
+  useEffect(() => {
+    apiFetch("/admin/stats")
+      .then(async (res) => {
+        if (!res.ok) return;
+        const s = await res.json();
+        setCounts({ orders: s.orderGroups?.todo ?? 0, requests: s.openRequests ?? 0 });
+      })
+      .catch(() => {});
+  }, [pathname]);
+  return counts;
+}
 
 // EN/FR switch: saves the choice for a year and re-renders the admin in it.
 function AdminLanguageSwitch() {
@@ -52,6 +69,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const activeLinkRef = useRef<HTMLAnchorElement>(null);
   const t = useTranslations("AdminShell");
+  const counts = useNavCounts(pathname);
 
   useEffect(() => {
     if (!loading && (!user || user.role !== "ADMIN")) router.push("/");
@@ -83,34 +101,69 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  const active = (href: string) => (href === "/admin" ? pathname === "/admin" : pathname.startsWith(href));
+  const badge = (key: NavKey) => (key === "orders" ? counts.orders : key === "requests" ? counts.requests : 0);
+  const tab = (on: boolean) =>
+    `flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-[3px] px-3.5 py-3 font-semibold transition-colors ${
+      on ? "border-amber text-ink" : "border-transparent text-steel hover:text-ink"
+    }`;
+
+  // Redesign step 6, option B: tabs across the top (a scrolling strip on
+  // phones) instead of a sidebar, with counts on what needs attention.
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col sm:flex-row gap-6 sm:gap-8">
-      <aside className="sm:w-48 shrink-0">
-        <nav aria-label={t("sections")} className="flex sm:flex-col gap-1 overflow-x-auto sm:overflow-visible -mx-1 px-1 sm:mx-0 sm:px-0 bg-steel-light sm:bg-transparent rounded-lg sm:rounded-none p-1 sm:p-0">
-          {links.map((link) => (
+    <>
+      <nav aria-label={t("sections")} className="border-b border-line bg-card">
+        <div className="max-w-6xl mx-auto px-4 flex items-center gap-1 overflow-x-auto [scrollbar-width:none]">
+          {tabs.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              ref={pathname === link.href ? activeLinkRef : undefined}
-              className={`block px-3 py-2 rounded-lg text-sm whitespace-nowrap transition-colors duration-200 ${
-                pathname === link.href
-                  ? "bg-ink text-white"
-                  : "text-steel hover:bg-white sm:hover:bg-steel-light hover:text-ink"
-              }`}
+              ref={active(link.href) ? activeLinkRef : undefined}
+              aria-current={active(link.href) ? "page" : undefined}
+              className={tab(active(link.href))}
             >
               {t(`nav.${link.key}`)}
+              {badge(link.key) > 0 && (
+                <span className="rounded-full bg-amber px-1.5 text-[13px] font-bold leading-5 text-ink">{badge(link.key)}</span>
+              )}
             </Link>
           ))}
-        </nav>
-        <div className="mt-3 sm:mt-6 sm:px-3">
-          <AdminLanguageSwitch />
+          {menus.map((menu) => {
+            const on = menu.links.some((l) => active(l.href));
+            return (
+              <details key={menu.key} className="group relative shrink-0">
+                <summary className={`${tab(on)} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>
+                  {t(`menu.${menu.key}`)} <span aria-hidden="true" className="text-xs">▾</span>
+                </summary>
+                <div className="fixed z-40 mt-1 flex min-w-48 flex-col rounded-[12px] border border-line bg-card p-1.5 shadow-lg">
+                  {menu.links.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={(e) => e.currentTarget.closest("details")?.removeAttribute("open")}
+                      aria-current={active(link.href) ? "page" : undefined}
+                      className={`rounded-lg px-3 py-2.5 font-semibold ${active(link.href) ? "bg-ink text-paper" : "text-ink hover:bg-sand"}`}
+                    >
+                      {t(`nav.${link.key}`)}
+                    </Link>
+                  ))}
+                </div>
+              </details>
+            );
+          })}
+          <Link href="/admin/account" aria-current={active("/admin/account") ? "page" : undefined} className={`${tab(active("/admin/account"))} ml-auto`}>
+            {t("nav.account")}
+          </Link>
+          <div className="shrink-0 pl-2">
+            <AdminLanguageSwitch />
+          </div>
         </div>
-      </aside>
-      <main className="flex-1 min-w-0">
+      </nav>
+      <main className="max-w-6xl mx-auto w-full px-4 py-8">
         {user.isDemo && <DemoBanner />}
         {children}
       </main>
-    </div>
+    </>
   );
 }
 

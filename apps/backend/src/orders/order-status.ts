@@ -67,3 +67,14 @@ export function reservesStock(from: OrderStatus, to: OrderStatus): boolean {
 export function releasesCoupon(from: OrderStatus, to: OrderStatus): boolean {
   return from === S.PAYMENT_PENDING && RELEASED.includes(to);
 }
+
+// The admin's order tabs (redesign step 6): what still needs the owner, what
+// is under way, what is finished, and what ended without a sale. Every
+// status is in exactly one group (order-status.spec.ts checks it).
+export const ORDER_GROUPS = {
+  todo: [S.PAYMENT_PENDING, S.DISPUTED],
+  doing: [S.PAID, S.PROCESSING, S.SHIPPED],
+  done: [S.DELIVERED],
+  closed: [S.EXPIRED, S.PAYMENT_FAILED, S.CANCELLED, S.REFUNDED, S.PARTIALLY_REFUNDED],
+} satisfies Record<string, OrderStatus[]>;
+export type OrderGroup = keyof typeof ORDER_GROUPS;
