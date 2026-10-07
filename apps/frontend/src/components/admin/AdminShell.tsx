@@ -87,20 +87,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     return <main className="max-w-6xl mx-auto px-4 py-16 text-steel">{t("checkingAccess")}</main>;
   }
 
-  // The post-style product composer is a focused, full-screen flow - the
-  // persistent sidebar nav would be noise there, same as a real app's post
-  // composer doesn't show its own tab bar. Still gated by the auth check
-  // above, just without the surrounding chrome.
-  const isFocusMode = pathname.startsWith("/admin/products/create");
-  if (isFocusMode) {
-    return (
-      <main className="max-w-lg mx-auto min-h-screen">
-        {user.isDemo && <DemoBanner />}
-        {children}
-      </main>
-    );
-  }
-
   const active = (href: string) => (href === "/admin" ? pathname === "/admin" : pathname.startsWith(href));
   const badge = (key: NavKey) => (key === "orders" ? counts.orders : key === "requests" ? counts.requests : 0);
   const tab = (on: boolean) =>

@@ -199,7 +199,9 @@ Demandes with count badges from `/admin/stats`, Produits, Importer, Catalogue �
 "to do today" cards (`orderGroups.todo`, `openRequests`, out of stock) + numbers + demand insights (WhatsApp clicks as
 bars). Orders: tabs = backend `ORDER_GROUPS` (`orders/order-status.ts`, every status in exactly one — tested;
 `?group=` on `/orders/admin/all` and the page URL), cards with call/WhatsApp and the next legal status as the main
-button. Products: list + quick-edit panel (price/stock/status via the same PATCH) beside it; the full form is unchanged.
+button. Products: list + quick-edit panel (price/stock/status via the same PATCH) beside it. The full form
+(create + edit, option A) is one shared `components/admin/ProductForm.tsx`: section cards + a sticky save bar; new
+photos stay local until Save, then upload in order (first = cover); validation runs on save and marks fields.
 The other admin pages (requests with `?status=` tabs, reviews, coupons, categories, brands, vehicles, import, account)
 use the same look through shared classes in `globals.css` — `admin-title`, `admin-card`, `admin-empty`, `admin-label`
 (wraps its input, so labels are real), `admin-input`, `admin-pill`/`admin-pill-on`, `admin-action`, `link-danger` — and
