@@ -47,21 +47,25 @@ export default function AdminBrandsPage() {
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">{t("title")}</h1>
-      <form onSubmit={handleAdd} className="flex gap-2 mb-6">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("namePlaceholder")} aria-label={t("namePlaceholder")} className="border border-steel-light rounded-lg px-3 py-2 flex-1" required />
-        <button disabled={submitting} className="bg-ink text-white rounded-lg px-4 py-2 disabled:opacity-50">{submitting ? tc("adding") : tc("add")}</button>
+    <div className="flex max-w-3xl flex-col gap-5">
+      <h1 className="admin-title">{t("title")}</h1>
+      <form onSubmit={handleAdd} className="admin-card flex flex-col gap-2 p-4 sm:flex-row">
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("namePlaceholder")} aria-label={t("namePlaceholder")} className="admin-input flex-1" required />
+        <button disabled={submitting} className="btn-primary h-11">{submitting ? tc("adding") : tc("add")}</button>
       </form>
-      {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
-      <ul className="bg-white border border-steel-light rounded-lg divide-y divide-steel-light">
+      {error && <p role="alert" className="text-sm text-rust-dark">{error}</p>}
+      <ul className="admin-card overflow-hidden divide-y divide-sand">
         {brands.map((b) => (
-          <li key={b.id} className="flex items-center justify-between p-3 text-sm">
-            <span>{b.name} <span className="text-steel">({t("productCount", { count: b._count.products })})</span></span>
+          <li key={b.id} className="flex items-center justify-between gap-3 px-4 py-3">
+            <span className="min-w-0">
+              <span className="font-bold text-ink">{b.name}</span>{" "}
+              <span className="text-sm text-steel">{t("productCount", { count: b._count.products })}</span>
+            </span>
             <button
+              type="button"
               onClick={() => handleDelete(b.id)}
               disabled={deletingId === b.id}
-              className="border border-red-200 bg-red-50 text-red-600 rounded-lg px-3 py-1.5 text-xs transition-colors duration-200 hover:bg-red-100 disabled:opacity-50"
+              className="link-danger shrink-0"
             >
               {deletingId === b.id ? tc("deleting") : tc("delete")}
             </button>

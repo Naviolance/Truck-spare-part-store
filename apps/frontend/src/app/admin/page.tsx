@@ -56,7 +56,7 @@ export default function AdminDashboardPage() {
   // "To do today" (redesign step 6, option B): what needs the owner, first.
   const tasks = [
     { count: stats.orderGroups.todo, title: t("taskOrders"), body: t("taskOrdersBody"), href: "/admin/orders?group=todo", cta: t("taskOrdersCta") },
-    { count: stats.openRequests, title: t("taskRequests"), body: t("taskRequestsBody"), href: "/admin/requests", cta: t("taskRequestsCta") },
+    { count: stats.openRequests, title: t("taskRequests"), body: t("taskRequestsBody"), href: "/admin/requests?status=OPEN", cta: t("taskRequestsCta") },
     { count: stats.outOfStock, title: t("outOfStock"), body: t("taskStockBody"), href: "/admin/products?stock=out", cta: t("taskStockCta") },
   ];
   const today = new Date().toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" });

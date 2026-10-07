@@ -45,6 +45,36 @@
     @apply tag-condition bg-[#E1E4E7] text-steel;
   }
 
+  /* Admin building blocks (redesign step 6): the look of the redesigned
+     orders/products pages, shared by every other admin page. */
+  .admin-title {
+    @apply font-display text-3xl sm:text-[38px] font-bold text-ink;
+  }
+  .admin-card {
+    @apply rounded-[14px] border border-line bg-card;
+  }
+  .admin-empty {
+    @apply rounded-[14px] border border-dashed border-line bg-card p-6 text-center text-steel;
+  }
+  .admin-label {
+    @apply flex flex-col gap-1.5 font-semibold text-ink;
+  }
+  .admin-input {
+    @apply h-11 w-full rounded-[10px] border border-[#BDB5A6] bg-white px-3 font-normal text-ink focus:border-ink focus:outline-none;
+  }
+  .admin-pill {
+    @apply inline-flex h-11 items-center gap-1.5 rounded-full border border-[#BDB5A6] bg-card px-4 font-semibold text-ink hover:border-ink;
+  }
+  .admin-pill-on {
+    @apply inline-flex h-11 items-center gap-1.5 rounded-full bg-ink px-4 font-bold text-paper;
+  }
+  .admin-action {
+    @apply inline-flex h-11 items-center justify-center rounded-[10px] border border-[#BDB5A6] px-3.5 font-bold text-ink hover:border-ink disabled:opacity-50;
+  }
+  .link-danger {
+    @apply text-sm font-semibold text-rust-dark underline underline-offset-2 disabled:opacity-50;
+  }
+
   /* Skeleton placeholders: the shape of the content that's loading,
      pulsing gently (replaces the old click-point spinner). */
   .skeleton {

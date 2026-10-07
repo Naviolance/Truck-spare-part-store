@@ -96,24 +96,24 @@ export default function AdminImportPage() {
   const canImport = plan && plan.errors.length === 0 && plan.rows.length > 0;
 
   return (
-    <div className="max-w-4xl">
-      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-1">{t("title")}</h1>
-      <p className="text-sm text-steel mb-6">
-        {t("intro")}
-      </p>
+    <div className="flex max-w-4xl flex-col gap-5">
+      <div className="flex flex-col gap-1">
+        <h1 className="admin-title">{t("title")}</h1>
+        <p className="text-steel">{t("intro")}</p>
+      </div>
 
-      <section className="bg-white border border-steel-light rounded-lg p-4 mb-6">
-        <h2 className="font-semibold text-ink mb-2">{t("step1Title")}</h2>
+      <section className="admin-card p-4 sm:p-5">
+        <h2 className="font-display text-[22px] font-bold text-ink mb-2">{t("step1Title")}</h2>
         <ol className="text-sm text-steel list-decimal pl-5 space-y-1 mb-3">
           <li>{t("step1Download")}</li>
           <li>{t("step1Fill")}</li>
           <li>{t.rich("step1Save", { strong: (chunks) => <strong>{chunks}</strong> })}</li>
         </ol>
-        <button onClick={downloadTemplate} className="bg-ink text-white text-sm px-4 py-2 rounded-lg">{t("downloadTemplate")}</button>
+        <button type="button" onClick={downloadTemplate} className="btn-secondary h-11">{t("downloadTemplate")}</button>
         <details className="mt-4 text-sm">
           <summary className="cursor-pointer text-ink font-medium">{t("columnsExplained")}</summary>
           <table className="mt-2 w-full text-left">
-            <tbody className="divide-y divide-steel-light">
+            <tbody className="divide-y divide-sand">
               {COLUMNS.map(([col, help]) => (
                 <tr key={col}>
                   <td className="py-1.5 pr-4 font-mono text-xs text-ink whitespace-nowrap align-top">{col}</td>
@@ -126,23 +126,23 @@ export default function AdminImportPage() {
         </details>
       </section>
 
-      <section className="bg-white border border-steel-light rounded-lg p-4 mb-6">
-        <h2 className="font-semibold text-ink mb-2">{t("step2Title")}</h2>
+      <section className="admin-card p-4 sm:p-5">
+        <h2 className="font-display text-[22px] font-bold text-ink mb-2">{t("step2Title")}</h2>
         <input
           ref={inputRef}
           type="file"
           accept=".csv,text/csv"
           aria-label={t("fileLabel")}
           onChange={(e) => e.target.files?.[0] && preview(e.target.files[0])}
-          className="text-sm"
+          className="text-sm file:mr-3 file:h-11 file:cursor-pointer file:rounded-[10px] file:border-0 file:bg-amber file:px-4 file:font-bold file:text-ink hover:file:bg-amber-dark"
         />
         {busy === "preview" && <p className="text-sm text-steel mt-2">{t("checking")}</p>}
       </section>
 
-      {error && <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3 mb-6">{error}</p>}
+      {error && <p role="alert" className="rounded-[10px] border border-[#E7C3B8] bg-[#F1DCD5] p-3 text-sm text-rust-dark">{error}</p>}
 
       {done && (
-        <div role="status" className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-6 text-sm text-emerald-800">
+        <div role="status" className="rounded-[10px] bg-stock-bg p-4 text-sm text-stock">
           {t.rich("done", {
             create: done.create,
             update: done.update,
@@ -152,7 +152,7 @@ export default function AdminImportPage() {
       )}
 
       {plan && (
-        <section className="bg-white border border-steel-light rounded-lg p-4 space-y-4">
+        <section className="admin-card p-4 sm:p-5 space-y-4">
           <div className="flex flex-wrap gap-2 text-sm">
             <span className="px-2 py-1 rounded-full bg-emerald-100 text-emerald-800">{t("summaryNew", { count: plan.summary.create })}</span>
             <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800">{t("summaryUpdated", { count: plan.summary.update })}</span>
@@ -200,7 +200,7 @@ export default function AdminImportPage() {
                     <th className="py-1 text-right">{t("colQuantity")}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-steel-light">
+                <tbody className="divide-y divide-sand">
                   {plan.rows.slice(0, PREVIEW_ROWS).map((r) => (
                     <tr key={r.line}>
                       <td className="py-1 pr-3 text-steel">{r.line}</td>
@@ -222,10 +222,10 @@ export default function AdminImportPage() {
             </div>
           )}
 
-          <div className="border-t border-steel-light pt-4 flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="border-t border-sand pt-4 flex flex-col sm:flex-row sm:items-center gap-3">
             <label className="text-sm text-steel flex items-center gap-2">
               {t("defaultStatusLabel")}
-              <select value={defaultStatus} onChange={(e) => setDefaultStatus(e.target.value as "PUBLISHED" | "DRAFT")} className="border border-steel-light rounded-lg px-2 py-1">
+              <select value={defaultStatus} onChange={(e) => setDefaultStatus(e.target.value as "PUBLISHED" | "DRAFT")} className="admin-input w-auto">
                 <option value="PUBLISHED">{t("publishNow")}</option>
                 <option value="DRAFT">{t("saveAsDrafts")}</option>
               </select>
@@ -233,7 +233,7 @@ export default function AdminImportPage() {
             <button
               onClick={commit}
               disabled={!canImport || busy !== null}
-              className="sm:ml-auto bg-amber text-ink px-5 py-2 text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+              className="btn-primary h-11 sm:ml-auto disabled:cursor-not-allowed"
             >
               {busy === "commit" ? t("importing") : t("importButton", { count: plan.rows.length })}
             </button>
@@ -248,7 +248,7 @@ function IssueTable({ issues, tone }: { issues: Issue[]; tone: "error" | "warnin
   const t = useTranslations("AdminImport");
   return (
     <table className="w-full text-sm text-left mt-1">
-      <tbody className="divide-y divide-steel-light">
+      <tbody className="divide-y divide-sand">
         {issues.slice(0, 200).map((issue, i) => (
           <tr key={i}>
             <td className="py-1 pr-3 text-steel whitespace-nowrap align-top">{issue.line > 0 ? t("issueLine", { line: issue.line }) : t("issueFile")}</td>

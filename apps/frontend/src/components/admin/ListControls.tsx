@@ -11,7 +11,7 @@ export function SearchBox({ value, onChange, placeholder }: { value: string; onC
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       aria-label={placeholder}
-      className="w-full sm:w-72 border border-steel-light rounded-lg px-3 py-2 text-sm bg-white"
+      className="admin-input sm:max-w-sm"
     />
   );
 }
@@ -30,7 +30,7 @@ export function Pager({ page, totalPages, total, limit, onPage }: {
   const from = (page - 1) * limit + 1;
   const to = Math.min(total, page * limit);
   return (
-    <div className="flex items-center justify-between gap-3 mt-4 text-sm text-steel">
+    <div className="flex flex-wrap items-center justify-between gap-3 mt-4 text-sm text-steel">
       <span>
         {t("range", { from: n(from), to: n(to), total: n(total) })}
       </span>
@@ -40,7 +40,7 @@ export function Pager({ page, totalPages, total, limit, onPage }: {
             type="button"
             onClick={() => onPage(page - 1)}
             disabled={page <= 1}
-            className="border border-steel-light rounded-lg px-3 py-1.5 disabled:opacity-40 hover:border-ink"
+            className="admin-action disabled:opacity-40"
           >
             {t("previous")}
           </button>
@@ -49,7 +49,7 @@ export function Pager({ page, totalPages, total, limit, onPage }: {
             type="button"
             onClick={() => onPage(page + 1)}
             disabled={page >= totalPages}
-            className="border border-steel-light rounded-lg px-3 py-1.5 disabled:opacity-40 hover:border-ink"
+            className="admin-action disabled:opacity-40"
           >
             {t("next")}
           </button>
@@ -70,7 +70,7 @@ export function FilterSelect({ value, onChange, options, label }: {
       value={value}
       onChange={(e) => onChange(e.target.value)}
       aria-label={label}
-      className="border border-steel-light rounded-lg px-3 py-2 text-sm bg-white"
+      className="admin-input w-auto"
     >
       {options.map((o) => (
         <option key={o.value} value={o.value}>

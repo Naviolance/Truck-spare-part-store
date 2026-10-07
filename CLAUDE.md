@@ -197,6 +197,10 @@ Demandes with count badges from `/admin/stats`, Produits, Importer, Catalogue �
 bars). Orders: tabs = backend `ORDER_GROUPS` (`orders/order-status.ts`, every status in exactly one — tested;
 `?group=` on `/orders/admin/all` and the page URL), cards with call/WhatsApp and the next legal status as the main
 button. Products: list + quick-edit panel (price/stock/status via the same PATCH) beside it; the full form is unchanged.
+The other admin pages (requests with `?status=` tabs, reviews, coupons, categories, brands, vehicles, import, account)
+use the same look through shared classes in `globals.css` — `admin-title`, `admin-card`, `admin-empty`, `admin-label`
+(wraps its input, so labels are real), `admin-input`, `admin-pill`/`admin-pill-on`, `admin-action`, `link-danger` — and
+`ListControls`. New admin page → use these instead of hand-rolled borders/colours.
 
 **Search**: matches `products."searchText"` — one lower-case, accent-free string (name, descriptions,
 brand, category EN/FR, trucks, part/cross-reference numbers) with a GIN trigram index. It is written
