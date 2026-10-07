@@ -8,6 +8,7 @@ export type AnalyticsEvent =
   | "search"
   | "search_no_results"
   | "whatsapp_click"
+  | "fit_check"
   | "part_request_submitted"
   | "add_to_cart"
   | "checkout_started"

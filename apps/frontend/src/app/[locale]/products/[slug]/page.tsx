@@ -4,6 +4,8 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
 import { Link } from "@/i18n/navigation";
 import { AddToCartButton } from "./AddToCartButton";
+import { FitChecker, type Fit, type MakeOption } from "./FitChecker";
+import { StickyBuyBar } from "./StickyBuyBar";
 import { ReviewsSection } from "./ReviewsSection";
 import { ProductGallery } from "./ProductGallery";
 import { formatMoney } from "@/lib/money";
@@ -13,6 +15,7 @@ import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { JsonLd } from "@/components/JsonLd";
 import { serverFetch, serverFetchOrMissing } from "@/lib/server-api";
 import { categoryName } from "@/lib/catalog";
+import { getTruckCatalog, type TruckMake } from "@/lib/landing";
 import { breadcrumbJsonLd, localeAlternates, absoluteUrl, productJsonLd } from "@/lib/seo";
 import { slugify } from "@/lib/slug";
 import { whatsappLink } from "@/lib/site";
@@ -80,103 +83,83 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ProductPage({ params }: Props) {
   const { locale, slug } = await params;
   setRequestLocale(locale);
-  const [product, t, tc, payment] = await Promise.all([
+  const [product, t, tc, tl, tf, payment, trucks] = await Promise.all([
     getProduct(slug),
     getTranslations("Product"),
     getTranslations("Catalog"),
+    getTranslations("Landing"),
+    getTranslations("Footer"),
     serverFetch<{ online: boolean }>("/payments/options", { revalidate: 300 }),
+    getTruckCatalog(),
   ]);
 
   const description = localizedDescription(product, locale);
   const category = categoryName(product.category, locale);
   const inStock = product.quantity > 0;
   const url = absoluteUrl(`/${locale}/products/${slug}`);
+  const productLabel = `${product.name}${product.partNumber ? ` (${product.partNumber})` : ""}`;
   const whatsapp = whatsappLink(
     t("whatsappMessage", { name: product.name, ref: product.partNumber ? ` (${product.partNumber})` : "", url }),
   );
   const vehicles = product.compatibility.map((c) => c.vehicle);
+  const fits: Fit[] = vehicles.map((v) => ({
+    manufacturer: v.manufacturer,
+    model: v.model,
+    years: years(v),
+    engine: v.engine,
+    href: `/trucks/${slugify(v.manufacturer)}/${slugify(v.model)}`,
+  }));
+  const makes = truckOptions(trucks ?? [], vehicles);
+  const stock = inStock ? t("inStockCount", { count: product.quantity }) : t("outOfStock");
+  const crumbs = [
+    { name: tl("home"), path: "" },
+    { name: t("breadcrumbAll"), path: "/products" },
+    { name: category, path: `/categories/${product.category.slug}` },
+    { name: product.name, path: `/products/${slug}` },
+  ];
 
   return (
-    <main className="max-w-6xl mx-auto px-4 py-10">
+    // Bottom padding on phones: room for the pinned buy bar.
+    <main className="max-w-6xl mx-auto px-4 pt-6 pb-28 sm:pt-8 lg:pb-14">
       <JsonLd data={productJsonLd(product, url)} />
-      <JsonLd
-        data={breadcrumbJsonLd([
-          { name: t("breadcrumbAll"), path: `/${locale}/products` },
-          { name: category, path: `/${locale}/categories/${product.category.slug}` },
-          { name: product.name, path: `/${locale}/products/${slug}` },
-        ])}
-      />
+      <JsonLd data={breadcrumbJsonLd(crumbs.map((c) => ({ name: c.name, path: `/${locale}${c.path}` })))} />
 
-      <nav aria-label="Breadcrumb" className="text-sm text-steel">
-        <ol className="flex flex-wrap items-center gap-1">
-          <li><Link href="/products" className="hover:text-ink">{t("breadcrumbAll")}</Link></li>
-          <li aria-hidden="true">/</li>
-          <li><Link href={`/categories/${product.category.slug}`} className="hover:text-ink">{category}</Link></li>
-          <li aria-hidden="true">/</li>
-          <li aria-current="page" className="text-ink truncate max-w-[60vw]">{product.name}</li>
+      <nav aria-label={tc("breadcrumb")} className="text-sm text-steel">
+        <ol className="flex flex-wrap items-center gap-1.5">
+          {crumbs.map((c, i) => (
+            <li key={c.path} className="flex min-w-0 items-center gap-1.5">
+              {i > 0 && <span aria-hidden="true">/</span>}
+              {i < crumbs.length - 1 ? (
+                <Link href={c.path || "/"} className="hover:text-ink underline-offset-2 hover:underline">{c.name}</Link>
+              ) : (
+                <span aria-current="page" className="truncate max-w-[60vw] text-ink">{c.name}</span>
+              )}
+            </li>
+          ))}
         </ol>
       </nav>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mt-6">
-        <ProductGallery images={product.images} productName={product.name} />
-
-        <div>
-          <p className="text-sm text-steel">
-            {product.brand ? (
-              <Link href={`/brands/${product.brand.slug}`} className="hover:text-ink underline-offset-2 hover:underline">{product.brand.name}</Link>
-            ) : (
-              tc("unbranded")
-            )}
-          </p>
-          <h1 className="text-2xl font-sans font-bold mt-1 text-ink tracking-tight">{product.name}</h1>
-          {product.partNumber && (
-            <p className="text-sm text-steel mt-1">
-              {t("partNumber")}: <span className="font-mono text-ink">{product.partNumber}</span>
+      {/* Redesign step 3, option B. Desktop: content left, buy box right
+          (sticky). Phones: one column — photo and title, buy box, then the
+          fit check — with StickyBuyBar once the buy box scrolls away. */}
+      <div className="mt-5 grid gap-7 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-8">
+        <div className="grid gap-6 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:col-start-1">
+          <ProductGallery images={product.images} productName={product.name} />
+          <div className="flex flex-col gap-3">
+            <p className="text-[15px] font-semibold text-amber-dark">
+              {product.brand ? (
+                <Link href={`/brands/${product.brand.slug}`} className="hover:underline underline-offset-2">{product.brand.name}</Link>
+              ) : (
+                tc("unbranded")
+              )}
+              {" · "}
+              <Link href={`/categories/${product.category.slug}`} className="hover:underline underline-offset-2">{category}</Link>
             </p>
-          )}
+            <h1 className="font-display text-3xl sm:text-[38px] font-bold leading-[1.05] text-ink">{product.name}</h1>
 
-          <div className="flex items-center gap-3 mt-3 flex-wrap">
-            <span className="text-2xl font-mono font-semibold text-ink">{formatMoney(product.price)}</span>
-            <ConditionTag condition={product.condition} />
-          </div>
-
-          <p className={`text-sm mt-2 font-medium ${inStock ? "text-emerald-700" : "text-red-700"}`}>
-            {inStock ? t("inStockCount", { count: product.quantity }) : t("outOfStock")}
-          </p>
-
-          {product.conditionNotes && (
-            <div className="mt-4 bg-amber/10 border-l-4 border-amber p-3 text-sm text-ink">
-              <span className="font-medium">{t("conditionNotes")}: </span>
-              {product.conditionNotes}
-            </div>
-          )}
-
-          {/* Buy, or — when it's sold out — turn the visit into a lead. */}
-          <div className="mt-6 space-y-3">
-            {inStock ? (
-              <>
-                <AddToCartButton productId={product.id} slug={product.slug} inStock />
-                <WhatsAppButton href={whatsapp} label={t("askWhatsapp")} source="product" variant="outline" className="w-full" />
-                <p className="text-xs text-steel">{payment?.online ? t("cashNote") : t("cashOnlyNote")}</p>
-              </>
-            ) : (
-              <div className="border border-steel-light bg-white p-4">
-                <p className="font-semibold text-ink">{t("outOfStockTitle")}</p>
-                <p className="text-sm text-steel mt-1 mb-3">{t("outOfStockBody")}</p>
-                <WhatsAppButton href={whatsapp} label={t("askWhatsapp")} source="product_out_of_stock" className="w-full mb-4" />
-                <RequestProductForm
-                  startOpen
-                  prefillDescription={`${product.name}${product.partNumber ? ` (${product.partNumber})` : ""}`}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Plain, labelled facts: what shoppers scan for and what answer
-              engines extract. */}
-          <section className="mt-8">
-            <h2 className="font-display font-semibold mb-2 text-ink">{t("keyFacts")}</h2>
-            <dl className="text-sm grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
+            {/* Plain, labelled facts: what shoppers scan for and what answer
+                engines extract. */}
+            <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-[15px]">
               {product.partNumber && (
                 <>
                   <dt className="text-steel">{t("partNumber")}</dt>
@@ -186,11 +169,11 @@ export default async function ProductPage({ params }: Props) {
               {product.crossReference.length > 0 && (
                 <>
                   <dt className="text-steel">{t("crossReference")}</dt>
-                  <dd className="font-mono text-ink">{product.crossReference.join(", ")}</dd>
+                  <dd className="font-mono text-ink">{product.crossReference.join(" · ")}</dd>
                 </>
               )}
               <dt className="text-steel">{t("condition")}</dt>
-              <dd className="text-ink"><ConditionTag condition={product.condition} /></dd>
+              <dd><ConditionTag condition={product.condition} /></dd>
               {product.brand && (
                 <>
                   <dt className="text-steel">{t("brand")}</dt>
@@ -198,41 +181,102 @@ export default async function ProductPage({ params }: Props) {
                 </>
               )}
               <dt className="text-steel">{t("category")}</dt>
-              <dd className="text-ink">
-                <Link href={`/categories/${product.category.slug}`} className="underline-offset-2 hover:underline">{category}</Link>
-              </dd>
-              <dt className="text-steel">{t("availability")}</dt>
-              <dd className="text-ink">{inStock ? t("inStockCount", { count: product.quantity }) : t("outOfStock")}</dd>
+              <dd className="text-ink">{category}</dd>
             </dl>
+
+            {product.conditionNotes && (
+              <div className="rounded-[10px] bg-[#F6E6C8] px-3.5 py-3 text-sm text-ink">
+                <span className="font-semibold">{t("conditionNotes")} : </span>
+                {product.conditionNotes}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <aside
+          id="buy-box"
+          aria-label={t("buyBox")}
+          className="flex flex-col gap-3.5 self-start rounded-[14px] border border-line bg-card p-5 sm:p-6 lg:sticky lg:top-[136px] lg:col-start-2 lg:row-span-2 lg:row-start-1"
+        >
+          {/* Sticks below the pinned site header (119px on desktop) + 16px.
+              Buy, or — when it's sold out — turn the visit into a lead.
+              #buy-actions is what StickyBuyBar watches: price and buttons,
+              not the notes or form below them. */}
+          <div id="buy-actions" className="flex flex-col gap-3.5">
+            <span className="text-[34px] font-bold leading-none text-ink">{formatMoney(product.price)}</span>
+            <span className={`self-start rounded-full px-3 py-1 text-sm font-bold ${inStock ? "bg-stock-bg text-stock" : "bg-[#F1DCD5] text-[#8A3821]"}`}>
+              {stock}
+            </span>
+            {inStock ? (
+              <>
+                <AddToCartButton productId={product.id} slug={product.slug} inStock />
+                <WhatsAppButton href={whatsapp} label={t("askWhatsapp")} source="product" variant="action" className="w-full" />
+              </>
+            ) : (
+              <>
+                <p className="font-semibold text-ink">{t("outOfStockTitle")}</p>
+                <p className="text-sm text-steel">{t("outOfStockBody")}</p>
+                <WhatsAppButton href={whatsapp} label={t("askWhatsapp")} source="product_out_of_stock" variant="action" className="w-full" />
+              </>
+            )}
+          </div>
+          {inStock ? (
+            <ul className="flex flex-col gap-2 border-t border-sand pt-3.5 text-sm text-steel">
+              <li>{payment?.online ? t("cashNote") : t("cashOnlyNote")}</li>
+              <li>{tf("visitUsBody")}</li>
+            </ul>
+          ) : (
+            <RequestProductForm startOpen prefillDescription={productLabel} />
+          )}
+        </aside>
+
+        <div className="flex min-w-0 flex-col gap-8 lg:col-start-1">
+          <FitChecker fits={fits} makes={makes} productLabel={productLabel} productUrl={url} />
+
+          <section>
+            <h2 className="font-display text-2xl font-bold text-ink mb-2">{t("description")}</h2>
+            <p className="text-[17px] leading-relaxed text-ink whitespace-pre-line">{description}</p>
           </section>
 
-          <section className="mt-6">
-            <h2 className="font-display font-semibold mb-2 text-ink">{t("fits")}</h2>
-            {vehicles.length > 0 ? (
-              <ul className="text-sm space-y-1">
-                {vehicles.map((v, i) => (
-                  <li key={i} className="border-b border-steel-light pb-1">
-                    <Link href={`/trucks/${slugify(v.manufacturer)}/${slugify(v.model)}`} className="text-ink hover:underline underline-offset-2">
-                      {v.manufacturer} {v.model}
-                    </Link>{" "}
-                    <span className="text-steel">
-                      ({years(v)}){v.engine && ` · ${v.engine}`}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-            <p className="text-xs text-steel mt-2">{t("fitsUnknown")}</p>
-          </section>
-
-          <section className="mt-6">
-            <h2 className="font-display font-semibold mb-2 text-ink">{t("description")}</h2>
-            <p className="text-steel whitespace-pre-line leading-relaxed">{description}</p>
-          </section>
+          <ReviewsSection productId={product.id} initialReviews={product.reviews} />
         </div>
       </div>
 
-      <ReviewsSection productId={product.id} initialReviews={product.reviews} />
+      <StickyBuyBar targetId="buy-actions">
+        <div className="flex items-center gap-2.5">
+          <div className="flex min-w-0 flex-col">
+            <span className="whitespace-nowrap text-xl font-bold text-ink">{formatMoney(product.price)}</span>
+            <span className={`text-[13px] font-bold ${inStock ? "text-stock" : "text-[#8A3821]"}`}>{stock}</span>
+          </div>
+          <div className="ml-auto flex items-center gap-2">
+            {inStock ? (
+              <>
+                <WhatsAppButton href={whatsapp} label={t("askWhatsapp")} source="product_bar" variant="square" />
+                <AddToCartButton productId={product.id} slug={product.slug} inStock compact />
+              </>
+            ) : (
+              <WhatsAppButton href={whatsapp} label={t("askWhatsapp")} source="product_bar_out_of_stock" variant="action" className="h-[50px] px-4 text-base" />
+            )}
+          </div>
+        </div>
+      </StickyBuyBar>
     </main>
   );
+}
+
+// Makes and models for the fit check: every truck we know (so a shopper can
+// pick theirs even when this part doesn't fit it), plus this part's own
+// trucks in case the catalog call failed.
+function truckOptions(trucks: TruckMake[], vehicles: Vehicle[]): MakeOption[] {
+  const byMake = new Map<string, Set<string>>();
+  for (const make of trucks) {
+    byMake.set(make.manufacturer, new Set(make.models.map((m) => m.model)));
+  }
+  for (const v of vehicles) {
+    if (!byMake.has(v.manufacturer)) byMake.set(v.manufacturer, new Set());
+    byMake.get(v.manufacturer)!.add(v.model);
+  }
+  return [...byMake.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([manufacturer, models]) => ({ manufacturer, models: [...models].sort((a, b) => a.localeCompare(b)) }));
 }

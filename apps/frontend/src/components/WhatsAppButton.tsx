@@ -22,7 +22,7 @@ export function WhatsAppButton({
   href: string | null;
   label: string;
   source: string;
-  variant?: "solid" | "outline" | "icon";
+  variant?: "solid" | "outline" | "icon" | "action" | "square";
   className?: string;
 }) {
   if (!href) return null;
@@ -30,7 +30,12 @@ export function WhatsAppButton({
     solid: "inline-flex items-center justify-center gap-2 bg-[#25D366] text-ink px-4 py-2.5 text-sm font-semibold transition-colors duration-150 hover:bg-[#1ebe5a]",
     outline: "inline-flex items-center justify-center gap-2 border border-emerald-600 text-emerald-700 px-4 py-2.5 text-sm font-semibold transition-colors duration-150 hover:bg-emerald-50",
     icon: "inline-flex items-center text-paper/50 transition-colors duration-200 hover:text-amber",
+    // Product page buy box: same size as "add to cart" next to it.
+    action: "inline-flex h-[52px] items-center justify-center gap-2.5 rounded-[10px] border-2 border-[#1E7B45] text-[17px] font-bold text-[#1E7B45] transition-colors duration-150 hover:bg-emerald-50",
+    // Phone buy bar: icon only, labelled for screen readers.
+    square: "inline-flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-[10px] border-2 border-[#1E7B45] text-[#1E7B45] transition-colors duration-150 hover:bg-emerald-50",
   }[variant];
+  const iconOnly = variant === "icon" || variant === "square";
 
   return (
     <a
@@ -38,11 +43,11 @@ export function WhatsAppButton({
       target="_blank"
       rel="noopener noreferrer"
       onClick={() => track("whatsapp_click", { from: source })}
-      aria-label={variant === "icon" ? label : undefined}
+      aria-label={iconOnly ? label : undefined}
       className={`${styles} ${className}`}
     >
       <WhatsAppIcon />
-      {variant !== "icon" && label}
+      {!iconOnly && label}
     </a>
   );
 }

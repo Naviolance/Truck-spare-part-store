@@ -169,6 +169,12 @@ don't add their own), heading + `SortSelect`, removable active-filter pills (pla
 sidebar (single-choice category/brand radios — the API filters one of each; collapses behind "Filtres" below `lg`)
 and numbered pagination. On `/products` the search box is the header's (prefilled from the URL); landing pages keep
 a "search within" field. Change the layout → update `CatalogSkeleton` to match.
+Product page (step 3, option B; mockups: the "TruckParts product page" canvas): content left, buy box right
+(`#buy-box`, sticky below the pinned Navbar — `lg:top-[136px]` = its 119px + gap; change both together). `FitChecker`
+answers "does it fit my truck?" client-side from the product's own compatibility list (all makes from
+`/vehicles/catalog` are selectable; unlisted → "not in our list, ask on WhatsApp", never "doesn't fit").
+`StickyBuyBar` (phones) shows price + actions while `#buy-actions` is off screen or under the Navbar
+(`data-site-header`). `ProductPageSkeleton` mirrors this grid.
 
 **Search**: matches `products."searchText"` — one lower-case, accent-free string (name, descriptions,
 brand, category EN/FR, trucks, part/cross-reference numbers) with a GIN trigram index. It is written

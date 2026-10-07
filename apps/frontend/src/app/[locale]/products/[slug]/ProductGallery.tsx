@@ -29,7 +29,7 @@ export function ProductGallery({ images, productName }: { images: ProductImage[]
 
   if (images.length === 0) {
     return (
-      <div className="w-full aspect-square bg-steel-light rounded-lg flex items-center justify-center text-steel">
+      <div className="w-full aspect-square bg-sand rounded-[14px] flex items-center justify-center text-steel">
         No image
       </div>
     );
@@ -60,7 +60,7 @@ export function ProductGallery({ images, productName }: { images: ProductImage[]
   return (
     <div>
       <div
-        className="relative w-full aspect-square rounded-lg border border-steel-light overflow-hidden bg-paper group touch-pan-y"
+        className="relative w-full aspect-square rounded-[14px] border border-line overflow-hidden bg-sand group touch-pan-y"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -107,7 +107,7 @@ export function ProductGallery({ images, productName }: { images: ProductImage[]
               type="button"
               onClick={() => setIndex(i)}
               aria-label={`View image ${i + 1}`}
-              className={`relative w-16 h-16 shrink-0 rounded-lg overflow-hidden border-2 transition-colors duration-200 ${
+              className={`relative w-16 h-16 shrink-0 rounded-[10px] overflow-hidden border-2 transition-colors duration-200 ${
                 i === index ? "border-ink" : "border-transparent hover:border-steel-light"
               }`}
             >
