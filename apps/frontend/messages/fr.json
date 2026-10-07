@@ -497,10 +497,10 @@
     "stepPayAtPickup": "Paiement de {total} en espèces au retrait.",
     "stepDoneSr": "terminé",
     "stepNowSr": "en cours",
-    "stepLaterSr": "à venir"
+    "stepLaterSr": "à venir",
+    "backToAccount": "Mon compte"
   },
   "Account": {
-    "title": "Votre compte",
     "intro": "Vos informations et coordonnées par défaut pour les commandes.",
     "email": "E-mail",
     "name": "Nom",
@@ -518,7 +518,19 @@
     "confirmPassword": "Confirmer le nouveau mot de passe",
     "passwordsDontMatch": "Les deux nouveaux mots de passe ne correspondent pas.",
     "changePassword": "Changer le mot de passe",
-    "passwordChanged": "Mot de passe modifié. Vos autres appareils ont été déconnectés."
+    "passwordChanged": "Mot de passe modifié. Vos autres appareils ont été déconnectés.",
+    "hubTitle": "Mon compte",
+    "hello": "Bonjour {name} — vos commandes, vos coordonnées et votre mot de passe au même endroit.",
+    "navOrders": "Mes commandes",
+    "navDetails": "Mes coordonnées",
+    "navPassword": "Mot de passe",
+    "logout": "Se déconnecter",
+    "activeCount": "{count} en cours",
+    "currentOrder": "Commande en cours",
+    "previousOrders": "Commandes précédentes",
+    "viewOrder": "Voir la commande",
+    "question": "Une question ? WhatsApp",
+    "itemCount": "{count, plural, one {# article} other {# articles}}"
   },
   "ApiErrors": {
     "VALIDATION_FAILED": "Certaines informations ne sont pas valides. Vérifiez le formulaire et réessayez.",

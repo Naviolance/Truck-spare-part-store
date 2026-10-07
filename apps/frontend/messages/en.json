@@ -497,10 +497,10 @@
     "stepPayAtPickup": "Pay {total} in cash at pickup.",
     "stepDoneSr": "done",
     "stepNowSr": "in progress",
-    "stepLaterSr": "to come"
+    "stepLaterSr": "to come",
+    "backToAccount": "My account"
   },
   "Account": {
-    "title": "Your account",
     "intro": "Your details and default contact info for orders.",
     "email": "Email",
     "name": "Name",
@@ -518,7 +518,19 @@
     "confirmPassword": "Confirm new password",
     "passwordsDontMatch": "The two new passwords don't match.",
     "changePassword": "Change password",
-    "passwordChanged": "Password changed. Your other devices have been signed out."
+    "passwordChanged": "Password changed. Your other devices have been signed out.",
+    "hubTitle": "My account",
+    "hello": "Hello {name} — your orders, contact details and password in one place.",
+    "navOrders": "My orders",
+    "navDetails": "My details",
+    "navPassword": "Password",
+    "logout": "Log out",
+    "activeCount": "{count} in progress",
+    "currentOrder": "Order in progress",
+    "previousOrders": "Previous orders",
+    "viewOrder": "View the order",
+    "question": "A question? WhatsApp",
+    "itemCount": "{count, plural, one {# item} other {# items}}"
   },
   "ApiErrors": {
     "VALIDATION_FAILED": "Some details aren't valid. Check the form and try again.",

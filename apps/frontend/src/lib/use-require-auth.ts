@@ -8,15 +8,16 @@ import { usePathname, useRouter } from "@/i18n/navigation";
 // of seeing a misleading "your cart is empty" / "no orders yet".
 // `ready` is false until we know the user is logged in — render a loader.
 export function useRequireAuth() {
-  const { user, loading } = useAuth();
+  const { user, loading, loggedOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    if (loading || user) return;
+    // Logged out on purpose: logout() is already taking them home.
+    if (loading || user || loggedOut) return;
     const next = `${pathname}${window.location.search}`;
     router.replace(`/login?next=${encodeURIComponent(next)}`);
-  }, [loading, user, pathname, router]);
+  }, [loading, user, loggedOut, pathname, router]);
 
   return { user, ready: !loading && !!user };
 }

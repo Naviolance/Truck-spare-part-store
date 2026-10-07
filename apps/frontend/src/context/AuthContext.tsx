@@ -21,6 +21,10 @@ type AuthContextType = {
   login: (email: string, password: string) => Promise<void>;
   register: (data: { email: string; password: string; firstName: string; lastName: string }) => Promise<void>;
   logout: () => Promise<void>;
+  // True right after the user logged out themselves (until the next login):
+  // account-only pages then let logout() send them home instead of
+  // bouncing them to "log in again" (useRequireAuth).
+  loggedOut: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,6 +32,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loggedOut, setLoggedOut] = useState(false);
   const router = useRouter();
 
   async function fetchMe() {
@@ -111,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!res.ok) throw new ApiRequestError(await readApiError(res), "Login failed");
     const data = await res.json();
     setAccessToken(data.accessToken);
+    setLoggedOut(false);
     await fetchMe();
   }
 
@@ -123,12 +129,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!res.ok) throw new ApiRequestError(await readApiError(res), "Registration failed");
     const resData = await res.json();
     setAccessToken(resData.accessToken);
+    setLoggedOut(false);
     await fetchMe();
   }
 
   async function logout() {
     await apiFetch("/auth/logout", { method: "POST" });
     setAccessToken(null);
+    setLoggedOut(true);
     setUser(null);
     // Redirect off whatever page was open — it may show order history,
     // saved addresses, or other account-specific content.
@@ -136,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, loggedOut }}>
       {children}
     </AuthContext.Provider>
   );

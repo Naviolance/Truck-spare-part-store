@@ -1,7 +1,7 @@
 "use client";
 import { useLocale, useTranslations } from "next-intl";
 import { formatMoney } from "@/lib/money";
-import { isAwaitingCash } from "@/lib/order-status";
+import { isAwaitingCash, trackerStep } from "@/lib/order-status";
 
 type Order = {
   status: string;
@@ -11,23 +11,13 @@ type Order = {
   payments: { provider: string; status: string }[];
 };
 
-// Where an order is on the normal path (received → confirmed → ready →
-// collected), as the index of the step in progress; 4 = all done. Orders
-// off that path (expired, failed, cancelled, refunded, disputed) get no
-// tracker — the order page explains those with its own message.
-const STEP: Record<string, number> = { PAYMENT_PENDING: 1, PAID: 2, PROCESSING: 2, SHIPPED: 3, DELIVERED: 4 };
-
-export function hasTracker(status: string): boolean {
-  return status in STEP;
-}
-
 // The order page's progress tracker (redesign step 5, option B). Cash
 // orders: the system marks them paid at the counter, so "pay at pickup"
 // rides on the last step instead of a separate "paid" step.
 export function OrderTracker({ order }: { order: Order }) {
   const t = useTranslations("Orders");
   const locale = useLocale();
-  const current = STEP[order.status];
+  const current = trackerStep(order.status);
   if (current === undefined) return null;
 
   const cash = isAwaitingCash(order);

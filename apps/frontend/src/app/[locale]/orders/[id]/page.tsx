@@ -3,12 +3,12 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { PayOrderPanel } from "./PayOrderPanel";
-import { OrderTracker, hasTracker } from "./OrderTracker";
+import { OrderTracker } from "./OrderTracker";
 import { useLocale, useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api";
 import { formatMoney } from "@/lib/money";
 import { useRequireAuth } from "@/lib/use-require-auth";
-import { isAwaitingCash, useOrderStatusLabel } from "@/lib/order-status";
+import { hasTracker, isAwaitingCash, useOrderStatusLabel } from "@/lib/order-status";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { whatsappLink } from "@/lib/site";
 
@@ -113,7 +113,7 @@ export default function OrderDetailPage() {
   // for the payment provider, expired, failed).
   return (
     <main className="max-w-2xl mx-auto px-4 py-8 sm:py-10 flex flex-col gap-4">
-      <Link href="/orders" className="text-sm text-steel hover:text-ink">← {t("title")}</Link>
+      <Link href="/account" className="text-sm text-steel hover:text-ink">← {t("backToAccount")}</Link>
       <div>
         <h1 className="font-display text-3xl font-bold text-ink">{t("yourOrder")}</h1>
         <p className="font-mono text-sm text-steel">{number} · {placed}</p>
