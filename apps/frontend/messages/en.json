@@ -588,7 +588,7 @@
     "demoTitle": "You're viewing the admin panel in demo mode.",
     "demoBody": "Look around as much as you like. Saving, deleting and other changes are turned off for this account.",
     "nav": {
-      "dashboard": "Dashboard",
+      "dashboard": "Today",
       "products": "Products",
       "import": "Import",
       "categories": "Categories",
@@ -599,6 +599,10 @@
       "coupons": "Coupons",
       "reviews": "Reviews",
       "account": "Account"
+    },
+    "menu": {
+      "catalog": "Catalog",
+      "more": "Promo & reviews"
     }
   },
   "AdminAccount": {
@@ -612,11 +616,9 @@
     "page": "Page {page} of {pages}"
   },
   "AdminDashboard": {
-    "title": "Dashboard",
     "loading": "Loading…",
     "revenue": "Revenue (paid orders)",
     "orders": "Orders",
-    "awaitingPayment": "Awaiting payment",
     "products": "Products",
     "outOfStock": "Out of stock",
     "categories": "Categories",
@@ -646,7 +648,18 @@
       "about": "About page",
       "find_my_part_photo": "Find My Part (send a photo)",
       "request_form": "Part request form"
-    }
+    },
+    "todayTitle": "To do today",
+    "todayIntro": "{date} — what's waiting for you.",
+    "taskOrders": "Orders to handle",
+    "taskOrdersBody": "Cash payments to confirm and orders to review: call the customer.",
+    "taskOrdersCta": "See the orders",
+    "taskRequests": "Open part requests",
+    "taskRequestsBody": "Customers are looking for a part that isn't in the catalog.",
+    "taskRequestsCta": "Reply",
+    "taskStockBody": "Still shown in the shop; update the stock if they're back.",
+    "taskStockCta": "Show them",
+    "numbers": "Numbers"
   },
   "AdminCommon": {
     "loading": "Loading…",
@@ -676,7 +689,8 @@
       "IN_PROGRESS": "In progress",
       "FULFILLED": "Fulfilled",
       "DECLINED": "Declined"
-    }
+    },
+    "close": "Close"
   },
   "AdminProductForm": {
     "back": "Back",
@@ -753,11 +767,6 @@
     "title": "Orders",
     "searchPlaceholder": "Order number, customer or phone",
     "noMatch": "No orders match.",
-    "empty": "No orders yet.",
-    "colOrder": "Order",
-    "colCustomer": "Customer",
-    "colDate": "Date",
-    "colTotal": "Total",
     "cashAwaitingPickup": "Cash — awaiting pickup",
     "markPaidCash": "Mark paid (cash)",
     "cancelRefund": "Cancel & refund",
@@ -770,7 +779,23 @@
       "refundNote": "This marks the payment refunded; you still need to send the money back yourself."
     },
     "updateFailed": "Could not update this order",
-    "cancelFailed": "Could not cancel this order"
+    "cancelFailed": "Could not cancel this order",
+    "groups": {
+      "todo": "To handle",
+      "doing": "In progress",
+      "done": "Done",
+      "closed": "Cancelled / expired"
+    },
+    "groupEmpty": {
+      "todo": "Nothing to handle right now.",
+      "doing": "No orders in progress.",
+      "done": "No finished orders.",
+      "closed": "No cancelled or expired orders."
+    },
+    "call": "Call {phone}",
+    "whatsappMessage": "Hello {name}, this is TruckParts about your order {number}.",
+    "otherStatus": "Other status…",
+    "moveTo": "Move to: {status}"
   },
   "AdminRequests": {
     "title": "Product requests",
@@ -828,23 +853,24 @@
     "title": "Products",
     "importSpreadsheet": "Import spreadsheet",
     "newProduct": "+ New product",
-    "outOfStockBanner": "{count, plural, one {# product} other {# products}} out of stock",
-    "outOfStockExplain": "— still listed in the store with an “Out of stock” label, customers can request them.",
-    "showThem": "Show them",
     "searchPlaceholder": "Search name or part number",
     "stock": "Stock",
-    "anyStock": "Any stock",
     "outOfStock": "Out of stock",
     "inStock": "{count} in stock",
     "noMatch": "No products match.",
     "empty": "No products yet.",
-    "addedOn": "Added {date}",
-    "category": "Category",
-    "price": "Price",
-    "added": "Added",
     "deleteConfirm": "Delete this product? If it was ever ordered it will be archived (hidden from the store) instead, so order history stays intact.",
     "deleteFailed": "Could not delete this product",
-    "archivedInstead": "This product has past orders, so it was archived instead of deleted. It's hidden from the store; you can republish it from Edit."
+    "archivedInstead": "This product has past orders, so it was archived instead of deleted. It's hidden from the store; you can republish it from Edit.",
+    "listLabel": "Product list",
+    "quickEdit": "Quick edit",
+    "pickHint": "Pick a product to change its price, stock or status.",
+    "saved": "Saved ✓",
+    "saveFailed": "Couldn't save this product",
+    "viewInShop": "View in shop",
+    "priceFcfa": "Price (FCFA)",
+    "fullForm": "Photos, description, trucks… → full form",
+    "deleteProduct": "Delete this product"
   },
   "AdminImport": {
     "title": "Import products",

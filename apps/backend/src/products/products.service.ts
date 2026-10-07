@@ -178,7 +178,8 @@ export class ProductsService {
         (args) =>
           this.prisma.product.findMany({
             where,
-            include: { category: true, brand: true },
+            // Cover photo for the admin list's thumbnails.
+            include: { category: true, brand: true, images: { orderBy: { position: "asc" }, take: 1 } },
             orderBy: [{ createdAt: "desc" }, { id: "asc" }],
             ...args,
           }),

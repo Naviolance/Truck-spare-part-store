@@ -588,7 +588,7 @@
     "demoTitle": "Vous consultez l'administration en mode démonstration.",
     "demoBody": "Explorez librement. L'enregistrement, la suppression et toute autre modification sont désactivés pour ce compte.",
     "nav": {
-      "dashboard": "Tableau de bord",
+      "dashboard": "Aujourd’hui",
       "products": "Produits",
       "import": "Importer",
       "categories": "Catégories",
@@ -599,6 +599,10 @@
       "coupons": "Codes promo",
       "reviews": "Avis",
       "account": "Compte"
+    },
+    "menu": {
+      "catalog": "Catalogue",
+      "more": "Promo et avis"
     }
   },
   "AdminAccount": {
@@ -612,11 +616,9 @@
     "page": "Page {page} sur {pages}"
   },
   "AdminDashboard": {
-    "title": "Tableau de bord",
     "loading": "Chargement…",
     "revenue": "Chiffre d'affaires (commandes payées)",
     "orders": "Commandes",
-    "awaitingPayment": "En attente de paiement",
     "products": "Produits",
     "outOfStock": "En rupture de stock",
     "categories": "Catégories",
@@ -646,7 +648,18 @@
       "about": "Page À propos",
       "find_my_part_photo": "Trouver ma pièce (envoi de photo)",
       "request_form": "Formulaire de demande de pièce"
-    }
+    },
+    "todayTitle": "À faire aujourd’hui",
+    "todayIntro": "{date} — ce qui attend une action de votre part.",
+    "taskOrders": "Commandes à traiter",
+    "taskOrdersBody": "Paiements en espèces à confirmer et commandes à examiner : appelez le client.",
+    "taskOrdersCta": "Voir les commandes",
+    "taskRequests": "Demandes de pièces ouvertes",
+    "taskRequestsBody": "Des clients cherchent une pièce absente du catalogue.",
+    "taskRequestsCta": "Répondre",
+    "taskStockBody": "Toujours visibles en boutique ; mettez le stock à jour s’ils sont revenus.",
+    "taskStockCta": "Les afficher",
+    "numbers": "Chiffres"
   },
   "AdminCommon": {
     "loading": "Chargement…",
@@ -676,7 +689,8 @@
       "IN_PROGRESS": "En cours",
       "FULFILLED": "Traitée",
       "DECLINED": "Refusée"
-    }
+    },
+    "close": "Fermer"
   },
   "AdminProductForm": {
     "back": "Retour",
@@ -753,11 +767,6 @@
     "title": "Commandes",
     "searchPlaceholder": "N° de commande, client ou téléphone",
     "noMatch": "Aucune commande ne correspond.",
-    "empty": "Aucune commande pour le moment.",
-    "colOrder": "Commande",
-    "colCustomer": "Client",
-    "colDate": "Date",
-    "colTotal": "Total",
     "cashAwaitingPickup": "Espèces — en attente de retrait",
     "markPaidCash": "Marquer payée (espèces)",
     "cancelRefund": "Annuler et rembourser",
@@ -770,7 +779,23 @@
       "refundNote": "Le paiement sera marqué comme remboursé ; vous devez encore rendre l'argent vous-même."
     },
     "updateFailed": "Impossible de mettre à jour cette commande",
-    "cancelFailed": "Impossible d'annuler cette commande"
+    "cancelFailed": "Impossible d'annuler cette commande",
+    "groups": {
+      "todo": "À traiter",
+      "doing": "En cours",
+      "done": "Terminées",
+      "closed": "Annulées / expirées"
+    },
+    "groupEmpty": {
+      "todo": "Rien à traiter pour l’instant.",
+      "doing": "Aucune commande en cours.",
+      "done": "Aucune commande terminée.",
+      "closed": "Aucune commande annulée ou expirée."
+    },
+    "call": "Appeler {phone}",
+    "whatsappMessage": "Bonjour {name}, c’est TruckParts au sujet de votre commande {number}.",
+    "otherStatus": "Autre statut…",
+    "moveTo": "Passer à : {status}"
   },
   "AdminRequests": {
     "title": "Demandes de pièces",
@@ -828,23 +853,24 @@
     "title": "Produits",
     "importSpreadsheet": "Importer un fichier",
     "newProduct": "+ Nouveau produit",
-    "outOfStockBanner": "{count, plural, one {# produit en rupture de stock} other {# produits en rupture de stock}}",
-    "outOfStockExplain": "— toujours affichés dans la boutique avec la mention « En rupture de stock » ; les clients peuvent en faire la demande.",
-    "showThem": "Les afficher",
     "searchPlaceholder": "Rechercher par nom ou référence",
     "stock": "Stock",
-    "anyStock": "Tout le stock",
     "outOfStock": "En rupture de stock",
     "inStock": "{count} en stock",
     "noMatch": "Aucun produit ne correspond.",
     "empty": "Aucun produit pour l’instant.",
-    "addedOn": "Ajouté le {date}",
-    "category": "Catégorie",
-    "price": "Prix",
-    "added": "Ajouté le",
     "deleteConfirm": "Supprimer ce produit ? S’il a déjà été commandé, il sera archivé (masqué de la boutique) à la place, pour conserver l’historique des commandes.",
     "deleteFailed": "Impossible de supprimer ce produit",
-    "archivedInstead": "Ce produit a déjà été commandé : il a donc été archivé au lieu d’être supprimé. Il est masqué de la boutique ; vous pouvez le republier depuis « Modifier »."
+    "archivedInstead": "Ce produit a déjà été commandé : il a donc été archivé au lieu d’être supprimé. Il est masqué de la boutique ; vous pouvez le republier depuis « Modifier ».",
+    "listLabel": "Liste des produits",
+    "quickEdit": "Modification rapide",
+    "pickHint": "Choisissez un produit pour modifier son prix, son stock ou son statut.",
+    "saved": "Enregistré ✓",
+    "saveFailed": "Impossible d’enregistrer ce produit",
+    "viewInShop": "Voir en boutique",
+    "priceFcfa": "Prix (FCFA)",
+    "fullForm": "Photos, description, camions… → fiche complète",
+    "deleteProduct": "Supprimer ce produit"
   },
   "AdminImport": {
     "title": "Importer des produits",

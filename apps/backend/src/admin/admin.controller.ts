@@ -2,7 +2,8 @@ import { Controller, Get, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
-import { OrderStatus, UserRole } from "@truckparts/prisma";
+import { OrderStatus, ProductRequestStatus, UserRole } from "@truckparts/prisma";
+import { ORDER_GROUPS, type OrderGroup } from "../orders/order-status";
 import { PrismaService } from "../common/prisma/prisma.service";
 
 @Controller("admin")
@@ -13,7 +14,7 @@ export class AdminController {
 
   @Get("stats")
   async stats() {
-    const [products, categories, brands, users, orders, outOfStock, pendingPayment, revenue, recentOrders] =
+    const [products, categories, brands, users, orders, outOfStock, pendingPayment, revenue, recentOrders, byStatus, openRequests] =
       await Promise.all([
         this.prisma.product.count(),
         this.prisma.category.count(),
@@ -35,7 +36,17 @@ export class AdminController {
             user: { select: { firstName: true, lastName: true } },
           },
         }),
+        this.prisma.order.groupBy({ by: ["status"], _count: { _all: true } }),
+        this.prisma.productRequest.count({ where: { status: ProductRequestStatus.OPEN } }),
       ]);
+
+    // Counts for the admin's order tabs and "to do today" (ORDER_GROUPS).
+    const orderGroups = Object.fromEntries(
+      Object.entries(ORDER_GROUPS).map(([group, statuses]) => [
+        group,
+        byStatus.filter((row) => (statuses as OrderStatus[]).includes(row.status)).reduce((n, row) => n + row._count._all, 0),
+      ]),
+    ) as Record<OrderGroup, number>;
 
     return {
       products,
@@ -47,6 +58,8 @@ export class AdminController {
       pendingPayment,
       revenue: revenue._sum.total ?? 0,
       recentOrders,
+      orderGroups,
+      openRequests,
     };
   }
 }
