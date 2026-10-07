@@ -14,7 +14,7 @@ format/round as whole numbers, never cents.
 First-time setup (see [README.md](README.md) for the full walkthrough):
 ```bash
 cp .env.example .env
-docker compose up -d          # Postgres, MinIO, Mailhog, Adminer
+docker compose up -d          # Postgres, RustFS, Mailhog, Adminer
 pnpm install
 pnpm prisma:generate
 pnpm prisma:migrate
@@ -77,7 +77,7 @@ Postgres is mapped to **host port 5433** (not the default 5432) — see `POSTGRE
 in `.env`.
 
 Local service URLs: backend `http://localhost:4000` (health at `/health`), frontend
-`http://localhost:3000`, Adminer `http://localhost:8080`, MinIO console `http://localhost:9001`,
+`http://localhost:3000`, Adminer `http://localhost:8080`, RustFS console `http://localhost:9001`,
 Mailhog `http://localhost:8025`, Prisma Studio via `pnpm prisma:studio`.
 
 Seeded test accounts: `admin@truckparts.local` / `admin123` (admin), `customer@truckparts.local` /
@@ -85,7 +85,7 @@ Seeded test accounts: `admin@truckparts.local` / `admin123` (admin), `customer@t
 
 CI (`.github/workflows/ci.yml`) runs on every PR: backend lint + unit tests + `test:db` against a fresh
 Postgres (all migrations applied from scratch) + build, frontend lint + build, and the e2e suite against the
-full stack (docker compose Postgres + MinIO, seeded). Keep it green.
+full stack (docker compose Postgres + RustFS, seeded). Keep it green.
 
 ## Architecture
 
@@ -237,6 +237,6 @@ compatibility search), `Cart`/`CartItem`, `Order`/`OrderItem`, `Payment`, `Revie
 `Brand`. `OrderStatus` and `PaymentStatus` enums drive the checkout/payment state machine described
 above.
 
-**File uploads**: images go through the backend's uploads module to MinIO (S3-compatible); the
-backend proxies file serving (see `/uploads/file/...` routes) rather than exposing MinIO directly, so
+**File uploads**: images go through the backend's uploads module to RustFS (S3-compatible); the
+backend proxies file serving (see `/uploads/file/...` routes) rather than exposing RustFS directly, so
 CORS/CSP stay same-origin from the frontend's perspective.

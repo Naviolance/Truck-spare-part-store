@@ -105,7 +105,7 @@ The screenshots show the desktop admin tables. On a phone, every list becomes a 
 | Frontend | Next.js (App Router) + TypeScript + Tailwind CSS | One codebase for the storefront and the admin panel, server components where they help |
 | Backend | NestJS + TypeScript | One module per domain (auth, orders, payments, uploads...), easier to test than one flat Express app |
 | Database | PostgreSQL + Prisma | Orders, stock and payments need relational integrity and transactions |
-| Object storage | S3-compatible: MinIO locally, Backblaze B2 in production | Same S3 API in both places, so no code changes between local and production |
+| Object storage | S3-compatible: RustFS locally (Docker; replaces MinIO, whose images are no longer published), Backblaze B2 in production | Same S3 API in both places, so no code changes between local and production |
 | Auth | JWT access token + httpOnly refresh cookie | The short-lived token stays in memory, the session in a cookie JavaScript can't read |
 | Payments | Provider adapters (Notch Pay reference) | Hosted checkout and webhooks behind one interface; cash at pickup always available |
 | Email | Nodemailer over SMTP: Mailhog locally, Resend in production | Password reset emails, testable locally without sending real mail |
@@ -156,7 +156,7 @@ NestJS API (Railway)
 - **Read-only demo mode is one global interceptor**, not checks in each controller. New routes
   are covered automatically. It's an interceptor rather than a global guard because global guards
   run before `JwtAuthGuard` has identified the user.
-- **S3 API everywhere.** Local MinIO and production Backblaze B2 speak the same protocol, so
+- **S3 API everywhere.** Local RustFS and production Backblaze B2 speak the same protocol, so
   switching is only environment variables.
 
 ## Running locally
@@ -174,7 +174,7 @@ NestJS API (Railway)
    cp .env.example .env
    ```
 
-2. **Start the local services (Postgres, MinIO, Mailhog, Adminer):**
+2. **Start the local services (Postgres, RustFS, Mailhog, Adminer):**
    ```bash
    docker compose up -d
    docker compose ps   # check they're healthy
@@ -213,7 +213,7 @@ Notch Pay adapter, set `PAYMENT_PROVIDER=notchpay` and its sandbox keys in `.env
 - Adminer (database GUI): http://localhost:8080 (System: PostgreSQL, Server: `postgres`,
   credentials from your `.env`)
 - Prisma Studio: `pnpm prisma:studio`
-- MinIO console: http://localhost:9001
+- RustFS console: http://localhost:9001
 - Mailhog (see test emails): http://localhost:8025
 
 ## Environment variables
@@ -238,9 +238,9 @@ The values in `.env.example` are for local development only. Never commit real k
 | `NEXT_PUBLIC_API_URL` | frontend | Backend URL the `/api/backend` rewrite points to |
 | `NEXT_PUBLIC_SITE_URL` | frontend | Public URL of the storefront |
 | `NEXT_PUBLIC_DEMO_EMAIL`, `NEXT_PUBLIC_DEMO_PASSWORD` | frontend | Optional. Shows the demo login on the login page |
-| `MINIO_ENDPOINT`, `MINIO_PUBLIC_URL`, `MINIO_REGION`, `MINIO_BUCKET` | backend | S3-compatible storage (MinIO locally, Backblaze B2 in production) |
+| `MINIO_ENDPOINT`, `MINIO_PUBLIC_URL`, `MINIO_REGION`, `MINIO_BUCKET` | backend | S3-compatible storage (RustFS locally, Backblaze B2 in production) |
 | `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD` | backend, Docker | Storage access keys |
-| `MINIO_PORT`, `MINIO_CONSOLE_PORT` | Docker | Local MinIO ports |
+| `MINIO_PORT`, `MINIO_CONSOLE_PORT` | Docker | Local storage (RustFS) ports |
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_FROM` | backend | SMTP for emails (Mailhog locally, Resend in production) |
 | `MAILHOG_WEB_PORT` | Docker | Local Mailhog inbox port |
 | `PAYMENT_PROVIDER` | backend | Online payment adapter (`notchpay`); empty = cash only |
@@ -275,7 +275,7 @@ admin marks it paid, the admin product form, coupons, and phone-width layouts. E
 products through the admin API and removes them afterwards, so it works on any seeded database.
 
 ```bash
-# with Postgres + MinIO up, the database seeded, and both apps running:
+# with Postgres + RustFS up, the database seeded, and both apps running:
 pnpm --filter backend build && (cd apps/backend && INTERNAL_API_KEY=dev-key node dist/main) &
 pnpm --filter frontend build && (cd apps/frontend && INTERNAL_API_KEY=dev-key pnpm start) &
 pnpm --filter @truckparts/e2e exec playwright install chromium   # once
@@ -288,7 +288,7 @@ logins hit the 5-per-minute login limit. Failures keep a trace: `pnpm --filter @
 
 **CI** ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs all of the above on every pull
 request: unit and database tests against a fresh Postgres with every migration applied from scratch,
-and the browser tests against the full stack (Docker Postgres + MinIO, seeded). Don't merge a red PR.
+and the browser tests against the full stack (Docker Postgres + RustFS, seeded). Don't merge a red PR.
 
 ## Deployment
 
@@ -296,7 +296,7 @@ and the browser tests against the full stack (Docker Postgres + MinIO, seeded). 
 [docs/HOSTING.md](docs/HOSTING.md). Don't buy shared/cPanel hosting: it can't run this stack (needs an
 always-on Node.js server, PostgreSQL and S3-compatible storage). Whatever the host, the pieces are:
 the Next.js frontend, the NestJS backend, PostgreSQL, S3-compatible image storage (Backblaze B2 or
-MinIO), SMTP email (Resend) and optionally Sentry + Umami.
+RustFS), SMTP email (Resend) and optionally Sentry + Umami.
 
 The step-by-step go-live checklist (fresh database, environment variables, `TRUST_PROXY`,
 Search Console, monitoring, admin account, smoke test, backups) is in
@@ -336,7 +336,7 @@ apps/
 packages/
   prisma/     Database schema, migrations, seed script
 e2e/          Playwright browser tests of the whole stack
-docker-compose.yml  Local services (Postgres, MinIO, Mailhog, Adminer)
+docker-compose.yml  Local services (Postgres, RustFS, Mailhog, Adminer)
 ```
 
 ## Scope
