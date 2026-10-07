@@ -1,5 +1,5 @@
 # Runs on every pull request and on pushes to main: the same checks a
-# contributor runs locally (see CLAUDE.md). Two jobs in parallel; a red
+# contributor runs locally (see CLAUDE.md). Three jobs in parallel; a red
 # check on a PR means don't merge yet.
 name: CI
 
@@ -77,3 +77,51 @@ jobs:
       - run: pnpm --filter frontend build
         env:
           NEXT_TELEMETRY_DISABLED: "1"
+
+  e2e:
+    name: E2E (browser tests of the whole stack)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Same key on both apps: the frontend server sends it, and the test
+      # suite uses it to log in without hitting the login rate limit.
+      INTERNAL_API_KEY: ci-internal-key
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      # The local setup from the README: .env.example + Docker's Postgres and
+      # MinIO (photo uploads). Mail goes nowhere; sending failures are logged,
+      # never fatal.
+      - run: cp .env.example .env
+      - run: docker compose up -d --wait postgres minio
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma:generate
+      - run: pnpm prisma:deploy
+      - run: pnpm prisma:seed
+      - run: pnpm --filter backend build
+      - run: pnpm --filter frontend build
+      - name: Start backend and frontend
+        run: |
+          (cd apps/backend && nohup node dist/main > ../../backend.log 2>&1 &)
+          (cd apps/frontend && nohup pnpm start > ../../frontend.log 2>&1 &)
+          npx --yes wait-on@8 -t 120000 http://localhost:4000/health http://localhost:3000/fr
+      - run: pnpm --filter @truckparts/e2e exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+      - name: Upload report and server logs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-report
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+            backend.log
+            frontend.log
+          retention-days: 7
