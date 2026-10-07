@@ -115,6 +115,7 @@ export function ProductForm({ productId, initial }: { productId?: string; initia
   const makeCover = (url: string) => setPhotos((prev) => [...prev.filter((p) => p.url === url), ...prev.filter((p) => p.url !== url)]);
 
   async function uploadNewPhotos(): Promise<string[]> {
+    const photoName = [values.name, brands.find((b) => b.id === values.brandId)?.name, values.partNumber].filter(Boolean).join(" ");
     const urls: string[] = [];
     for (const p of photos) {
       if (!p.file) {
@@ -122,6 +123,9 @@ export function ProductForm({ productId, initial }: { productId?: string; initia
         continue;
       }
       const body = new FormData();
+      // Text first (multer reads fields in order): it becomes the readable
+      // file name, e.g. plaquettes-de-frein-avant-bosch-bp-29087-1a2b3c4d.webp.
+      body.append("name", photoName);
       body.append("file", p.file);
       const res = await apiFetch("/uploads/image", { method: "POST", body, headers: {} });
       if (!res.ok) throw new ApiRequestError(await readApiError(res), "Image upload failed");

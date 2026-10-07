@@ -1,8 +1,8 @@
 import { Injectable, Logger, NotFoundException, OnModuleInit } from "@nestjs/common";
 import { S3Client, PutObjectCommand, GetObjectCommand, CreateBucketCommand, HeadBucketCommand } from "@aws-sdk/client-s3";
-import { randomUUID } from "crypto";
 import type { Readable } from "stream";
 import * as sharpModule from "sharp";
+import { imageKey } from "./image-key";
 
 // sharp >= 0.35 types its ESM entry as `export default`, but under this
 // project's CommonJS output require("sharp") returns the function itself
@@ -49,8 +49,10 @@ export class UploadsService implements OnModuleInit {
     }
   }
 
-  async uploadImage(file: Express.Multer.File): Promise<string> {
-    const key = `products/${randomUUID()}.webp`;
+  // `name` describes the product (name, brand, part number): it becomes the
+  // file name, see image-key.ts.
+  async uploadImage(file: Express.Multer.File, name?: string): Promise<string> {
+    const key = imageKey(name);
 
     // Re-encode every upload to WebP and cap dimensions at 2000px - phone
     // photos routinely arrive as multi-MB JPEGs far larger than anything the

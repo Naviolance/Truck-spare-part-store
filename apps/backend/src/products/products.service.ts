@@ -131,7 +131,8 @@ export class ProductsService {
   sitemap(chunk = 0) {
     return this.prisma.product.findMany({
       where: { status: ProductStatus.PUBLISHED },
-      select: { slug: true, updatedAt: true },
+      // Photos too: the sitemap lists them under their page (image sitemap).
+      select: { slug: true, updatedAt: true, images: { select: { url: true }, orderBy: { position: "asc" }, take: 10 } },
       orderBy: { id: "asc" },
       skip: chunk * SITEMAP_CHUNK_SIZE,
       take: SITEMAP_CHUNK_SIZE,

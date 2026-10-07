@@ -7,6 +7,7 @@ import { AddToCartButton } from "./AddToCartButton";
 import { FitChecker, type Fit, type MakeOption } from "./FitChecker";
 import { ReviewsSection } from "./ReviewsSection";
 import { ProductGallery } from "./ProductGallery";
+import { productImageAlt } from "@/lib/image";
 import { formatMoney } from "@/lib/money";
 import { ConditionTag } from "@/components/ProductCard";
 import { RequestProductForm } from "@/components/RequestProductForm";
@@ -144,7 +145,7 @@ export default async function ProductPage({ params }: Props) {
           fit check — with StickyActionBar once the buy box scrolls away. */}
       <div className="mt-5 grid gap-7 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-8">
         <div className="grid gap-6 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:col-start-1">
-          <ProductGallery images={product.images} productName={product.name} />
+          <ProductGallery images={product.images} alt={productImageAlt(product)} />
           <div className="flex flex-col gap-3">
             <p className="text-[15px] font-semibold text-amber-dark">
               {product.brand ? (

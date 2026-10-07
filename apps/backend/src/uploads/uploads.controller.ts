@@ -4,6 +4,7 @@ import {
   Post,
   Get,
   Param,
+  Body,
   Res,
   UseGuards,
   UseInterceptors,
@@ -14,6 +15,7 @@ import {
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
 import { UploadsService } from "./uploads.service";
+import { IMAGE_KEY_RE } from "./image-key";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -22,11 +24,7 @@ import { UserRole } from "@truckparts/prisma";
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE_BYTES = 5 * 1024 * 1024;
 
-// Only keys this service itself creates (uploadImage): products/<uuid>.webp.
-// Anything else in the bucket is never served through this public route.
-const IMAGE_KEY_RE = /^products\/[0-9a-f-]{36}\.webp$/;
-
-// Keys are random UUIDs and never overwritten, so an image at a given URL
+// Keys are unique (random part) and never overwritten, so an image at a given URL
 // can never change: browsers and CDNs may cache it for a year without
 // revalidating. That's what keeps repeat views off the backend and storage.
 const IMMUTABLE_CACHE = "public, max-age=31536000, immutable";
@@ -52,14 +50,16 @@ export class UploadsController {
   @Roles(UserRole.ADMIN)
   @Post("image")
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_SIZE_BYTES, files: 1, fields: 5 } }))
-  async uploadImage(@UploadedFile() file?: Express.Multer.File) {
+  // Optional multipart field `name`: what the photo shows (product name,
+  // brand, part number), used for a readable file name.
+  async uploadImage(@UploadedFile() file?: Express.Multer.File, @Body("name") name?: unknown) {
     if (!file) throw new BadRequestException(apiError("NO_FILE", "No file provided"));
     if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
       throw new BadRequestException(apiError("IMAGE_TYPE", "Only JPEG, PNG, or WEBP images are allowed"));
     }
 
     try {
-      const url = await this.uploadsService.uploadImage(file);
+      const url = await this.uploadsService.uploadImage(file, typeof name === "string" ? name.slice(0, 300) : undefined);
       return { url };
     } catch (err) {
       // sharp couldn't decode it: the bytes aren't really an image.
