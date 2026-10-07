@@ -153,6 +153,10 @@ detect `;`/`,`, EN/FR headers, row validation; unit-tested); `product-import.ser
 (`preview`, writes nothing) and `commit`s in one transaction, re-validating the file. Rows match
 existing products by normalized part number + brand (update) else create. Admin UI:
 `app/admin/import/page.tsx`. Excel files must be saved as CSV (xlsx is rejected on purpose).
+The template's column titles are bilingual (`Nom / Name *`): the parser matches either side of a `/` against
+`HEADER_ALIASES`, so older single-language files still work. Import-then-photos workflow: `?photos=none` on
+`/products/admin/all` (and the admin Produits "Sans photo" pill / dashboard card, `noPhoto` counts) lists products
+without any image.
 
 **Catalog & SEO**: one listing query (`products/product-listing.ts`) serves `/products`, search, Find My
 Part and the category/brand/truck landing pages — out-of-stock products stay listed (sorted last).

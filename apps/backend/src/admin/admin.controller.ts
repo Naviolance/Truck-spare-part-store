@@ -2,7 +2,7 @@ import { Controller, Get, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
-import { OrderStatus, ProductRequestStatus, UserRole } from "@truckparts/prisma";
+import { OrderStatus, ProductRequestStatus, ProductStatus, UserRole } from "@truckparts/prisma";
 import { ORDER_GROUPS, type OrderGroup } from "../orders/order-status";
 import { PrismaService } from "../common/prisma/prisma.service";
 
@@ -14,7 +14,7 @@ export class AdminController {
 
   @Get("stats")
   async stats() {
-    const [products, categories, brands, users, orders, outOfStock, pendingPayment, revenue, recentOrders, byStatus, openRequests] =
+    const [products, categories, brands, users, orders, outOfStock, pendingPayment, revenue, recentOrders, byStatus, openRequests, noPhoto] =
       await Promise.all([
         this.prisma.product.count(),
         this.prisma.category.count(),
@@ -38,6 +38,8 @@ export class AdminController {
         }),
         this.prisma.order.groupBy({ by: ["status"], _count: { _all: true } }),
         this.prisma.productRequest.count({ where: { status: ProductRequestStatus.OPEN } }),
+        // Imported without photos yet (archived ones don't matter).
+        this.prisma.product.count({ where: { images: { none: {} }, status: { not: ProductStatus.ARCHIVED } } }),
       ]);
 
     // Counts for the admin's order tabs and "to do today" (ORDER_GROUPS).
@@ -60,6 +62,7 @@ export class AdminController {
       recentOrders,
       orderGroups,
       openRequests,
+      noPhoto,
     };
   }
 }

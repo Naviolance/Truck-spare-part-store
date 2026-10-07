@@ -18,8 +18,8 @@ type Product = {
   images: { url: string }[];
 };
 
-type Filter = "" | "out" | "PUBLISHED" | "DRAFT" | "ARCHIVED";
-const FILTERS: Filter[] = ["", "out", "PUBLISHED", "DRAFT", "ARCHIVED"];
+type Filter = "" | "out" | "nophoto" | "PUBLISHED" | "DRAFT" | "ARCHIVED";
+const FILTERS: Filter[] = ["", "out", "nophoto", "PUBLISHED", "DRAFT", "ARCHIVED"];
 
 // Products (redesign step 6, option B): the list on the left, a quick edit
 // panel on the right (price, stock, published/draft) so daily stock updates
@@ -36,11 +36,15 @@ function ProductsBoard() {
   const t = useTranslations("AdminProducts");
   const tc = useTranslations("AdminCommon");
   const apiError = useApiError();
-  // ?stock=out: the dashboard's "show them" link.
-  const [filter, setFilter] = useState<Filter>(useSearchParams().get("stock") === "out" ? "out" : "");
-  const list = useAdminList<Product, { outOfStock: number }>("/products/admin/all", {
-    status: filter === "out" ? "" : filter,
+  // ?stock=out / ?photos=none: the dashboard cards' links.
+  const params = useSearchParams();
+  const [filter, setFilter] = useState<Filter>(
+    params.get("stock") === "out" ? "out" : params.get("photos") === "none" ? "nophoto" : "",
+  );
+  const list = useAdminList<Product, { outOfStock: number; noPhoto: number }>("/products/admin/all", {
+    status: filter === "out" || filter === "nophoto" ? "" : filter,
     stock: filter === "out" ? "out" : "",
+    photos: filter === "nophoto" ? "none" : "",
   });
   const { items: products, data, reload: load } = list;
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -64,8 +68,15 @@ function ProductsBoard() {
 
 
   const outOfStock = data?.outOfStock ?? 0;
+  const noPhoto = data?.noPhoto ?? 0;
   const filterLabel = (f: Filter) =>
-    f === "" ? tc("allStatuses") : f === "out" ? `${t("outOfStock")} · ${outOfStock}` : tc(`productStatus.${f}`);
+    f === ""
+      ? tc("allStatuses")
+      : f === "out"
+        ? `${t("outOfStock")} · ${outOfStock}`
+        : f === "nophoto"
+          ? `${t("noPhoto")} · ${noPhoto}`
+          : tc(`productStatus.${f}`);
   const pill = (on: boolean, warn = false) =>
     `h-11 rounded-full px-4 font-semibold ${on ? "bg-ink text-paper" : warn ? "bg-[#F1DCD5] text-[#8A3821] font-bold" : "border border-[#BDB5A6] bg-card text-ink hover:border-ink"}`;
 
@@ -86,7 +97,7 @@ function ProductsBoard() {
           <SearchBox value={list.search} onChange={list.setSearch} placeholder={t("searchPlaceholder")} />
           <div className="flex flex-wrap gap-2">
             {FILTERS.map((f) => (
-              <button key={f || "all"} type="button" aria-pressed={filter === f} onClick={() => setFilter(f)} className={pill(filter === f, f === "out" && outOfStock > 0)}>
+              <button key={f || "all"} type="button" aria-pressed={filter === f} onClick={() => setFilter(f)} className={pill(filter === f, (f === "out" && outOfStock > 0) || (f === "nophoto" && noPhoto > 0))}>
                 {filterLabel(f)}
               </button>
             ))}

@@ -659,7 +659,10 @@
     "taskRequestsCta": "Répondre",
     "taskStockBody": "Toujours visibles en boutique ; mettez le stock à jour s’ils sont revenus.",
     "taskStockCta": "Les afficher",
-    "numbers": "Chiffres"
+    "numbers": "Chiffres",
+    "taskPhotos": "Produits sans photo",
+    "taskPhotosBody": "Importés ou créés sans photo : ajoutez-en une, les clients achètent ce qu’ils voient.",
+    "taskPhotosCta": "Ajouter les photos"
   },
   "AdminCommon": {
     "loading": "Chargement…",
@@ -855,7 +858,8 @@
     "viewInShop": "Voir en boutique",
     "priceFcfa": "Prix (FCFA)",
     "fullForm": "Photos, description, camions… → fiche complète",
-    "deleteProduct": "Supprimer ce produit"
+    "deleteProduct": "Supprimer ce produit",
+    "noPhoto": "Sans photo"
   },
   "AdminImport": {
     "title": "Importer des produits",
@@ -915,7 +919,8 @@
     "importing": "Import en cours…",
     "importButton": "{count, plural, one {Importer # produit} other {Importer # produits}}",
     "issueLine": "Ligne {line}",
-    "issueFile": "Fichier"
+    "issueFile": "Fichier",
+    "addPhotosNext": "Ajouter les photos des produits qui n’en ont pas →"
   },
   "AdminCategories": {
     "title": "Catégories",

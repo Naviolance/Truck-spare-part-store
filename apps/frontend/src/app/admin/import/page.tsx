@@ -19,20 +19,21 @@ type Plan = {
 
 const PREVIEW_ROWS = 50;
 
-// [CSV column name (never translated — it's what the importer accepts), help key in AdminImport.columns]
+// [CSV column title as in the template (French / English: either side is
+// accepted, as are older single-language titles), help key in AdminImport.columns]
 const COLUMNS: [string, string][] = [
-  ["name *", "name"],
-  ["category *", "category"],
-  ["condition *", "condition"],
-  ["price *", "price"],
-  ["quantity *", "quantity"],
-  ["brand", "brand"],
-  ["partNumber", "partNumber"],
-  ["crossReference", "crossReference"],
-  ["vehicles", "vehicles"],
-  ["description, descriptionFr", "description"],
-  ["conditionNotes", "conditionNotes"],
-  ["status", "status"],
+  ["Nom / Name *", "name"],
+  ["Catégorie / Category *", "category"],
+  ["État / Condition *", "condition"],
+  ["Prix FCFA / Price XAF *", "price"],
+  ["Quantité / Quantity *", "quantity"],
+  ["Marque / Brand", "brand"],
+  ["Référence / Part number", "partNumber"],
+  ["Équivalences / Cross references", "crossReference"],
+  ["Camions / Vehicles", "vehicles"],
+  ["Description (EN), Description (FR)", "description"],
+  ["Remarques état / Condition notes", "conditionNotes"],
+  ["Statut / Status", "status"],
 ];
 
 // Spreadsheet import: choose a file -> see exactly what will happen ->
@@ -147,7 +148,11 @@ export default function AdminImportPage() {
             create: done.create,
             update: done.update,
             link: (chunks) => <Link href="/admin/products" className="underline">{chunks}</Link>,
-          })}
+          })}{" "}
+          {/* Next step after an import: the products still without a photo. */}
+          <Link href="/admin/products?photos=none" className="font-bold underline">
+            {t("addPhotosNext")}
+          </Link>
         </div>
       )}
 

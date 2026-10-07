@@ -11,4 +11,9 @@ export class AdminProductsQueryDto extends AdminListQueryDto {
   @IsOptional()
   @IsIn(["out"])
   stock?: "out";
+
+  // "none": only products without any photo (imported, photos still to add).
+  @IsOptional()
+  @IsIn(["none"])
+  photos?: "none";
 }
