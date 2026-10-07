@@ -1,0 +1,13 @@
+{
+  "name": "@truckparts/e2e",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Browser tests of the whole stack (storefront, checkout, admin) with Playwright",
+  "scripts": {
+    "test": "playwright test",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

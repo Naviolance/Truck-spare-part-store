@@ -14,7 +14,8 @@
     "docker:down": "docker compose down",
     "admin:promote": "pnpm --filter @truckparts/prisma admin:promote",
     "launch:reset": "pnpm --filter @truckparts/prisma launch:reset",
-    "prisma:deploy": "pnpm --filter @truckparts/prisma migrate:deploy"
+    "prisma:deploy": "pnpm --filter @truckparts/prisma migrate:deploy",
+    "test:e2e": "pnpm --filter @truckparts/e2e test"
   },
   "engines": {
     "node": ">=20.0.0"

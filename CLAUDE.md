@@ -14,7 +14,7 @@ format/round as whole numbers, never cents.
 First-time setup (see [README.md](README.md) for the full walkthrough):
 ```bash
 cp .env.example .env
-docker compose up -d          # Postgres, MinIO, Mailhog, Adminer
+docker compose up -d          # Postgres, RustFS, Mailhog, Adminer
 pnpm install
 pnpm prisma:generate
 pnpm prisma:migrate
@@ -45,6 +45,13 @@ Note: running `tsc --noEmit` directly via `npx` in `apps/frontend` fails with a 
 error from a version mismatch between the global `npx` tsc and the project's pinned one — use
 `pnpm --filter frontend build` to type-check instead.
 
+Browser tests (`e2e/`, Playwright; needs both apps running from production builds, same `INTERNAL_API_KEY`):
+```bash
+INTERNAL_API_KEY=<key> pnpm test:e2e     # PW_CHROMIUM_PATH=<chrome> to use an installed Chromium
+```
+Tests create their own products in `global-setup.ts` (the seed is random) and log in through the API
+(`support/api.ts` `loginAs`), not the form. One worker on purpose (shared database).
+
 Prisma (`packages/prisma`):
 ```bash
 pnpm prisma:generate
@@ -70,14 +77,15 @@ Postgres is mapped to **host port 5433** (not the default 5432) — see `POSTGRE
 in `.env`.
 
 Local service URLs: backend `http://localhost:4000` (health at `/health`), frontend
-`http://localhost:3000`, Adminer `http://localhost:8080`, MinIO console `http://localhost:9001`,
+`http://localhost:3000`, Adminer `http://localhost:8080`, RustFS console `http://localhost:9001`,
 Mailhog `http://localhost:8025`, Prisma Studio via `pnpm prisma:studio`.
 
 Seeded test accounts: `admin@truckparts.local` / `admin123` (admin), `customer@truckparts.local` /
 `customer123` (customer). Seed password hashes are placeholders for local testing only.
 
 CI (`.github/workflows/ci.yml`) runs on every PR: backend lint + unit tests + `test:db` against a fresh
-Postgres (all migrations applied from scratch) + build, and frontend lint + build. Keep it green.
+Postgres (all migrations applied from scratch) + build, frontend lint + build, and the e2e suite against the
+full stack (docker compose Postgres + RustFS, seeded). Keep it green.
 
 ## Architecture
 
@@ -199,7 +207,9 @@ Demandes with count badges from `/admin/stats`, Produits, Importer, Catalogue �
 "to do today" cards (`orderGroups.todo`, `openRequests`, out of stock) + numbers + demand insights (WhatsApp clicks as
 bars). Orders: tabs = backend `ORDER_GROUPS` (`orders/order-status.ts`, every status in exactly one — tested;
 `?group=` on `/orders/admin/all` and the page URL), cards with call/WhatsApp and the next legal status as the main
-button. Products: list + quick-edit panel (price/stock/status via the same PATCH) beside it; the full form is unchanged.
+button. Products: list + quick-edit panel (price/stock/status via the same PATCH) beside it. The full form
+(create + edit, option A) is one shared `components/admin/ProductForm.tsx`: section cards + a sticky save bar; new
+photos stay local until Save, then upload in order (first = cover); validation runs on save and marks fields.
 The other admin pages (requests with `?status=` tabs, reviews, coupons, categories, brands, vehicles, import, account)
 use the same look through shared classes in `globals.css` — `admin-title`, `admin-card`, `admin-empty`, `admin-label`
 (wraps its input, so labels are real), `admin-input`, `admin-pill`/`admin-pill-on`, `admin-action`, `link-danger` — and
@@ -227,6 +237,6 @@ compatibility search), `Cart`/`CartItem`, `Order`/`OrderItem`, `Payment`, `Revie
 `Brand`. `OrderStatus` and `PaymentStatus` enums drive the checkout/payment state machine described
 above.
 
-**File uploads**: images go through the backend's uploads module to MinIO (S3-compatible); the
-backend proxies file serving (see `/uploads/file/...` routes) rather than exposing MinIO directly, so
+**File uploads**: images go through the backend's uploads module to RustFS (S3-compatible); the
+backend proxies file serving (see `/uploads/file/...` routes) rather than exposing RustFS directly, so
 CORS/CSP stay same-origin from the frontend's perspective.
