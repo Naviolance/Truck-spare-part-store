@@ -159,6 +159,10 @@ so missing products answer "200 + noindex" instead of a real 404 (measured, even
 `components/NavigationSkeleton.tsx` shows a skeleton of the destination page (`components/Skeletons.tsx`)
 on internal link clicks and on `announceNavigation(href)` (`lib/navigation-events.ts`: search form,
 language switch, hero truck finder). New page type → add its skeleton and route pattern there.
+It never covers a same-page navigation (only the query changes): catalogs update in place via
+`components/catalog/CatalogNav.tsx` (filters/sort/pages/pills run in a transition, only the results column shows a
+skeleton; it also catches the header search's announcement on `/products`). Use `useCatalogNav().go(href)` for new
+catalog controls instead of `router.push` + `announceNavigation`.
 
 **Design (redesign step 1)**: dark ink header/hero with amber accents, paper background, rounded cards
 (`rounded-[14px] border-line bg-card`), tokens in `tailwind.config.ts` (`card`, `line`, `sand`, `skeleton`,
@@ -184,8 +188,7 @@ client components must be in a namespace that reaches the browser (`SERVER_ONLY_
 Find My Part (step 5, option B; "TruckParts account, orders & Find My Part" canvas): `find-my-part/TruckPicker.tsx` —
 make tiles → model pills → optional year/engine, from `/vehicles/catalog` (only trucks with parts). Each choice is a
 link (`?manufacturer=&model=&vehicleId=`); the page server-renders the parts right below via `<CatalogView embedded>`
-(section + h2, no breadcrumb). Clicks run in a transition and show an in-place skeleton; `data-inline-loading` stops
-`NavigationSkeleton` covering the page on same-page updates. Order page: `orders/[id]/OrderTracker.tsx` maps status →
+(section + h2, no breadcrumb). Choices highlight at once (`useOptimistic`) and run in a transition with an in-place skeleton. Order page: `orders/[id]/OrderTracker.tsx` maps status →
 step (PAYMENT_PENDING confirm, PAID/PROCESSING ready, SHIPPED collect, DELIVERED done); other statuses show their
 own message instead (step mapping: `trackerStep()` in `lib/order-status.ts`). "Mon compte" (`/account`, option B):
 orders (active ones with a progress bar) / details / password via `?section=`; `/orders` redirects there. Logging

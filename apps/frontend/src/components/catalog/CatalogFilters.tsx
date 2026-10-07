@@ -1,8 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
-import { announceNavigation } from "@/lib/navigation-events";
+import { useCatalogNav } from "./CatalogNav";
 import { catalogHref, categoryName, type CatalogOption, type CatalogQuery } from "@/lib/catalog";
 
 const fieldClass =
@@ -34,7 +33,7 @@ export function CatalogFilters({ basePath, query, categories, brands, hide = [],
   const t = useTranslations("Catalog");
   const tc = useTranslations("Condition");
   const locale = useLocale();
-  const router = useRouter();
+  const { go } = useCatalogNav();
   const formRef = useRef<HTMLFormElement>(null);
   const [open, setOpen] = useState(false);
 
@@ -46,8 +45,7 @@ export function CatalogFilters({ basePath, query, categories, brands, hide = [],
     }
     // Keep truck filters (Find My Part links) that have no visible field.
     const href = catalogHref(basePath, { ...next, manufacturer: query.manufacturer, model: query.model, vehicleId: query.vehicleId });
-    announceNavigation(`/${locale}${href}`);
-    router.push(href, { scroll: false });
+    go(href);
   }
 
   const onSubmit = (e: React.FormEvent) => {

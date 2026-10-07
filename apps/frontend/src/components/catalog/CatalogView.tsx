@@ -10,6 +10,7 @@ import { formatMoney } from "@/lib/money";
 import { breadcrumbJsonLd } from "@/lib/seo";
 import { apiProductsPath, catalogHref, categoryName, type CatalogOption, type CatalogQuery, type ProductList } from "@/lib/catalog";
 import { CatalogFilters } from "./CatalogFilters";
+import { CatalogNav, CatalogResults } from "./CatalogNav";
 import { SearchTracker } from "./SearchTracker";
 import { SortSelect } from "./SortSelect";
 
@@ -77,7 +78,8 @@ export async function CatalogView({ basePath, query, locked = {}, heading, intro
   const clearAll = catalogHref(basePath, { manufacturer: query.manufacturer, model: query.model, vehicleId: query.vehicleId });
 
   return (
-    <Wrapper className={`flex flex-col gap-5 ${embedded ? "" : "max-w-6xl mx-auto px-4 py-8 sm:py-10"}`}>
+    <Wrapper className={embedded ? "" : "max-w-6xl mx-auto px-4 py-8 sm:py-10"}>
+      <CatalogNav urlKey={basePath + JSON.stringify(query)} className="flex flex-col gap-5">
       {!embedded && (
         <>
           <JsonLd data={breadcrumbJsonLd(crumbs.map((c) => ({ name: c.name, path: `/${locale}${c.path}` })))} />
@@ -151,6 +153,7 @@ export async function CatalogView({ basePath, query, locked = {}, heading, intro
         />
 
         <section className="flex-1 min-w-0 w-full" aria-live="polite">
+          <CatalogResults>
           {!list ? (
             <p className="text-steel" role="alert">{t("unavailable")}</p>
           ) : list.items.length === 0 ? (
@@ -178,9 +181,11 @@ export async function CatalogView({ basePath, query, locked = {}, heading, intro
               </div>
             </>
           )}
+          </CatalogResults>
           <SearchTracker search={effective.search} total={list?.total ?? 0} />
         </section>
       </div>
+      </CatalogNav>
     </Wrapper>
   );
 }
