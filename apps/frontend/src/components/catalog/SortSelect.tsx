@@ -1,7 +1,6 @@
 "use client";
 import { useLocale, useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
-import { announceNavigation } from "@/lib/navigation-events";
+import { useCatalogNav } from "./CatalogNav";
 import { catalogHref, type CatalogQuery } from "@/lib/catalog";
 
 // "Sort by", next to the results heading. Changes apply at once; without
@@ -9,13 +8,12 @@ import { catalogHref, type CatalogQuery } from "@/lib/catalog";
 export function SortSelect({ basePath, query }: { basePath: string; query: CatalogQuery }) {
   const t = useTranslations("Catalog");
   const locale = useLocale();
-  const router = useRouter();
+  const { go } = useCatalogNav();
   const kept = Object.entries({ ...query, sort: undefined, page: undefined }).filter(([, v]) => v !== undefined && v !== "");
 
   function onChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const href = catalogHref(basePath, { ...query, sort: (e.target.value || undefined) as CatalogQuery["sort"], page: undefined });
-    announceNavigation(`/${locale}${href}`);
-    router.push(href, { scroll: false });
+    go(href);
   }
 
   return (

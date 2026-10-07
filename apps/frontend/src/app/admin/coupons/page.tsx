@@ -86,113 +86,72 @@ export default function AdminCouponsPage() {
   if (loading) return <p className="text-steel">{tc("loading")}</p>;
 
   return (
-    <div>
-      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">{t("title")}</h1>
+    <div className="flex max-w-4xl flex-col gap-5">
+      <h1 className="admin-title">{t("title")}</h1>
 
-      <form onSubmit={handleCreate} className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 bg-white border border-steel-light rounded-lg p-4">
-        <div>
-          <label className="block text-xs font-medium mb-1">{t("code")}</label>
-          <input required value={form.code} onChange={(e) => update("code", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium mb-1">{t("type")}</label>
-          <select value={form.type} onChange={(e) => update("type", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm">
+      <form onSubmit={handleCreate} className="admin-card grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 sm:p-5">
+        <label className="admin-label">
+          {t("code")}
+          <input required value={form.code} onChange={(e) => update("code", e.target.value)} className="admin-input" />
+        </label>
+        <label className="admin-label">
+          {t("type")}
+          <select value={form.type} onChange={(e) => update("type", e.target.value)} className="admin-input">
             <option value="PERCENTAGE">{t("typePercentage")}</option>
             <option value="FIXED">{t("typeFixed")}</option>
           </select>
-        </div>
-        <div>
-          <label className="block text-xs font-medium mb-1">{t("value")}</label>
-          <input required type="number" min="0" value={form.value} onChange={(e) => update("value", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium mb-1">{t("minOrderTotal")}</label>
-          <input type="number" min="0" value={form.minOrderTotal} onChange={(e) => update("minOrderTotal", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium mb-1">{t("maxUses")}</label>
-          <input type="number" min="1" value={form.maxUses} onChange={(e) => update("maxUses", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium mb-1">{t("expiresAt")}</label>
-          <input type="date" value={form.expiresAt} onChange={(e) => update("expiresAt", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
-        </div>
-        {error && <p className="sm:col-span-2 text-red-600 text-sm">{error}</p>}
-        <button disabled={submitting} className="sm:col-span-2 bg-ink text-white rounded-lg py-2 text-sm disabled:opacity-50">{submitting ? t("creating") : t("create")}</button>
+        </label>
+        <label className="admin-label">
+          {t("value")}
+          <input required type="number" min="0" value={form.value} onChange={(e) => update("value", e.target.value)} className="admin-input" />
+        </label>
+        <label className="admin-label">
+          {t("minOrderTotal")}
+          <input type="number" min="0" value={form.minOrderTotal} onChange={(e) => update("minOrderTotal", e.target.value)} className="admin-input" />
+        </label>
+        <label className="admin-label">
+          {t("maxUses")}
+          <input type="number" min="1" value={form.maxUses} onChange={(e) => update("maxUses", e.target.value)} className="admin-input" />
+        </label>
+        <label className="admin-label">
+          {t("expiresAt")}
+          <input type="date" value={form.expiresAt} onChange={(e) => update("expiresAt", e.target.value)} className="admin-input" />
+        </label>
+        {error && <p role="alert" className="sm:col-span-2 text-sm text-rust-dark">{error}</p>}
+        <button disabled={submitting} className="btn-primary h-11 sm:col-span-2">{submitting ? t("creating") : t("create")}</button>
       </form>
 
       {coupons.length === 0 ? (
-        <p className="text-steel">{t("empty")}</p>
+        <p className="admin-empty">{t("empty")}</p>
       ) : (
-        <>
-        <div className="sm:hidden space-y-3">
+        <ul className="admin-card overflow-hidden divide-y divide-sand">
           {coupons.map((c) => (
-            <div key={c.id} className="bg-white border border-steel-light rounded-lg p-4">
-              <div className="flex items-start justify-between gap-3">
-                <p className="font-mono font-medium text-ink">{c.code}</p>
-                <button onClick={() => toggleActive(c)} disabled={pendingId === c.id}
-                  className={`shrink-0 text-xs px-2 py-1 rounded-full disabled:opacity-50 ${c.active ? "bg-green-100 text-green-700" : "bg-steel-light text-steel"}`}>
+            <li key={c.id} className="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3.5">
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="font-mono text-lg font-medium text-ink">{c.code}</span>
+                <span className="font-bold text-ink">{t("off", { amount: c.type === "PERCENTAGE" ? `${c.value}%` : formatMoney(c.value) })}</span>
+                <span className="text-sm text-steel">
+                  {t("minOrderLine", { value: c.minOrderTotal ? formatMoney(c.minOrderTotal) : "—" })} · {t("usesLine", { value: uses(c) })} ·{" "}
+                  {t("expiresLine", { value: expires(c) })}
+                </span>
+              </div>
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => toggleActive(c)}
+                  disabled={pendingId === c.id}
+                  aria-pressed={c.active}
+                  className={`h-9 rounded-full px-3.5 text-sm font-bold disabled:opacity-50 ${c.active ? "bg-stock-bg text-stock" : "bg-[#E1E4E7] text-steel"}`}
+                >
                   {pendingId === c.id ? "…" : c.active ? t("active") : t("inactive")}
                 </button>
+                <button type="button" onClick={() => remove(c.id)} disabled={pendingId === c.id} className="link-danger">
+                  {pendingId === c.id ? tc("deleting") : tc("delete")}
+                </button>
               </div>
-              <p className="text-sm text-ink mt-2">{t("off", { amount: c.type === "PERCENTAGE" ? `${c.value}%` : formatMoney(c.value) })}</p>
-              <div className="mt-2 text-xs text-steel space-y-0.5">
-                <p>{t("minOrderLine", { value: c.minOrderTotal ? formatMoney(c.minOrderTotal) : "—" })}</p>
-                <p>{t("usesLine", { value: uses(c) })}</p>
-                <p>{t("expiresLine", { value: expires(c) })}</p>
-              </div>
-              <button
-                onClick={() => remove(c.id)}
-                disabled={pendingId === c.id}
-                className="w-full mt-3 border border-red-200 bg-red-50 text-red-600 rounded-lg py-2 text-sm disabled:opacity-50"
-              >
-                {pendingId === c.id ? tc("deleting") : tc("delete")}
-              </button>
-            </div>
+            </li>
           ))}
-        </div>
-        <div className="hidden sm:block overflow-x-auto">
-        <table className="w-full text-sm bg-white border border-steel-light rounded-lg overflow-hidden">
-          <thead className="bg-paper text-left">
-            <tr>
-              <th className="p-3">{t("code")}</th>
-              <th className="p-3">{t("colDiscount")}</th>
-              <th className="p-3">{t("colMinOrder")}</th>
-              <th className="p-3">{t("colUses")}</th>
-              <th className="p-3">{t("colExpires")}</th>
-              <th className="p-3">{tc("status")}</th>
-              <th className="p-3"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {coupons.map((c) => (
-              <tr key={c.id} className="border-t border-steel-light">
-                <td className="p-3 font-mono">{c.code}</td>
-                <td className="p-3">{c.type === "PERCENTAGE" ? `${c.value}%` : formatMoney(c.value)}</td>
-                <td className="p-3">{c.minOrderTotal ? formatMoney(c.minOrderTotal) : "—"}</td>
-                <td className="p-3">{uses(c)}</td>
-                <td className="p-3">{expires(c)}</td>
-                <td className="p-3">
-                  <button onClick={() => toggleActive(c)} disabled={pendingId === c.id}
-                    className={`text-xs px-2 py-1 rounded-full disabled:opacity-50 ${c.active ? "bg-green-100 text-green-700" : "bg-steel-light text-steel"}`}>
-                    {pendingId === c.id ? "…" : c.active ? t("active") : t("inactive")}
-                  </button>
-                </td>
-                <td className="p-3 text-right">
-                  <button
-                    onClick={() => remove(c.id)}
-                    disabled={pendingId === c.id}
-                    className="border border-red-200 bg-red-50 text-red-600 rounded-lg px-3 py-1.5 text-xs transition-colors duration-200 hover:bg-red-100 disabled:opacity-50"
-                  >
-                    {pendingId === c.id ? tc("deleting") : tc("delete")}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </div>
-        </>
+        </ul>
       )}
     </div>
   );

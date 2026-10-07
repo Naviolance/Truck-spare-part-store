@@ -817,11 +817,7 @@
     "noMatch": "No reviews match.",
     "empty": "No reviews yet.",
     "deleteConfirm": "Delete this review?",
-    "colProduct": "Product",
-    "colCustomer": "Customer",
-    "colRating": "Rating",
-    "colComment": "Comment",
-    "colDate": "Date"
+    "colRating": "Rating"
   },
   "AdminCoupons": {
     "title": "Coupons",
@@ -838,16 +834,12 @@
     "createFailed": "Failed to create coupon",
     "empty": "No coupons yet.",
     "deleteConfirm": "Delete this coupon?",
-    "active": "ACTIVE",
-    "inactive": "INACTIVE",
+    "active": "Active",
+    "inactive": "Inactive",
     "off": "{amount} off",
     "minOrderLine": "Min. order: {value}",
     "usesLine": "Uses: {value}",
-    "expiresLine": "Expires: {value}",
-    "colDiscount": "Discount",
-    "colMinOrder": "Min. order",
-    "colUses": "Uses",
-    "colExpires": "Expires"
+    "expiresLine": "Expires: {value}"
   },
   "AdminProducts": {
     "title": "Products",

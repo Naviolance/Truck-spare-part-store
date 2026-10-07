@@ -63,46 +63,50 @@ export default function AdminVehiclesPage() {
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-6">{t("title")}</h1>
+    <div className="flex max-w-3xl flex-col gap-5">
+      <h1 className="admin-title">{t("title")}</h1>
 
-      <form onSubmit={handleAdd} className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 bg-white border border-steel-light rounded-lg p-4">
-        <div>
-          <label className="block text-xs font-medium mb-1">{t("manufacturer")}</label>
-          <input required value={form.manufacturer} onChange={(e) => update("manufacturer", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium mb-1">{t("model")}</label>
-          <input required value={form.model} onChange={(e) => update("model", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium mb-1">{t("yearStart")}</label>
-          <input required type="number" value={form.yearStart} onChange={(e) => update("yearStart", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium mb-1">{t("yearEnd")}</label>
-          <input type="number" value={form.yearEnd} onChange={(e) => update("yearEnd", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
-        </div>
-        <div className="sm:col-span-2">
-          <label className="block text-xs font-medium mb-1">{t("engine")}</label>
-          <input value={form.engine} onChange={(e) => update("engine", e.target.value)} className="w-full border border-steel-light rounded-lg px-3 py-2 text-sm" />
-        </div>
-        {error && <p className="sm:col-span-2 text-red-600 text-sm">{error}</p>}
-        <button disabled={submitting} className="sm:col-span-2 bg-ink text-white rounded-lg py-2 text-sm disabled:opacity-50">{submitting ? tc("adding") : t("addVehicle")}</button>
+      <form onSubmit={handleAdd} className="admin-card grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 sm:p-5">
+        <label className="admin-label">
+          {t("manufacturer")}
+          <input required value={form.manufacturer} onChange={(e) => update("manufacturer", e.target.value)} className="admin-input" />
+        </label>
+        <label className="admin-label">
+          {t("model")}
+          <input required value={form.model} onChange={(e) => update("model", e.target.value)} className="admin-input" />
+        </label>
+        <label className="admin-label">
+          {t("yearStart")}
+          <input required type="number" value={form.yearStart} onChange={(e) => update("yearStart", e.target.value)} className="admin-input" />
+        </label>
+        <label className="admin-label">
+          {t("yearEnd")}
+          <input type="number" value={form.yearEnd} onChange={(e) => update("yearEnd", e.target.value)} className="admin-input" />
+        </label>
+        <label className="admin-label sm:col-span-2">
+          {t("engine")}
+          <input value={form.engine} onChange={(e) => update("engine", e.target.value)} className="admin-input" />
+        </label>
+        {error && <p role="alert" className="sm:col-span-2 text-sm text-rust-dark">{error}</p>}
+        <button disabled={submitting} className="btn-primary h-11 sm:col-span-2">{submitting ? tc("adding") : t("addVehicle")}</button>
       </form>
 
-      <ul className="bg-white border border-steel-light rounded-lg divide-y divide-steel-light">
+      <ul className="admin-card overflow-hidden divide-y divide-sand">
         {vehicles.map((v) => (
-          <li key={v.id} className="flex items-center justify-between p-3 text-sm">
-            <span>
-              {v.manufacturer} {v.model} ({v.yearStart}{v.yearEnd ? `–${v.yearEnd}` : "+"})
-              {v.engine && ` · ${v.engine}`}
-              <span className="text-steel"> — {t("productCount", { count: v._count.compatibilities })}</span>
+          <li key={v.id} className="flex items-center justify-between gap-3 px-4 py-3">
+            <span className="min-w-0">
+              <span className="font-bold text-ink">{v.manufacturer} {v.model}</span>{" "}
+              <span className="text-steel">
+                {v.yearStart}{v.yearEnd ? `–${v.yearEnd}` : "+"}
+                {v.engine && ` · ${v.engine}`}
+              </span>
+              <span className="block text-sm text-steel">{t("productCount", { count: v._count.compatibilities })}</span>
             </span>
             <button
+              type="button"
               onClick={() => handleDelete(v.id)}
               disabled={deletingId === v.id}
-              className="shrink-0 border border-red-200 bg-red-50 text-red-600 rounded-lg px-3 py-1.5 text-xs transition-colors duration-200 hover:bg-red-100 disabled:opacity-50"
+              className="link-danger shrink-0"
             >
               {deletingId === v.id ? tc("deleting") : tc("delete")}
             </button>

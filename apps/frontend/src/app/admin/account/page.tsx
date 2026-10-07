@@ -6,13 +6,15 @@ import { ChangePasswordForm } from "@/components/ChangePasswordForm";
 export default function AdminAccountPage() {
   const t = useTranslations("AdminAccount");
   return (
-    <div className="max-w-lg">
-      <h1 className="text-2xl font-display font-bold text-ink tracking-tight mb-1">{t("title")}</h1>
-      <p className="text-sm text-steel mb-6">{t("subtitle")}</p>
-      <AccountDetails variant="admin" />
-      <div className="mt-10 border-t border-steel-light pt-8">
-        <ChangePasswordForm />
+    <div className="flex max-w-lg flex-col gap-5">
+      <div className="flex flex-col gap-1">
+        <h1 className="admin-title">{t("title")}</h1>
+        <p className="text-steel">{t("subtitle")}</p>
       </div>
+      <AccountDetails variant="admin" />
+      <section className="admin-card p-4 sm:p-5">
+        <ChangePasswordForm />
+      </section>
     </div>
   );
 }

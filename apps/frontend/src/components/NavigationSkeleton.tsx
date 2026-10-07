@@ -59,12 +59,11 @@ export function NavigationSkeleton() {
       }
       if (url.origin !== window.location.origin) return;
       if (url.pathname.startsWith("/admin")) return; // different app shell
-      if (url.pathname === window.location.pathname && url.search === window.location.search) return;
-      // A page that shows its own loading state for in-page updates (Find My
-      // Part: pick a truck, the parts load below the tiles) marks itself with
-      // data-inline-loading; covering it with a whole-page skeleton would
-      // feel like going to another page.
-      if (url.pathname === window.location.pathname && document.querySelector("[data-inline-loading]")) return;
+      // Same page, new query (filters, sort, page, Find My Part's truck,
+      // account sections): the page stays and updates in place — catalogs
+      // show their own results skeleton (CatalogNav). Covering everything
+      // here would look like a full reload.
+      if (url.pathname === window.location.pathname) return;
       clearTimers();
       timers.current.push(
         setTimeout(() => {

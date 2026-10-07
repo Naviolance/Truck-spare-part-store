@@ -817,11 +817,7 @@
     "noMatch": "Aucun avis ne correspond.",
     "empty": "Aucun avis pour le moment.",
     "deleteConfirm": "Supprimer cet avis ?",
-    "colProduct": "Produit",
-    "colCustomer": "Client",
-    "colRating": "Note",
-    "colComment": "Commentaire",
-    "colDate": "Date"
+    "colRating": "Note"
   },
   "AdminCoupons": {
     "title": "Codes promo",
@@ -838,16 +834,12 @@
     "createFailed": "Impossible de créer le code promo",
     "empty": "Aucun code promo pour le moment.",
     "deleteConfirm": "Supprimer ce code promo ?",
-    "active": "ACTIF",
-    "inactive": "INACTIF",
+    "active": "Actif",
+    "inactive": "Inactif",
     "off": "{amount} de réduction",
     "minOrderLine": "Commande min. : {value}",
     "usesLine": "Utilisations : {value}",
-    "expiresLine": "Expire le : {value}",
-    "colDiscount": "Réduction",
-    "colMinOrder": "Commande min.",
-    "colUses": "Utilisations",
-    "colExpires": "Expire le"
+    "expiresLine": "Expire le : {value}"
   },
   "AdminProducts": {
     "title": "Produits",
