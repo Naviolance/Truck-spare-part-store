@@ -182,8 +182,11 @@ export function parseProductCsv(buffer: Buffer): ParseResult {
   // Map each column to a field.
   const columns = new Map<number, Field>();
   records[0].forEach((title, index) => {
-    const key = normalizeKey(title);
-    const field = (Object.keys(HEADER_ALIASES) as Field[]).find((f) => HEADER_ALIASES[f].includes(key));
+    // Bilingual titles ("Nom / Name", the template's) match on either side.
+    const keys = [title, ...title.split("/")].map(normalizeKey).filter(Boolean);
+    const field = keys
+      .map((key) => (Object.keys(HEADER_ALIASES) as Field[]).find((f) => HEADER_ALIASES[f].includes(key)))
+      .find(Boolean);
     if (field && ![...columns.values()].includes(field)) columns.set(index, field);
     else if (title && !field) warnings.push({ line: 1, message: `Column "${title}" isn't recognised and will be ignored` });
   });
@@ -294,9 +297,11 @@ export function parseProductCsv(buffer: Buffer): ParseResult {
 
 // The template the admin downloads: the exact columns, one example row per
 // condition, using every feature (multiple trucks, cross references).
+// Column titles in French and English ("Nom / Name"): either side is
+// enough to match. * = required. Values may be French or English too.
 export const IMPORT_TEMPLATE_CSV = [
-  "name;category;brand;partNumber;crossReference;condition;conditionNotes;price;quantity;vehicles;description;descriptionFr;status",
+  "Nom / Name *;Catégorie / Category *;Marque / Brand;Référence / Part number;Équivalences / Cross references;État / Condition *;Remarques état / Condition notes;Prix FCFA / Price XAF *;Quantité / Quantity *;Camions / Vehicles;Description (EN);Description (FR);Statut / Status",
   'Plaquettes de frein avant;Brakes;Bosch;0 986 494 155;A0064200520|29087;NEW;;45000;12;Mercedes-Benz / Actros / 2012-2024 / OM471|Mercedes-Benz / Axor / 2005-2013;Front brake pads for Mercedes heavy trucks.;Plaquettes de frein avant pour poids lourds Mercedes.;Published',
-  'Filtre à huile;Filters;Mann;W 962/2;LF3970;NEW;;8500;40;Volvo / FH16 / 2015+;Engine oil filter.;Filtre à huile moteur.;Published',
-  'Démarreur 24V;Electrical;Prestolite;M93R3001SE;;USED;Tested, minor wear on housing;120000;1;Scania / R-Series / 2013-2023 / DC13;Used 24V starter motor, bench tested.;Démarreur 24V d\'occasion, testé au banc.;Draft',
+  'Filtre à huile;Filters;Mann;W 962/2;LF3970;Neuf;;8 500;40;Volvo / FH16 / 2015+;Engine oil filter.;Filtre à huile moteur.;Publié',
+  'Démarreur 24V;Electrical;Prestolite;M93R3001SE;;Occasion;Testé, légère usure du boîtier;120000;1;Scania / R-Series / 2013-2023 / DC13;Used 24V starter motor, bench tested.;Démarreur 24V d\'occasion, testé au banc.;Brouillon',
 ].join("\r\n");

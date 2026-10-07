@@ -164,16 +164,17 @@ export class ProductsService {
     return product;
   }
 
-  // Admin list, one page at a time. `outOfStock` feeds the banner: a count
-  // (not names) so it stays small however big the catalog gets.
+  // Admin list, one page at a time. `outOfStock` / `noPhoto` feed the filter
+  // pills: counts (not names) so they stay small however big the catalog gets.
   async findAllAdmin(query: AdminProductsQueryDto) {
     const search = searchTerm(query.search);
     const where: Prisma.ProductWhereInput = {
       ...(query.status && { status: query.status }),
       ...(query.stock === "out" && { quantity: 0 }),
+      ...(query.photos === "none" && { images: { none: {} } }),
       ...(search && { OR: [{ name: { contains: search, mode: "insensitive" as const } }, { partNumber: { contains: search, mode: "insensitive" as const } }] }),
     };
-    const [page, outOfStock] = await Promise.all([
+    const [page, outOfStock, noPhoto] = await Promise.all([
       paginate(
         query,
         (args) =>
@@ -187,8 +188,9 @@ export class ProductsService {
         () => this.prisma.product.count({ where }),
       ),
       this.prisma.product.count({ where: { quantity: 0, status: { not: ProductStatus.ARCHIVED } } }),
+      this.prisma.product.count({ where: { images: { none: {} }, status: { not: ProductStatus.ARCHIVED } } }),
     ]);
-    return { ...page, outOfStock };
+    return { ...page, outOfStock, noPhoto };
   }
 
   async findByIdAdmin(id: string) {

@@ -70,6 +70,14 @@ describe("parseProductCsv", () => {
     expect(rows[2].status).toBe(ProductStatus.DRAFT);
   });
 
+  it("reads bilingual column titles (\"Nom / Name *\") from either side", () => {
+    const { rows, errors } = parseProductCsv(
+      csv("Name / Nom *;Catégorie / Category *;État / Condition *;Prix FCFA / Price XAF *;Quantité / Quantity *;Description (FR)\r\nFiltre;Filters;Neuf;100;1;Filtre"),
+    );
+    expect(errors).toEqual([]);
+    expect(rows[0]).toMatchObject({ name: "Filtre", category: "Filters", price: 100, quantity: 1, descriptionFr: "Filtre" });
+  });
+
   it("accepts French headers and values from a French Excel file", () => {
     const file = Buffer.from(
       "Nom;Catégorie;Marque;Référence;État;Prix;Quantité;Camions\r\nDisque d'embrayage;Transmission;Sachs;1878 004 832;Occasion;\"85 000 FCFA\";2;DAF / XF / 2016+",

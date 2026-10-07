@@ -23,6 +23,7 @@ type Stats = {
   users: number;
   orders: number;
   outOfStock: number;
+  noPhoto: number;
   pendingPayment: number;
   revenue: string;
   recentOrders: RecentOrder[];
@@ -58,6 +59,7 @@ export default function AdminDashboardPage() {
     { count: stats.orderGroups.todo, title: t("taskOrders"), body: t("taskOrdersBody"), href: "/admin/orders?group=todo", cta: t("taskOrdersCta") },
     { count: stats.openRequests, title: t("taskRequests"), body: t("taskRequestsBody"), href: "/admin/requests?status=OPEN", cta: t("taskRequestsCta") },
     { count: stats.outOfStock, title: t("outOfStock"), body: t("taskStockBody"), href: "/admin/products?stock=out", cta: t("taskStockCta") },
+    { count: stats.noPhoto, title: t("taskPhotos"), body: t("taskPhotosBody"), href: "/admin/products?photos=none", cta: t("taskPhotosCta") },
   ];
   const today = new Date().toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" });
 
@@ -68,7 +70,7 @@ export default function AdminDashboardPage() {
         <p className="mt-1 text-steel first-letter:uppercase">{t("todayIntro", { date: today })}</p>
       </div>
 
-      <div className="grid gap-3.5 sm:grid-cols-3">
+      <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
         {tasks.map((task, i) => {
           const urgent = i === 0 && task.count > 0;
           return (
