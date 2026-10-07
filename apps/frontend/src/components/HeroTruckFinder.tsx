@@ -10,8 +10,8 @@ const selectClass =
   "h-12 w-full rounded-[10px] border border-[#BDB5A6] bg-white px-3 text-base text-ink focus:border-ink focus:outline-none disabled:bg-paper disabled:text-steel";
 
 // The homepage's "What do you drive?" card: pick make and model, then go to
-// Find My Part with them (same URL the full selector there uses). Unlike
-// TruckSelector it doesn't navigate on every change — it's a form.
+// Find My Part with them (the same URL its truck tiles use). It's a form:
+// nothing happens until "show parts" is pressed.
 export function HeroTruckFinder({ makes }: { makes: Make[] }) {
   const t = useTranslations("FindMyPart");
   const locale = useLocale();

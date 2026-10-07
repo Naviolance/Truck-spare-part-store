@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { NAVIGATION_START } from "@/lib/navigation-events";
-import { CatalogSkeleton, PageSkeleton, ProductPageSkeleton } from "@/components/Skeletons";
+import { CatalogSkeleton, FindMyPartSkeleton, PageSkeleton, ProductPageSkeleton } from "@/components/Skeletons";
 
 // While the next page loads, show a skeleton of THAT page over the content
 // area (header and footer stay), instead of a spinner.
@@ -26,7 +26,8 @@ const LOCALE_PREFIX = /^\/(fr|en)(?=\/|$)/;
 function skeletonFor(pathname: string) {
   const path = pathname.replace(LOCALE_PREFIX, "") || "/";
   if (/^\/products\/[^/]+$/.test(path)) return <ProductPageSkeleton />;
-  if (/^\/(products|find-my-part|categories\/[^/]+|brands\/[^/]+|trucks\/[^/]+(\/[^/]+)?)$/.test(path)) return <CatalogSkeleton />;
+  if (path === "/find-my-part") return <FindMyPartSkeleton />;
+  if (/^\/(products|categories\/[^/]+|brands\/[^/]+|trucks\/[^/]+(\/[^/]+)?)$/.test(path)) return <CatalogSkeleton />;
   return <PageSkeleton />;
 }
 
@@ -59,6 +60,11 @@ export function NavigationSkeleton() {
       if (url.origin !== window.location.origin) return;
       if (url.pathname.startsWith("/admin")) return; // different app shell
       if (url.pathname === window.location.pathname && url.search === window.location.search) return;
+      // A page that shows its own loading state for in-page updates (Find My
+      // Part: pick a truck, the parts load below the tiles) marks itself with
+      // data-inline-loading; covering it with a whole-page skeleton would
+      // feel like going to another page.
+      if (url.pathname === window.location.pathname && document.querySelector("[data-inline-loading]")) return;
       clearTimers();
       timers.current.push(
         setTimeout(() => {

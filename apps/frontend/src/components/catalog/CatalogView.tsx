@@ -23,6 +23,9 @@ type Props = {
   intro?: ReactNode;
   hide?: ("categoryId" | "brandId")[];
   crumbs: Crumb[]; // Home → … → this page (visible trail + BreadcrumbList JSON-LD)
+  // Inside another page (Find My Part's results): a <section> with an h2 —
+  // the page owns the <main>, h1, breadcrumb and their JSON-LD.
+  embedded?: boolean;
 };
 
 // Server-rendered catalog: the HTML arrives with the products and real
@@ -30,7 +33,7 @@ type Props = {
 // and slow phones show results without waiting for JavaScript. Used by
 // /products and every landing page. Layout = redesign step 2, option A:
 // filter sidebar, removable "active filter" pills, numbered pages.
-export async function CatalogView({ basePath, query, locked = {}, heading, intro, hide, crumbs }: Props) {
+export async function CatalogView({ basePath, query, locked = {}, heading, intro, hide, crumbs, embedded = false }: Props) {
   const t = await getTranslations("Catalog");
   const tc = await getTranslations("Condition");
   const locale = await getLocale();
@@ -42,6 +45,8 @@ export async function CatalogView({ basePath, query, locked = {}, heading, intro
     serverFetch<CatalogOption[]>("/brands", { revalidate: 300 }),
   ]);
 
+  const Wrapper = embedded ? "section" : "main";
+  const Heading = embedded ? "h2" : "h1";
   const page = list?.page ?? 1;
   // ?page=99 past the end is a real 404, not an indexable empty page.
   if (list && page > 1 && list.items.length === 0) notFound();
@@ -72,28 +77,34 @@ export async function CatalogView({ basePath, query, locked = {}, heading, intro
   const clearAll = catalogHref(basePath, { manufacturer: query.manufacturer, model: query.model, vehicleId: query.vehicleId });
 
   return (
-    <main className="max-w-6xl mx-auto px-4 py-8 sm:py-10 flex flex-col gap-5">
-      <JsonLd data={breadcrumbJsonLd(crumbs.map((c) => ({ name: c.name, path: `/${locale}${c.path}` })))} />
-      <nav aria-label={t("breadcrumb")} className="text-sm text-steel">
-        <ol className="flex flex-wrap items-center gap-1.5">
-          {crumbs.map((c, i) => (
-            <li key={c.path} className="flex items-center gap-1.5">
-              {i > 0 && <span aria-hidden="true">/</span>}
-              {i < crumbs.length - 1 ? (
-                <Link href={c.path || "/"} className="hover:text-ink underline-offset-2 hover:underline">
-                  {c.name}
-                </Link>
-              ) : (
-                <span aria-current="page" className="text-ink">{c.name}</span>
-              )}
-            </li>
-          ))}
-        </ol>
-      </nav>
+    <Wrapper className={`flex flex-col gap-5 ${embedded ? "" : "max-w-6xl mx-auto px-4 py-8 sm:py-10"}`}>
+      {!embedded && (
+        <>
+          <JsonLd data={breadcrumbJsonLd(crumbs.map((c) => ({ name: c.name, path: `/${locale}${c.path}` })))} />
+          <nav aria-label={t("breadcrumb")} className="text-sm text-steel">
+            <ol className="flex flex-wrap items-center gap-1.5">
+              {crumbs.map((c, i) => (
+                <li key={c.path} className="flex items-center gap-1.5">
+                  {i > 0 && <span aria-hidden="true">/</span>}
+                  {i < crumbs.length - 1 ? (
+                    <Link href={c.path || "/"} className="hover:text-ink underline-offset-2 hover:underline">
+                      {c.name}
+                    </Link>
+                  ) : (
+                    <span aria-current="page" className="text-ink">{c.name}</span>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </nav>
+        </>
+      )}
 
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="font-display font-bold text-3xl sm:text-4xl text-ink tracking-tight">{heading}</h1>
+          <Heading className={`font-display font-bold text-ink tracking-tight ${embedded ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl"}`}>
+            {heading}
+          </Heading>
           {list && list.total > 0 && (
             <p className="text-steel mt-1">
               {t("results", { count: list.total })}
@@ -170,7 +181,7 @@ export async function CatalogView({ basePath, query, locked = {}, heading, intro
           <SearchTracker search={effective.search} total={list?.total ?? 0} />
         </section>
       </div>
-    </main>
+    </Wrapper>
   );
 }
 
