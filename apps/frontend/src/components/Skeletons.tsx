@@ -73,24 +73,37 @@ export function CatalogSkeleton() {
   );
 }
 
-// /products/<slug>
+// /products/<slug> — same grid as the page: photo + title, buy box on the
+// right (first below them on phones), then the dark fit-check box.
 export function ProductPageSkeleton() {
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <Bar className="h-3.5 w-56 mb-6" />
-      <div className="grid gap-8 md:grid-cols-2">
-        <div className="skeleton aspect-square rounded-[14px]" />
-        <div className="flex flex-col gap-4">
-          <Bar className="h-4 w-28 rounded-full" />
-          <Bar className="h-9 w-[90%]" />
-          <Bar className="h-4 w-48" />
-          <Bar className="h-8 w-40 mt-2" />
-          <Bar className="h-12 w-full mt-4" />
-          <Bar className="h-12 w-full" />
-          <div className="flex flex-col gap-2 mt-4">
-            <Bar className="h-3.5 w-full" />
-            <Bar className="h-3.5 w-[92%]" />
-            <Bar className="h-3.5 w-[70%]" />
+    <div className="max-w-6xl mx-auto px-4 pt-6 sm:pt-8">
+      <Bar className="h-3.5 w-64 mb-5" />
+      <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-8">
+        <div className="grid gap-6 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+          <div className="skeleton aspect-square rounded-[14px]" />
+          <div className="flex flex-col gap-3">
+            <Bar className="h-4 w-36" />
+            <Bar className="h-9 w-[90%]" />
+            <Bar className="h-9 w-[60%]" />
+            <div className="mt-2 flex flex-col gap-2">
+              <Bar className="h-4 w-[70%]" />
+              <Bar className="h-4 w-[55%]" />
+              <Bar className="h-4 w-[40%]" />
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-col gap-3.5 self-start rounded-[14px] border border-line bg-card p-5 sm:p-6 lg:row-span-2">
+          <Bar className="h-9 w-44" />
+          <Bar className="h-6 w-24 rounded-full" />
+          <Bar className="h-[52px] w-full" />
+          <Bar className="h-[52px] w-full" />
+        </div>
+        <div className="rounded-[14px] bg-ink/90 p-5 sm:p-6 flex flex-col gap-3.5">
+          <div className="h-7 w-56 rounded-lg bg-ink-soft motion-safe:animate-pulse" />
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="h-12 rounded-[10px] bg-ink-soft motion-safe:animate-pulse" />
+            <div className="h-12 rounded-[10px] bg-ink-soft motion-safe:animate-pulse" />
           </div>
         </div>
       </div>

@@ -293,12 +293,9 @@
     "condition": "État",
     "brand": "Marque",
     "category": "Catégorie",
-    "availability": "Disponibilité",
     "inStockCount": "{count} en stock",
     "outOfStock": "Rupture de stock",
     "conditionNotes": "Remarques sur l'état",
-    "keyFacts": "Caractéristiques",
-    "fits": "Compatible avec ces camions",
     "fitsUnknown": "Vous n'êtes pas sûr de la compatibilité ? Demandez-nous avant d'acheter — envoyez le modèle et l'année de votre camion sur WhatsApp.",
     "description": "Description",
     "askWhatsapp": "Demander sur WhatsApp",
@@ -332,7 +329,14 @@
     "nextImage": "Image suivante",
     "unavailable": "Cette pièce n'a pas pu être chargée. Réessayez dans un instant.",
     "genericError": "Une erreur s'est produite — veuillez réessayer.",
-    "stars": "{count} sur 5 étoiles"
+    "stars": "{count} sur 5 étoiles",
+    "buyBox": "Acheter",
+    "fitTitle": "Ça va sur mon camion ?",
+    "fitYes": "Oui, compatible avec {truck}",
+    "fitNo": "{truck} n’est pas dans notre liste.",
+    "fitAsk": "Demandez-nous sur WhatsApp",
+    "fitList": "Liste vérifiée :",
+    "fitWhatsappMessage": "Bonjour TruckParts, est-ce que {product} va sur mon {truck} ? {url}"
   },
   "FindMyPart": {
     "title": "Trouver ma pièce",

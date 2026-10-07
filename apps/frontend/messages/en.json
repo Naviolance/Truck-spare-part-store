@@ -293,12 +293,9 @@
     "condition": "Condition",
     "brand": "Brand",
     "category": "Category",
-    "availability": "Availability",
     "inStockCount": "{count} in stock",
     "outOfStock": "Out of stock",
     "conditionNotes": "Condition notes",
-    "keyFacts": "Key facts",
-    "fits": "Fits these trucks",
     "fitsUnknown": "Not sure it fits your truck? Ask us before you buy — send your truck's model and year on WhatsApp.",
     "description": "Description",
     "askWhatsapp": "Ask about this part on WhatsApp",
@@ -332,7 +329,14 @@
     "nextImage": "Next image",
     "unavailable": "This part couldn't be loaded right now. Please try again in a moment.",
     "genericError": "Something went wrong — please try again.",
-    "stars": "{count} out of 5 stars"
+    "stars": "{count} out of 5 stars",
+    "buyBox": "Buy",
+    "fitTitle": "Does it fit my truck?",
+    "fitYes": "Yes, it fits {truck}",
+    "fitNo": "{truck} isn't in our list.",
+    "fitAsk": "Ask us on WhatsApp",
+    "fitList": "Checked list:",
+    "fitWhatsappMessage": "Hello TruckParts, does {product} fit my {truck}? {url}"
   },
   "FindMyPart": {
     "title": "Find My Part",

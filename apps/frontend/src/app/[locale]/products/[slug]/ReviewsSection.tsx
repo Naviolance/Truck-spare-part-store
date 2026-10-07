@@ -81,14 +81,14 @@ export function ReviewsSection({ productId, initialReviews }: { productId: strin
   }
 
   return (
-    <div className="mt-16 max-w-2xl">
-      <h2 className="text-xl font-display font-bold text-ink tracking-tight mb-4">{t("reviews")}</h2>
+    <div className="max-w-2xl border-t border-line pt-6">
+      <h2 className="text-2xl font-display font-bold text-ink mb-3">{t("reviews")}</h2>
 
       {reviews.length === 0 && <p className="text-sm text-steel mb-4">{t("noReviews")}</p>}
       {reviews.length > 0 && (
         <div className="space-y-4 mb-6">
           {reviews.map((r) => (
-            <div key={r.id} className="border border-steel-light rounded-lg p-4 bg-white">
+            <div key={r.id} className="rounded-[14px] border border-line bg-card p-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-ink">
                   <span aria-label={t("stars", { count: r.rating })}>★ {r.rating}/5</span>
