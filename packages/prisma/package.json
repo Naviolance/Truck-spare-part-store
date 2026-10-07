@@ -11,7 +11,8 @@
     "studio": "dotenv -e ../../.env -- prisma studio",
     "seed": "dotenv -e ../../.env -- tsx seed.ts",
     "admin:promote": "dotenv -e ../../.env -- tsx scripts/promote-admin.ts",
-    "launch:reset": "dotenv -e ../../.env -- tsx scripts/launch-reset.ts"
+    "launch:reset": "dotenv -e ../../.env -- tsx scripts/launch-reset.ts",
+    "photos:check": "dotenv -e ../../.env -- tsx scripts/check-photos.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",

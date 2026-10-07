@@ -2,6 +2,7 @@ import { routing } from "@/i18n/routing";
 import { serverFetch } from "@/lib/server-api";
 import { getBrands, getCategories, getTruckCatalog, productCount } from "@/lib/landing";
 import { SITE_URL } from "@/lib/site";
+import { absoluteUrl } from "@/lib/seo";
 
 // Sitemaps, split so every product is listed however big the catalog gets
 // (Google reads at most 50,000 URLs per file):
@@ -21,7 +22,7 @@ export const SITEMAP_HEADERS = {
   "Cache-Control": `public, max-age=0, s-maxage=${SITEMAP_REVALIDATE}, stale-while-revalidate=86400`,
 };
 
-type Entry = { url: string; languages: Record<string, string>; lastModified?: string; changeFrequency?: string };
+type Entry = { url: string; languages: Record<string, string>; lastModified?: string; changeFrequency?: string; images?: string[] };
 
 // One entry per page per language, each listing its translations
 // (hreflang), so search engines index /fr and /en as the same page in two
@@ -44,10 +45,12 @@ export function urlsetXml(entries: Entry[]): string {
       ),
       e.lastModified ? `<lastmod>${new Date(e.lastModified).toISOString()}</lastmod>` : "",
       e.changeFrequency ? `<changefreq>${e.changeFrequency}</changefreq>` : "",
+      // Image sitemap: tells search engines which photos belong to this page.
+      ...(e.images ?? []).map((src) => `<image:image><image:loc>${xmlEscape(src)}</image:loc></image:image>`),
       "</url>",
     ].join(""),
   );
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${urls.join("\n")}\n</urlset>\n`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${urls.join("\n")}\n</urlset>\n`;
 }
 
 export async function sitemapIndexXml(): Promise<string> {
@@ -78,9 +81,15 @@ export async function pageEntries(): Promise<Entry[]> {
 }
 
 export async function productEntries(chunk: number): Promise<Entry[] | null> {
-  const products = await serverFetch<{ slug: string; updatedAt: string }[]>(`/products/sitemap?chunk=${chunk}`, {
+  const products = await serverFetch<{ slug: string; updatedAt: string; images?: { url: string }[] }[]>(`/products/sitemap?chunk=${chunk}`, {
     revalidate: SITEMAP_REVALIDATE,
   });
   if (!products || products.length === 0) return null;
-  return products.flatMap((p) => localized(`/products/${p.slug}`, { lastModified: p.updatedAt, changeFrequency: "weekly" }));
+  return products.flatMap((p) =>
+    localized(`/products/${p.slug}`, {
+      lastModified: p.updatedAt,
+      changeFrequency: "weekly",
+      images: (p.images ?? []).map((i) => absoluteUrl(i.url)),
+    }),
+  );
 }

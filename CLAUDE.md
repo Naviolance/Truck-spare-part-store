@@ -65,6 +65,7 @@ Launch / operations:
 ```bash
 pnpm admin:promote <email>                       # make a registered account an admin
 pnpm launch:reset --keep <email> [--wipe-catalog]  # dry run; add --yes to delete test data
+pnpm photos:check [--remove --yes]               # list product photos that 404; optionally drop their rows
 ```
 
 Docker infra:
@@ -240,3 +241,8 @@ above.
 **File uploads**: images go through the backend's uploads module to RustFS (S3-compatible); the
 backend proxies file serving (see `/uploads/file/...` routes) rather than exposing RustFS directly, so
 CORS/CSP stay same-origin from the frontend's perspective.
+Keys (`uploads/image-key.ts`, tested): new uploads are readable — `products/<product name brand part-number>-<8 hex>.webp`,
+from the `name` field the product form sends with each photo (SEO). The public file route serves only the key shapes
+in `IMAGE_KEY_RE`, which must keep accepting older ones (`<uuid>.webp`, and pre-WebP `<uuid>.<original ext>`) —
+narrowing it once broke every older photo. Alt text when none is stored: `productImageAlt()` (`lib/image.ts`).
+Product sitemaps list each product's photos (`<image:image>`).

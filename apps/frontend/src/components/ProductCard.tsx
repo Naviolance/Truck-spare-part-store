@@ -3,7 +3,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { categoryName } from "@/lib/catalog";
 import { Link } from "@/i18n/navigation";
 import { formatMoney } from "@/lib/money";
-import { isUnoptimizableImage } from "@/lib/image";
+import { isUnoptimizableImage, productImageAlt } from "@/lib/image";
 
 export type ProductCardData = {
   id: string;
@@ -66,7 +66,7 @@ export function ProductCard({ product, eager = false }: { product: ProductCardDa
         {image ? (
           <Image
             src={image.url}
-            alt={image.altText ?? product.name}
+            alt={image.altText ?? productImageAlt(product)}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             loading={eager ? "eager" : "lazy"}

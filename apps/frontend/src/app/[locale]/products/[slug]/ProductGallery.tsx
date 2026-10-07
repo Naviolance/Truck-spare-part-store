@@ -22,7 +22,10 @@ function ChevronIcon({ direction }: { direction: "left" | "right" }) {
 // keeps accidental micro-drags from flipping the image.
 const SWIPE_THRESHOLD = 40;
 
-export function ProductGallery({ images, productName }: { images: ProductImage[]; productName: string }) {
+// `alt`: the product's description of its photos (productImageAlt), used
+// where the admin didn't write one; later photos get "(2)", "(3)"...
+export function ProductGallery({ images, alt }: { images: ProductImage[]; alt: string }) {
+  const altFor = (img: ProductImage, i: number) => img.altText ?? (i > 0 ? `${alt} (${i + 1})` : alt);
   const t = useTranslations("Product");
   const [index, setIndex] = useState(0);
   const touchStartX = useRef<number | null>(null);
@@ -67,7 +70,7 @@ export function ProductGallery({ images, productName }: { images: ProductImage[]
         <Image
           key={active.url}
           src={active.url}
-          alt={active.altText ?? productName}
+          alt={altFor(active, index)}
           fill
           sizes="(max-width: 768px) 100vw, 50vw"
           priority
@@ -113,7 +116,7 @@ export function ProductGallery({ images, productName }: { images: ProductImage[]
             >
               <Image
                 src={img.url}
-                alt={img.altText ?? productName}
+                alt={altFor(img, i)}
                 fill
                 sizes="64px"
                 unoptimized={isUnoptimizableImage(img.url)}
