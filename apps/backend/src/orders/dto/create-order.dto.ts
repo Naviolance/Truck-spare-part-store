@@ -2,10 +2,12 @@ import { IsString, IsOptional, MinLength, MaxLength } from "class-validator";
 import { IsContactPhone } from "../../common/validators/contact-phone";
 
 export class CreateOrderDto {
+  // Optional: parts are picked up in store, so a street address is only
+  // useful when a delivery is arranged. Phone and city stay required.
+  @IsOptional()
   @IsString()
-  @MinLength(5)
   @MaxLength(300)
-  shippingAddress!: string;
+  shippingAddress?: string;
 
   @IsString()
   @MinLength(2)

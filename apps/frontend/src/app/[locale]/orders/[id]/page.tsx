@@ -178,7 +178,7 @@ export default function OrderDetailPage() {
         <dt className="font-medium">{t("numberLabel")}</dt>
         <dd className="text-ink font-mono">{number}</dd>
         <dt className="font-medium">{t("contactAddress")}</dt>
-        <dd className="text-ink">{order.shippingAddress}, {order.shippingCity}</dd>
+        <dd className="text-ink">{[order.shippingAddress, order.shippingCity].filter(Boolean).join(", ")}</dd>
         <dt className="font-medium">{t("phone")}</dt>
         <dd className="text-ink">{order.shippingPhone}</dd>
       </dl>

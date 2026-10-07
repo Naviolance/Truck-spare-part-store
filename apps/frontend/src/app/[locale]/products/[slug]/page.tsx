@@ -5,13 +5,13 @@ import type { Locale } from "@/i18n/routing";
 import { Link } from "@/i18n/navigation";
 import { AddToCartButton } from "./AddToCartButton";
 import { FitChecker, type Fit, type MakeOption } from "./FitChecker";
-import { StickyBuyBar } from "./StickyBuyBar";
 import { ReviewsSection } from "./ReviewsSection";
 import { ProductGallery } from "./ProductGallery";
 import { formatMoney } from "@/lib/money";
 import { ConditionTag } from "@/components/ProductCard";
 import { RequestProductForm } from "@/components/RequestProductForm";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { StickyActionBar } from "@/components/StickyActionBar";
 import { JsonLd } from "@/components/JsonLd";
 import { serverFetch, serverFetchOrMissing } from "@/lib/server-api";
 import { categoryName } from "@/lib/catalog";
@@ -141,7 +141,7 @@ export default async function ProductPage({ params }: Props) {
 
       {/* Redesign step 3, option B. Desktop: content left, buy box right
           (sticky). Phones: one column — photo and title, buy box, then the
-          fit check — with StickyBuyBar once the buy box scrolls away. */}
+          fit check — with StickyActionBar once the buy box scrolls away. */}
       <div className="mt-5 grid gap-7 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-8">
         <div className="grid gap-6 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:col-start-1">
           <ProductGallery images={product.images} productName={product.name} />
@@ -200,7 +200,7 @@ export default async function ProductPage({ params }: Props) {
         >
           {/* Sticks below the pinned site header (119px on desktop) + 16px.
               Buy, or — when it's sold out — turn the visit into a lead.
-              #buy-actions is what StickyBuyBar watches: price and buttons,
+              #buy-actions is what StickyActionBar watches: price and buttons,
               not the notes or form below them. */}
           <div id="buy-actions" className="flex flex-col gap-3.5">
             <span className="text-[34px] font-bold leading-none text-ink">{formatMoney(product.price)}</span>
@@ -242,7 +242,7 @@ export default async function ProductPage({ params }: Props) {
         </div>
       </div>
 
-      <StickyBuyBar targetId="buy-actions">
+      <StickyActionBar targetId="buy-actions">
         <div className="flex items-center gap-2.5">
           <div className="flex min-w-0 flex-col">
             <span className="whitespace-nowrap text-xl font-bold text-ink">{formatMoney(product.price)}</span>
@@ -259,7 +259,7 @@ export default async function ProductPage({ params }: Props) {
             )}
           </div>
         </div>
-      </StickyBuyBar>
+      </StickyActionBar>
     </main>
   );
 }

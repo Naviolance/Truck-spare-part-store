@@ -8,7 +8,7 @@ import { SOCIAL } from "@/lib/site";
 // page — for many customers here, WhatsApp IS the way they buy.
 // Hidden where the page already has its own WhatsApp button or a primary
 // action at the bottom of a phone screen it would cover (add to cart, pay).
-const HIDDEN_ON = [/^\/products\/[^/]+$/, /^\/cart/, /^\/checkout/, /^\/orders\//];
+const HIDDEN_ON = [/^\/products\/[^/]+$/, /^\/cart/, /^\/orders\//];
 
 export function FloatingWhatsApp() {
   const t = useTranslations("Navbar");

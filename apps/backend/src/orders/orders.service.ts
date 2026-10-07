@@ -248,7 +248,7 @@ export class OrdersService {
           discountTotal,
           total: subtotal - discountTotal,
           couponId,
-          shippingAddress: dto.shippingAddress,
+          shippingAddress: dto.shippingAddress?.trim() ?? "",
           shippingCity: dto.shippingCity,
           shippingPhone: dto.shippingPhone,
           items: {
