@@ -267,8 +267,28 @@ pnpm --filter frontend lint
 pnpm --filter frontend build    # also type-checks the frontend
 ```
 
+### Browser tests (Playwright)
+
+`e2e/` drives a real Chromium through the running stack: storefront (search, out-of-stock request,
+product JSON-LD, language switch), catalog and Find My Part updating in place, register → cash order →
+admin marks it paid, the admin product form, coupons, and phone-width layouts. Each run creates its own
+products through the admin API and removes them afterwards, so it works on any seeded database.
+
+```bash
+# with Postgres + MinIO up, the database seeded, and both apps running:
+pnpm --filter backend build && (cd apps/backend && INTERNAL_API_KEY=dev-key node dist/main) &
+pnpm --filter frontend build && (cd apps/frontend && INTERNAL_API_KEY=dev-key pnpm start) &
+pnpm --filter @truckparts/e2e exec playwright install chromium   # once
+INTERNAL_API_KEY=dev-key pnpm test:e2e
+```
+
+Use the production frontend build (`pnpm start`), not `pnpm dev`: dev mode compiles each page on first
+visit and makes the timings meaningless. `INTERNAL_API_KEY` must match the backend's, or the tests'
+logins hit the 5-per-minute login limit. Failures keep a trace: `pnpm --filter @truckparts/e2e report`.
+
 **CI** ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs all of the above on every pull
-request, against a fresh Postgres with every migration applied from scratch. Don't merge a red PR.
+request: unit and database tests against a fresh Postgres with every migration applied from scratch,
+and the browser tests against the full stack (Docker Postgres + MinIO, seeded). Don't merge a red PR.
 
 ## Deployment
 
@@ -315,6 +335,7 @@ apps/
   frontend/   Next.js storefront and admin panel (src/app/admin/*)
 packages/
   prisma/     Database schema, migrations, seed script
+e2e/          Playwright browser tests of the whole stack
 docker-compose.yml  Local services (Postgres, MinIO, Mailhog, Adminer)
 ```
 

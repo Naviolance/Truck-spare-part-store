@@ -31,7 +31,8 @@ services:
     volumes:
       - truckparts_minio_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      # The image has no curl; `mc ready` is MinIO's own readiness check.
+      test: ["CMD", "mc", "ready", "local"]
       interval: 10s
       timeout: 5s
       retries: 5

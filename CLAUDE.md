@@ -45,6 +45,13 @@ Note: running `tsc --noEmit` directly via `npx` in `apps/frontend` fails with a 
 error from a version mismatch between the global `npx` tsc and the project's pinned one — use
 `pnpm --filter frontend build` to type-check instead.
 
+Browser tests (`e2e/`, Playwright; needs both apps running from production builds, same `INTERNAL_API_KEY`):
+```bash
+INTERNAL_API_KEY=<key> pnpm test:e2e     # PW_CHROMIUM_PATH=<chrome> to use an installed Chromium
+```
+Tests create their own products in `global-setup.ts` (the seed is random) and log in through the API
+(`support/api.ts` `loginAs`), not the form. One worker on purpose (shared database).
+
 Prisma (`packages/prisma`):
 ```bash
 pnpm prisma:generate
@@ -77,7 +84,8 @@ Seeded test accounts: `admin@truckparts.local` / `admin123` (admin), `customer@t
 `customer123` (customer). Seed password hashes are placeholders for local testing only.
 
 CI (`.github/workflows/ci.yml`) runs on every PR: backend lint + unit tests + `test:db` against a fresh
-Postgres (all migrations applied from scratch) + build, and frontend lint + build. Keep it green.
+Postgres (all migrations applied from scratch) + build, frontend lint + build, and the e2e suite against the
+full stack (docker compose Postgres + MinIO, seeded). Keep it green.
 
 ## Architecture
 
