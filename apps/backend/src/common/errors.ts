@@ -25,6 +25,10 @@ export const ERROR_CODES = [
   "RESET_LINK_INVALID",
   "PERMISSION_DENIED",
   "DEMO_READ_ONLY",
+  // Admin: users
+  "USER_NOT_FOUND",
+  "CANNOT_CHANGE_OWN_ACCOUNT",
+  "LAST_ADMIN",
   // Cart / checkout / orders / payment
   "PRODUCT_UNAVAILABLE",
   "NOT_ENOUGH_STOCK",

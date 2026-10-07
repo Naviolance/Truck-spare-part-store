@@ -18,8 +18,10 @@ test("a new customer registers from the cart and places a cash order", async ({ 
   await page.getByRole("link", { name: "Créer un compte" }).first().click();
   await page.getByLabel("Prénom").fill("Awa");
   await page.getByLabel("Nom", { exact: true }).fill("Ngono");
-  await page.getByLabel("E-mail").fill(`e2e-${Date.now()}@example.com`);
+  const email = `e2e-${Date.now()}@example.com`;
+  await page.getByLabel("E-mail", { exact: true }).fill(email);
   await page.getByLabel("Mot de passe", { exact: true }).fill("camion rouge douala");
+  await page.getByLabel(/Je souhaite recevoir les arrivages/).check();
   await page.getByRole("button", { name: "Créer mon compte" }).click();
   await expect(page).toHaveURL(/\/fr\/cart$/);
 
@@ -37,6 +39,9 @@ test("a new customer registers from the cart and places a cash order", async ({ 
   const order = orders.items.find((o: { items: { productId: string }[] }) => o.items.some((i) => i.productId === inStock.id));
   orderNumber = order.orderNumber;
   expect((await api.get(`/products/admin/${inStock.id}`)).quantity).toBe(before - 1);
+  // The sign-up consent box was ticked: they're in the offers list.
+  const optedIn = await api.get(`/users/admin/all?optIn=yes&search=${encodeURIComponent(email)}`);
+  expect(optedIn.items).toHaveLength(1);
   await api.dispose();
 });
 

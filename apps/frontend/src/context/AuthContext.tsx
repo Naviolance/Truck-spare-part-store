@@ -19,7 +19,7 @@ type AuthContextType = {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (data: { email: string; password: string; firstName: string; lastName: string }) => Promise<void>;
+  register: (data: { email: string; password: string; firstName: string; lastName: string; marketingOptIn?: boolean }) => Promise<void>;
   logout: () => Promise<void>;
   // True right after the user logged out themselves (until the next login):
   // account-only pages then let logout() send them home instead of
@@ -120,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await fetchMe();
   }
 
-  async function register(data: { email: string; password: string; firstName: string; lastName: string }) {
+  async function register(data: { email: string; password: string; firstName: string; lastName: string; marketingOptIn?: boolean }) {
     const res = await apiFetch("/auth/register", {
       method: "POST",
       body: JSON.stringify(data),

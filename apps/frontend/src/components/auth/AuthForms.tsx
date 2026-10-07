@@ -100,8 +100,11 @@ export function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
   const { register } = useAuth();
   const id = useId();
   const [form, setForm] = useState({ email: "", password: "", firstName: "", lastName: "" });
+  // Unticked by default: consent must be an active choice.
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const { submit, error, submitting } = useSubmit(
-    () => register({ ...form, email: form.email.trim(), firstName: form.firstName.trim(), lastName: form.lastName.trim() }),
+    () =>
+      register({ ...form, email: form.email.trim(), firstName: form.firstName.trim(), lastName: form.lastName.trim(), marketingOptIn }),
     onSuccess,
   );
   const update = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -137,6 +140,10 @@ export function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
         />
         <p id={`${id}-password-hint`} className="text-xs text-steel mt-1">{t("passwordHint")}</p>
       </div>
+      <label className="flex cursor-pointer items-start gap-2.5 text-sm text-ink">
+        <input type="checkbox" checked={marketingOptIn} onChange={(e) => setMarketingOptIn(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-ink" />
+        <span>{t("marketingOptIn")}</span>
+      </label>
       {error && <p role="alert" className="text-red-600 text-sm">{error}</p>}
       <button type="submit" disabled={submitting} className={submitClass}>
         {submitting ? t("registering") : t("registerButton")}

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { getTranslations, getLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
 import { localeAlternates } from "@/lib/seo";
+import { CookieChoiceButton } from "@/components/CookieBanner";
+import { GA_ID } from "@/lib/consent";
 
 // Using the owner's personal email as a stand-in until a dedicated business
 // address exists — swap this for something like privacy@<realdomain> once
@@ -64,6 +66,15 @@ export default async function PrivacyPage() {
 
       <Section title={t("analyticsTitle")}>
         <p>{t("analyticsBody")}</p>
+        {GA_ID && (
+          <p>
+            {t("analyticsGa")} <CookieChoiceButton />
+          </p>
+        )}
+      </Section>
+
+      <Section title={t("marketingTitle")}>
+        <p>{t("marketingBody")}</p>
       </Section>
 
       <Section title={t("errorsTitle")}>

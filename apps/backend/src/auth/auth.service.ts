@@ -62,6 +62,7 @@ export class AuthService {
       passwordHash,
       firstName: dto.firstName,
       lastName: dto.lastName,
+      marketingOptIn: dto.marketingOptIn === true,
     });
 
     return this.createSession(user.id, user.role, user.email);

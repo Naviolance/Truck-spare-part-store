@@ -92,7 +92,12 @@
   "CookieBanner": {
     "text": "Nous utilisons des cookies pour vous garder connecté et mémoriser votre langue. Nous n'utilisons aucun cookie publicitaire ou de suivi.",
     "learnMore": "En savoir plus",
-    "accept": "Compris"
+    "accept": "Compris",
+    "label": "Cookies",
+    "consentText": "Nous utilisons des cookies nécessaires (connexion, langue) et, avec votre accord, des cookies de mesure d'audience (Google Analytics) pour améliorer le site.",
+    "acceptAnalytics": "Accepter",
+    "refuse": "Refuser",
+    "change": "Modifier mon choix de cookies"
   },
   "PrivacyPage": {
     "title": "Confidentialité et cookies",
@@ -119,7 +124,10 @@
     "analyticsTitle": "Statistiques de visite",
     "analyticsBody": "Nous mesurons les visites, recherches et clics avec Umami, un outil respectueux de la vie privée qui n'utilise pas de cookies et ne vous identifie pas. Il nous indique par exemple quelles pièces sont recherchées, pour mieux les proposer. Nous conservons aussi nous-mêmes des totaux quotidiens anonymes — les recherches sans résultat et le nombre de clics sur chaque bouton WhatsApp — sans adresse IP ni compte associé.",
     "errorsTitle": "Rapports d'erreurs",
-    "errorsBody": "Si quelque chose ne fonctionne pas, des détails techniques sur l'erreur (la page, le navigateur, le problème) sont envoyés à notre service de suivi des erreurs, Sentry, pour que nous puissions corriger. Nous n'y incluons ni vos mots de passe ni vos données de paiement."
+    "errorsBody": "Si quelque chose ne fonctionne pas, des détails techniques sur l'erreur (la page, le navigateur, le problème) sont envoyés à notre service de suivi des erreurs, Sentry, pour que nous puissions corriger. Nous n'y incluons ni vos mots de passe ni vos données de paiement.",
+    "analyticsGa": "Si vous l'acceptez dans le bandeau cookies, nous utilisons aussi Google Analytics (adresse IP anonymisée) pour comprendre comment le site est utilisé. Sans votre accord, il n'est pas chargé.",
+    "marketingTitle": "Offres et arrivages",
+    "marketingBody": "Uniquement si vous cochez la case à l'inscription ou dans votre compte, nous pouvons vous envoyer nos arrivages et offres par WhatsApp ou e-mail. Vous pouvez retirer cet accord à tout moment depuis « Mon compte »."
   },
   "Meta": {
     "title": "TruckParts — Pièces détachées camion au Cameroun",
@@ -181,7 +189,8 @@
     "saving": "Enregistrement…",
     "resetDone": "Mot de passe mis à jour. Vous pouvez maintenant vous connecter.",
     "resetMissingToken": "Ce lien est incomplet. Veuillez en demander un nouveau.",
-    "requestNewLink": "Demander un nouveau lien"
+    "requestNewLink": "Demander un nouveau lien",
+    "marketingOptIn": "Je souhaite recevoir les arrivages et offres par WhatsApp ou e-mail (désinscription à tout moment depuis mon compte)."
   },
   "Condition": {
     "NEW": "Neuf",
@@ -530,7 +539,9 @@
     "previousOrders": "Commandes précédentes",
     "viewOrder": "Voir la commande",
     "question": "Une question ? WhatsApp",
-    "itemCount": "{count, plural, one {# article} other {# articles}}"
+    "itemCount": "{count, plural, one {# article} other {# articles}}",
+    "marketingTitle": "Recevoir les arrivages et offres",
+    "marketingBody": "Par WhatsApp ou e-mail, rarement. Décochez pour ne plus rien recevoir."
   },
   "ApiErrors": {
     "VALIDATION_FAILED": "Certaines informations ne sont pas valides. Vérifiez le formulaire et réessayez.",
@@ -579,7 +590,10 @@
     "BRAND_HAS_PRODUCTS": "Cette marque contient encore {count} produit(s). Déplacez-les d'abord vers une autre marque.",
     "NO_FILE": "Choisissez d'abord un fichier.",
     "IMAGE_TYPE": "Seules les images JPEG, PNG ou WEBP sont acceptées.",
-    "IMAGE_INVALID": "Ce fichier n'est pas une image valide."
+    "IMAGE_INVALID": "Ce fichier n'est pas une image valide.",
+    "USER_NOT_FOUND": "Utilisateur introuvable.",
+    "CANNOT_CHANGE_OWN_ACCOUNT": "Vous ne pouvez pas modifier ni supprimer votre propre compte ici.",
+    "LAST_ADMIN": "La boutique doit garder au moins un administrateur."
   },
   "AdminShell": {
     "checkingAccess": "Vérification de l'accès…",
@@ -598,11 +612,12 @@
       "requests": "Demandes",
       "coupons": "Codes promo",
       "reviews": "Avis",
-      "account": "Compte"
+      "account": "Compte",
+      "users": "Utilisateurs"
     },
     "menu": {
       "catalog": "Catalogue",
-      "more": "Promo et avis"
+      "more": "Plus"
     }
   },
   "AdminAccount": {
@@ -952,5 +967,35 @@
     "productCount": "{count, plural, one {# produit} other {# produits}}",
     "deleteConfirm": "Supprimer cette configuration de camion ?",
     "addFailed": "Impossible d’ajouter le camion"
+  },
+  "AdminUsers": {
+    "title": "Utilisateurs",
+    "add": "+ Nouvel utilisateur",
+    "addIntro": "Créez un compte pour quelqu’un (par exemple un autre administrateur). Donnez-lui le mot de passe temporaire : il le change ensuite dans « Mon compte ».",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "email": "E-mail",
+    "tempPassword": "Mot de passe temporaire",
+    "tempPasswordHint": "Au moins 10 caractères.",
+    "roleLabel": "Rôle",
+    "role": {
+      "CUSTOMER": "Client",
+      "ADMIN": "Admin"
+    },
+    "create": "Créer le compte",
+    "created": "Compte créé pour {email}.",
+    "exportOptIn": "Exporter les accords offres (CSV)",
+    "all": "Tous",
+    "optedIn": "Accord offres",
+    "optInBadge": "Offres ✓",
+    "you": "vous",
+    "orders": "{count, plural, =0 {aucune commande} one {# commande} other {# commandes}}",
+    "since": "inscrit le {date}",
+    "searchPlaceholder": "Nom, e-mail ou téléphone",
+    "empty": "Aucun utilisateur ne correspond.",
+    "deleteConfirm": "Supprimer le compte de {name} ? Cette action est définitive.",
+    "deleteConfirmOrders": "{name} a {count, plural, one {# commande} other {# commandes}}. Le compte sera anonymisé : nom, e-mail, téléphone et adresses effacés, les commandes conservées sous « Client supprimé ». Continuer ?",
+    "deleted": "Compte de {name} supprimé.",
+    "anonymized": "Compte de {name} anonymisé (ses commandes sont conservées)."
   }
 }

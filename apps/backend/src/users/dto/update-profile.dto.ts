@@ -1,4 +1,4 @@
-import { IsString, IsOptional, MinLength, MaxLength, ValidateIf } from "class-validator";
+import { IsBoolean, IsString, IsOptional, MinLength, MaxLength, ValidateIf } from "class-validator";
 
 // These are all optional profile fields being edited, not a fresh signup —
 // an empty string means "leave this blank," which must always be allowed.
@@ -39,4 +39,9 @@ export class UpdateProfileDto {
   @ValidateIf((o) => o.defaultShippingPhone !== "")
   @MinLength(6)
   defaultShippingPhone?: string;
+
+  // Offers / new-stock alerts by WhatsApp or e-mail (account page switch).
+  @IsOptional()
+  @IsBoolean()
+  marketingOptIn?: boolean;
 }
