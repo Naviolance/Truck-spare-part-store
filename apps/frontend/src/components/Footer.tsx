@@ -85,7 +85,7 @@ export async function Footer() {
           <ul className="space-y-2 text-sm text-paper/70">
             <li><Link href="/login" className={linkClass}>{t("login")}</Link></li>
             <li><Link href="/register" className={linkClass}>{t("createAccount")}</Link></li>
-            <li><Link href="/orders" className={linkClass}>{t("orderHistory")}</Link></li>
+            <li><Link href="/account" className={linkClass}>{t("orderHistory")}</Link></li>
             <li><Link href="/cart" className={linkClass}>{t("cart")}</Link></li>
             <li><Link href="/about" className={linkClass}>{t("about")}</Link></li>
           </ul>

@@ -73,6 +73,24 @@ export function CatalogSkeleton() {
   );
 }
 
+// /find-my-part — title, then the grid of make tiles.
+export function FindMyPartSkeleton() {
+  return (
+    <div className="max-w-6xl mx-auto px-4 py-8 sm:py-10">
+      <Bar className="h-10 w-80 max-w-full mb-3" />
+      <Bar className="h-5 w-96 max-w-full mb-8" />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        {Array.from({ length: 8 }, (_, i) => (
+          <div key={i} className="flex h-[92px] flex-col justify-center gap-2 rounded-[14px] border border-line bg-card p-4">
+            <Bar className="h-6 w-[70%]" />
+            <Bar className="h-4 w-[40%]" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // /products/<slug> — same grid as the page: photo + title, buy box on the
 // right (first below them on phones), then the dark fit-check box.
 export function ProductPageSkeleton() {

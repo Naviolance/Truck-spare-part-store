@@ -276,8 +276,8 @@ export function Navbar({ categories = [] }: { categories?: NavCategory[] }) {
           <NavLink href="/about" onClick={closeMenu}>{t("about")}</NavLink>
           {loading ? null : user ? (
             <>
-              {user.role !== "ADMIN" && <NavLink href="/orders" onClick={closeMenu}>{t("orders")}</NavLink>}
-              <NavLink href={user.role === "ADMIN" ? "/admin" : "/account"} onClick={closeMenu}>
+              {user.role !== "ADMIN" && <NavLink href="/account" onClick={closeMenu}>{t("orders")}</NavLink>}
+              <NavLink href={user.role === "ADMIN" ? "/admin" : "/account?section=details"} onClick={closeMenu}>
                 {user.role === "ADMIN" ? t("dashboard") : t("hiUser", { name: user.firstName })}
               </NavLink>
               <button

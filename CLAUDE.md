@@ -181,6 +181,16 @@ order; `/checkout` only redirects there. Order logic lives in `cart/use-checkout
 the subtotal changes). One `<form>`; the summary and phone-bar buttons submit it via `form=`. Translations used by
 client components must be in a namespace that reaches the browser (`SERVER_ONLY_NAMESPACES` in `AppShell` — e.g.
 `Footer` doesn't).
+Find My Part (step 5, option B; "TruckParts account, orders & Find My Part" canvas): `find-my-part/TruckPicker.tsx` —
+make tiles → model pills → optional year/engine, from `/vehicles/catalog` (only trucks with parts). Each choice is a
+link (`?manufacturer=&model=&vehicleId=`); the page server-renders the parts right below via `<CatalogView embedded>`
+(section + h2, no breadcrumb). Clicks run in a transition and show an in-place skeleton; `data-inline-loading` stops
+`NavigationSkeleton` covering the page on same-page updates. Order page: `orders/[id]/OrderTracker.tsx` maps status →
+step (PAYMENT_PENDING confirm, PAID/PROCESSING ready, SHIPPED collect, DELIVERED done); other statuses show their
+own message instead (step mapping: `trackerStep()` in `lib/order-status.ts`). "Mon compte" (`/account`, option B):
+orders (active ones with a progress bar) / details / password via `?section=`; `/orders` redirects there. Logging
+out sets `loggedOut` in `AuthContext` so `useRequireAuth` lets `logout()` take the user home instead of to login.
+Mockups from now on: two versions per screen, never bundles of screens.
 
 **Search**: matches `products."searchText"` — one lower-case, accent-free string (name, descriptions,
 brand, category EN/FR, trucks, part/cross-reference numbers) with a GIN trigram index. It is written
