@@ -8,7 +8,6 @@ import { CartProvider } from "@/context/CartContext";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { CookieBanner } from "@/components/CookieBanner";
-import { PageTransition } from "@/components/PageTransition";
 import { NavigationSkeleton } from "@/components/NavigationSkeleton";
 import { getCategories, productCount } from "@/lib/landing";
 import { categoryName } from "@/lib/catalog";
@@ -28,10 +27,13 @@ const barlow = Barlow_Semi_Condensed({
 });
 // Used narrowly for part numbers/SKUs/spec rows - real parts-catalog
 // convention (unambiguous characters, tabular alignment), not decoration.
+// Not preloaded: it only styles part numbers, and preloading it delayed the
+// fonts the first screen needs (measured with Lighthouse, mobile).
 const plexMono = IBM_Plex_Mono({
   subsets: ["latin"],
   weight: ["500", "600"],
   display: "swap",
+  preload: false,
   variable: "--font-mono",
 });
 
@@ -78,7 +80,7 @@ export async function AppShell({
             <CartProvider>
               <Navbar categories={navCategories} />
               <div className="relative flex-1">
-                <PageTransition>{children}</PageTransition>
+                {children}
                 {/* Suspense isolated here (not around the whole app) so
                     useSearchParams() inside only de-opts this component to
                     client rendering, not every static page in the tree. */}
