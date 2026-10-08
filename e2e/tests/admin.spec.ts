@@ -79,6 +79,26 @@ test("\"Sans photo\" lists products still waiting for a photo", async ({ page })
   await expect(page.getByRole("button", { name: new RegExp(inStock.name) })).toBeVisible();
 });
 
+test("users: create an account, make it admin, delete it", async ({ page }) => {
+  const email = `e2e-staff-${Date.now()}@example.com`;
+  await page.goto("/admin/users");
+  await page.getByRole("button", { name: "+ Nouvel utilisateur" }).click();
+  await page.getByLabel("Prénom").fill("Staff");
+  await page.getByLabel("Nom", { exact: true }).fill("E2E");
+  await page.getByLabel("E-mail", { exact: true }).fill(email);
+  await page.getByLabel("Mot de passe temporaire").fill("camion rouge douala");
+  await page.getByRole("button", { name: "Créer le compte" }).click();
+  await expect(page.getByText(`Compte créé pour ${email}.`)).toBeVisible();
+
+  const row = page.locator("li", { hasText: email });
+  await row.getByLabel("Rôle").selectOption("ADMIN");
+  await expect(row.locator("span", { hasText: /^Admin$/ })).toBeVisible();
+  page.once("dialog", (d) => d.accept());
+  await row.getByRole("button", { name: "Supprimer" }).click();
+  await expect(page.getByText("Compte de Staff E2E supprimé.")).toBeVisible();
+  await expect(row).toHaveCount(0);
+});
+
 test("coupons: create, switch off, delete", async ({ page }) => {
   const code = `E2E${Date.now().toString(36).toUpperCase()}`;
   await page.goto("/admin/coupons");
@@ -103,7 +123,7 @@ test("requests open on the status from the URL", async ({ page }) => {
 
 test("the admin pages fit a phone screen", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const url of ["/admin", "/admin/orders", "/admin/products", "/admin/products/create", "/admin/requests", "/admin/coupons", "/admin/vehicles"]) {
+  for (const url of ["/admin", "/admin/orders", "/admin/products", "/admin/products/create", "/admin/requests", "/admin/coupons", "/admin/vehicles", "/admin/users"]) {
     await page.goto(url);
     await page.waitForLoadState("networkidle");
     expect(await noHorizontalScroll(page), url).toBe(true);

@@ -233,6 +233,16 @@ products: ~10–40 ms per search (was ~0.8 s scanning every row).
 frontend. Don't return unbounded `findMany` lists from admin endpoints; vehicles and coupons are the
 deliberate exceptions (small by nature).
 
+**Users & consent**: `User.marketingOptIn`/`marketingOptInAt` = consent to offers (sign-up checkbox, unticked by
+default; switch on `/account?section=details` via `PATCH /users/me`). Admin "Utilisateurs" (`app/admin/users`,
+`users/admin-users.*`): list/search/filter (role, opt-in), create (temporary password), change role (ends that
+user's sessions), delete, and `GET /users/admin/opt-in.csv`. Nobody changes/deletes their own account there and the
+last admin can't be removed. Delete = hard delete if no orders/reviews, else **anonymise** (`deletedAt` set, personal
+fields and order shipping phone/address erased, rows kept for sales history); deleted users are hidden everywhere
+admin lists users. Analytics: Umami (cookieless) always; Google Analytics only when `NEXT_PUBLIC_GA_ID` is set AND the
+visitor accepted in `CookieBanner` (`lib/consent.ts`, `GoogleAnalytics.tsx`). Without a GA id the banner stays a plain
+notice (all cookies are necessary).
+
 **Rate limiting**: `UserThrottlerGuard` buckets by verified user id, else client IP (needs correct
 `TRUST_PROXY`; check `/health`'s `clientIp`), and skips requests carrying `INTERNAL_API_KEY`.
 

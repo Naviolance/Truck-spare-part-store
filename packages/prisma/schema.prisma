@@ -69,6 +69,13 @@ model User {
   defaultShippingCity    String?
   defaultShippingPhone   String?
   role         UserRole @default(CUSTOMER)
+  // Consent to offers / new-stock alerts (WhatsApp or e-mail). Off unless the
+  // customer ticked it; the date is when they last said yes.
+  marketingOptIn   Boolean   @default(false)
+  marketingOptInAt DateTime?
+  // Set when an admin deletes an account that has orders: the row stays so
+  // order history holds, but every personal field is erased.
+  deletedAt    DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

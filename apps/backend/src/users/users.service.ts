@@ -20,12 +20,16 @@ export class UsersService {
     firstName: string;
     lastName: string;
     role?: UserRole;
+    marketingOptIn?: boolean;
   }) {
+    const { marketingOptIn = false, ...rest } = data;
     return this.prisma.user.create({
       data: {
-        ...data,
+        ...rest,
         email: data.email.toLowerCase(),
         role: data.role ?? UserRole.CUSTOMER,
+        marketingOptIn,
+        marketingOptInAt: marketingOptIn ? new Date() : null,
       },
     });
   }
@@ -36,7 +40,16 @@ export class UsersService {
     defaultShippingAddress?: string;
     defaultShippingCity?: string;
     defaultShippingPhone?: string;
+    marketingOptIn?: boolean;
   }) {
-    return this.prisma.user.update({ where: { id }, data });
+    const { marketingOptIn, ...rest } = data;
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        ...rest,
+        // Record when consent was given; withdrawing it clears the date.
+        ...(marketingOptIn !== undefined && { marketingOptIn, marketingOptInAt: marketingOptIn ? new Date() : null }),
+      },
+    });
   }
 }

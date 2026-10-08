@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ADMIN_LOCALE_COOKIE, ADMIN_LOCALES } from "@/lib/admin-locale";
 import { apiFetch } from "@/lib/api";
 
-type NavKey = "dashboard" | "orders" | "requests" | "products" | "import" | "categories" | "brands" | "vehicles" | "coupons" | "reviews" | "account";
+type NavKey = "dashboard" | "orders" | "requests" | "products" | "import" | "categories" | "brands" | "vehicles" | "coupons" | "reviews" | "users" | "account";
 const tabs: { href: string; key: NavKey }[] = [
   { href: "/admin", key: "dashboard" },
   { href: "/admin/orders", key: "orders" },
@@ -18,7 +18,7 @@ const tabs: { href: string; key: NavKey }[] = [
 // Less frequent pages, folded into two menus.
 const menus: { key: "catalog" | "more"; links: { href: string; key: NavKey }[] }[] = [
   { key: "catalog", links: [{ href: "/admin/categories", key: "categories" }, { href: "/admin/brands", key: "brands" }, { href: "/admin/vehicles", key: "vehicles" }] },
-  { key: "more", links: [{ href: "/admin/coupons", key: "coupons" }, { href: "/admin/reviews", key: "reviews" }] },
+  { key: "more", links: [{ href: "/admin/users", key: "users" }, { href: "/admin/coupons", key: "coupons" }, { href: "/admin/reviews", key: "reviews" }] },
 ];
 
 // Badge counts on the tabs: orders still needing the owner and open part

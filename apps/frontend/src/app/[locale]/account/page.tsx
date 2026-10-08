@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { AccountDetails } from "@/components/AccountDetails";
+import { MarketingConsent } from "@/components/MarketingConsent";
 import { ChangePasswordForm } from "@/components/ChangePasswordForm";
 import { apiFetch } from "@/lib/api";
 import { trackerStep } from "@/lib/order-status";
@@ -102,6 +103,7 @@ function AccountHub() {
               <h2 className="mb-1 font-display text-2xl font-bold text-ink">{t("navDetails")}</h2>
               <p className="mb-5 text-sm text-steel">{t("intro")}</p>
               <AccountDetails variant="customer" />
+              <MarketingConsent />
             </section>
           )}
           {section === "password" && (

@@ -92,7 +92,12 @@
   "CookieBanner": {
     "text": "We use cookies to keep you signed in and to remember your language. We don't use analytics, advertising, or tracking cookies.",
     "learnMore": "Learn more",
-    "accept": "Got it"
+    "accept": "Got it",
+    "label": "Cookies",
+    "consentText": "We use necessary cookies (login, language) and, with your consent, audience measurement cookies (Google Analytics) to improve the site.",
+    "acceptAnalytics": "Accept",
+    "refuse": "Refuse",
+    "change": "Change my cookie choice"
   },
   "PrivacyPage": {
     "title": "Privacy & Cookies",
@@ -119,7 +124,10 @@
     "analyticsTitle": "Visitor statistics",
     "analyticsBody": "We count visits, searches and clicks with Umami, a privacy-friendly analytics tool that uses no cookies and doesn't identify you. It tells us things like which parts people look for, so we can stock them. We also keep anonymous daily totals ourselves — which search terms found nothing and how many times each WhatsApp button was used — with no IP address or account attached.",
     "errorsTitle": "Error reports",
-    "errorsBody": "If something breaks, technical details about the error (the page, the browser, what went wrong) are sent to our error-monitoring service, Sentry, so we can fix it. We don't include your passwords or payment details."
+    "errorsBody": "If something breaks, technical details about the error (the page, the browser, what went wrong) are sent to our error-monitoring service, Sentry, so we can fix it. We don't include your passwords or payment details.",
+    "analyticsGa": "If you accept it in the cookie banner, we also use Google Analytics (anonymised IP address) to understand how the site is used. Without your consent it is not loaded.",
+    "marketingTitle": "Offers and new stock",
+    "marketingBody": "Only if you tick the box when signing up or in your account, we may send you new stock and offers by WhatsApp or email. You can withdraw this consent at any time from \"My account\"."
   },
   "Meta": {
     "title": "TruckParts — Truck spare parts in Cameroon",
@@ -181,7 +189,8 @@
     "saving": "Saving…",
     "resetDone": "Password updated. You can now log in.",
     "resetMissingToken": "This reset link is incomplete. Please request a new one.",
-    "requestNewLink": "Request a new link"
+    "requestNewLink": "Request a new link",
+    "marketingOptIn": "I want to receive new stock and offers by WhatsApp or email (unsubscribe anytime from my account)."
   },
   "Condition": {
     "NEW": "New",
@@ -530,7 +539,9 @@
     "previousOrders": "Previous orders",
     "viewOrder": "View the order",
     "question": "A question? WhatsApp",
-    "itemCount": "{count, plural, one {# item} other {# items}}"
+    "itemCount": "{count, plural, one {# item} other {# items}}",
+    "marketingTitle": "Receive new stock and offers",
+    "marketingBody": "By WhatsApp or email, not often. Untick to stop receiving them."
   },
   "ApiErrors": {
     "VALIDATION_FAILED": "Some details aren't valid. Check the form and try again.",
@@ -579,7 +590,10 @@
     "BRAND_HAS_PRODUCTS": "This brand still has {count} product(s). Move them to another brand first.",
     "NO_FILE": "Choose a file first.",
     "IMAGE_TYPE": "Only JPEG, PNG or WEBP images are allowed.",
-    "IMAGE_INVALID": "That file isn't a valid image."
+    "IMAGE_INVALID": "That file isn't a valid image.",
+    "USER_NOT_FOUND": "User not found.",
+    "CANNOT_CHANGE_OWN_ACCOUNT": "You can’t change or delete your own account here.",
+    "LAST_ADMIN": "The store needs at least one admin."
   },
   "AdminShell": {
     "checkingAccess": "Checking access…",
@@ -598,11 +612,12 @@
       "requests": "Requests",
       "coupons": "Coupons",
       "reviews": "Reviews",
-      "account": "Account"
+      "account": "Account",
+      "users": "Users"
     },
     "menu": {
       "catalog": "Catalog",
-      "more": "Promo & reviews"
+      "more": "More"
     }
   },
   "AdminAccount": {
@@ -952,5 +967,35 @@
     "productCount": "{count, plural, one {# product} other {# products}}",
     "deleteConfirm": "Delete this vehicle configuration?",
     "addFailed": "Failed to add vehicle"
+  },
+  "AdminUsers": {
+    "title": "Users",
+    "add": "+ New user",
+    "addIntro": "Create an account for someone (for example another admin). Give them the temporary password: they change it in \"My account\".",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "tempPassword": "Temporary password",
+    "tempPasswordHint": "At least 10 characters.",
+    "roleLabel": "Role",
+    "role": {
+      "CUSTOMER": "Customer",
+      "ADMIN": "Admin"
+    },
+    "create": "Create account",
+    "created": "Account created for {email}.",
+    "exportOptIn": "Export offer opt-ins (CSV)",
+    "all": "All",
+    "optedIn": "Offer opt-in",
+    "optInBadge": "Offers ✓",
+    "you": "you",
+    "orders": "{count, plural, =0 {no orders} one {# order} other {# orders}}",
+    "since": "joined {date}",
+    "searchPlaceholder": "Name, email or phone",
+    "empty": "No users match.",
+    "deleteConfirm": "Delete {name}'s account? This can't be undone.",
+    "deleteConfirmOrders": "{name} has {count, plural, one {# order} other {# orders}}. The account will be anonymised: name, email, phone and addresses erased, orders kept as \"Deleted customer\". Continue?",
+    "deleted": "{name}'s account deleted.",
+    "anonymized": "{name}'s account anonymised (orders kept)."
   }
 }

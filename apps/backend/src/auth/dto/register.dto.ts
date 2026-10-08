@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MaxLength, MinLength } from "class-validator";
+import { IsBoolean, IsEmail, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
 import { Transform } from "class-transformer";
 import { IsNewPassword } from "../../common/validators/password";
 
@@ -21,4 +21,9 @@ export class RegisterDto {
   @MinLength(1)
   @MaxLength(100)
   lastName!: string;
+
+  // The "send me offers" box on the sign-up form. Unticked by default.
+  @IsOptional()
+  @IsBoolean()
+  marketingOptIn?: boolean;
 }

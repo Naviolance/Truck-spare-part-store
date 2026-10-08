@@ -13,6 +13,7 @@ import { NavigationSkeleton } from "@/components/NavigationSkeleton";
 import { getCategories, productCount } from "@/lib/landing";
 import { categoryName } from "@/lib/catalog";
 import { Analytics } from "@/components/Analytics";
+import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { FloatingWhatsApp } from "@/components/FloatingWhatsApp";
 
 // Redesign step 1: Source Sans 3 for reading (a variable font — one file
@@ -94,6 +95,7 @@ export async function AppShell({
           {storefront && <FloatingWhatsApp />}
         </NextIntlClientProvider>
         <Analytics />
+        <GoogleAnalytics />
       </body>
     </html>
   );
