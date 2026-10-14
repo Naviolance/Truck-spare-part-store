@@ -31,5 +31,5 @@ export function whatsappLink(message: string): string | null {
 
 export const CREDIT = {
   name: "JPFW Web Services",
-  url: "https://jpfw-webservices.vercel.app/en",
+  url: "https://jpfwwebservices.com",
 };
